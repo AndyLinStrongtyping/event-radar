@@ -1,0 +1,23 @@
+name: Check Chimei special-exhibition links
+
+on:
+  schedule:
+    # Monday 09:20 Asia/Taipei (GitHub Actions cron uses UTC).
+    - cron: '20 1 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Check official listing links
+        run: npm run check:chimei
