@@ -5,6 +5,8 @@ import { changedValues, duplicateCandidates, type ExistingExhibition } from './d
 import { normalizeExhibition, type ExhibitionDraft } from './normalize.ts';
 import { normalizeNmnsFeed } from './sources/nmns.ts';
 import { mergeNpmSouthPages, npmSouthPages } from './sources/npm-south.ts';
+import { classifyNmmbaFeed, nmmbaDataUrl, type SourceRecord } from './sources/nmmba.ts';
+import { classifyNpmNorthFeed, npmNorthDataUrl } from './sources/npm-north.ts';
 
 function arg(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -24,14 +26,23 @@ async function fetchSource(url: string, host: string): Promise<string> {
   return new TextDecoder().decode(bytes);
 }
 
-async function sourceRows(museum: string, file: string | undefined, official: boolean): Promise<ExhibitionDraft[]> {
+type SourceBatch = { rows: ExhibitionDraft[]; records: SourceRecord[] };
+
+async function sourceRows(museum: string, file: string | undefined, snapshot: string | undefined,
+  official: boolean): Promise<SourceBatch> {
+  if (snapshot) {
+    const payload: unknown = JSON.parse(await readFile(snapshot, 'utf8'));
+    if (museum === 'nmmba') return classifyNmmbaFeed(payload);
+    if (museum === 'npm-north') return classifyNpmNorthFeed(payload);
+    throw new Error('原始快照目前只支援海生館或故宮北院');
+  }
   if (file) {
     const payload: unknown = JSON.parse(await readFile(file, 'utf8'));
     if (!Array.isArray(payload)) throw new Error('匯入檔必須是 JSON 陣列');
-    return payload.map((item) => {
+    return { rows: payload.map((item) => {
       if (!item || typeof item !== 'object' || Array.isArray(item)) throw new Error('資料列不是物件');
       return normalizeExhibition(item as Record<string, unknown>, museum);
-    });
+    }), records: [] };
   }
   if (!official) throw new Error('必須指定 --file 或 --official');
   if (museum === 'nmns') {
@@ -39,14 +50,20 @@ async function sourceRows(museum: string, file: string | undefined, official: bo
     if (!source) throw new Error('請設定 NMNS_OPEN_DATA_URL');
     const url = new URL(source);
     if (url.protocol !== 'https:' || url.hostname !== 'www.nmns.edu.tw') throw new Error('來源網址必須是科博館官方 HTTPS 網域');
-    return normalizeNmnsFeed(JSON.parse(await fetchSource(url.href, 'www.nmns.edu.tw')));
+    return { rows: normalizeNmnsFeed(JSON.parse(await fetchSource(url.href, 'www.nmns.edu.tw'))), records: [] };
   }
   if (museum === 'npm-south') {
     const pages: string[] = [];
     for (const url of npmSouthPages) pages.push(await fetchSource(url, 'south.npm.gov.tw'));
-    return mergeNpmSouthPages(pages);
+    return { rows: mergeNpmSouthPages(pages), records: [] };
   }
-  throw new Error('目前只有科博館與故宮南院支援官方來源匯入');
+  if (museum === 'nmmba') {
+    return classifyNmmbaFeed(JSON.parse(await fetchSource(nmmbaDataUrl, 'www.nmmba.gov.tw')));
+  }
+  if (museum === 'npm-north') {
+    return classifyNpmNorthFeed(JSON.parse(await fetchSource(npmNorthDataUrl, 'odapi.npm.gov.tw')));
+  }
+  throw new Error('此館尚無官方來源匯入器');
 }
 
 type Stored = ExhibitionDraft & { id: string; primaryProvider: string };
@@ -77,11 +94,13 @@ async function findStored(client: pg.PoolClient, row: ExhibitionDraft, provider:
 
 async function main(): Promise<void> {
   const file = arg('--file');
+  const snapshot = arg('--snapshot');
   const museum = arg('--source');
   const official = process.argv.includes('--official');
   const provider = arg('--provider') || museum;
-  if (!museum || Boolean(file) === official || !provider || !/^[a-z0-9-]{1,50}$/.test(provider)) {
-    throw new Error('用法：--source <館別ID> 搭配 --file <JSON檔> 或 --official，可選 --provider <來源ID>');
+  if (!museum || [Boolean(file), Boolean(snapshot), official].filter(Boolean).length !== 1
+    || !provider || !/^[a-z0-9-]{1,50}$/.test(provider)) {
+    throw new Error('用法：--source <館別ID> 搭配 --file <正規化JSON>、--snapshot <原始JSON> 或 --official');
   }
   if (!process.env.DATABASE_URL) throw new Error('請先設定 DATABASE_URL');
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -94,12 +113,23 @@ async function main(): Promise<void> {
     const run = await client.query<{ id: string }>(
       `INSERT INTO ingestion_runs (museum_id,status) VALUES ($1,'running') RETURNING id`, [museum]);
     runId = run.rows[0].id;
-    const rows = await sourceRows(museum, file, official);
-    if (rows.length === 0) throw new Error('來源回傳 0 筆，已停止匯入');
+    const { rows, records } = await sourceRows(museum, file, snapshot, official);
+    if (rows.length === 0 && records.length === 0) throw new Error('來源回傳 0 筆資料，已停止匯入');
     await client.query('BEGIN');
     inTransaction = true;
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [museum]);
-    const counts = { fetched: rows.length, inserted: 0, updated: 0, unchanged: 0, linked: 0, skipped: 0 };
+    const counts = { fetched: records.length || rows.length, inserted: 0, updated: 0,
+      unchanged: 0, linked: 0, skipped: records.filter((record) => record.status === 'ignored').length,
+      review: records.filter((record) => record.status === 'review').length };
+    for (const record of records) {
+      await client.query(`INSERT INTO source_records
+        (museum_id,provider,source_key,source_url,raw_record,status,reason)
+        VALUES ($1,$2,$3,$4,$5::jsonb,$6,$7)
+        ON CONFLICT (museum_id,provider,source_key) DO UPDATE SET
+          source_url=EXCLUDED.source_url,raw_record=EXCLUDED.raw_record,
+          status=EXCLUDED.status,reason=EXCLUDED.reason,last_seen_at=now()`,
+      [museum, provider, record.sourceKey, record.sourceUrl, JSON.stringify(record.raw), record.status, record.reason]);
+    }
     for (const row of rows) {
       const previous = await findStored(client, row, provider);
       let exhibitionId: string;
@@ -146,9 +176,10 @@ async function main(): Promise<void> {
     }
     await client.query(`UPDATE ingestion_runs SET status='succeeded',finished_at=now(),
       fetched_count=$2,inserted_count=$3,updated_count=$4,unchanged_count=$5,linked_count=$6,
-      skipped_count=0 WHERE id=$1`,
-    [runId, counts.fetched, counts.inserted, counts.updated, counts.unchanged, counts.linked]);
-    if (official || rows.some((row) => !row.isSample)) {
+      skipped_count=$7,review_count=$8 WHERE id=$1`,
+    [runId, counts.fetched, counts.inserted, counts.updated, counts.unchanged, counts.linked,
+      counts.skipped, counts.review]);
+    if (rows.length > 0 && (official || rows.some((row) => !row.isSample))) {
       await client.query('UPDATE museums SET last_success_at=now() WHERE id=$1', [museum]);
     }
     await client.query('COMMIT');

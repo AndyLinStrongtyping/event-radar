@@ -44,3 +44,33 @@ jobs:
       - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Sync official NPM South exhibition pages
         run: npm run ingest -- --source npm-south --official
+
+  sync-npm-north:
+    if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Sync official NPM exhibition JSON for North Branch
+        run: npm run ingest -- --source npm-north --official
+
+  sync-nmmba:
+    if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: Sync NMMBA exhibition open data
+        run: npm run ingest -- --source nmmba --official

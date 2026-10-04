@@ -40,6 +40,7 @@ async function main() {
   testDb = new pg.Pool({ connectionString: testUrl.href });
   await testDb.query(await readFile(join(project, 'db/001_init.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/002_sources_and_changes.sql'), 'utf8'));
+  await testDb.query(await readFile(join(project, 'db/003_source_review.sql'), 'utf8'));
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const [original] = JSON.parse(await readFile(join(project, 'test/fixtures/chimei.json'), 'utf8'));
 
@@ -73,6 +74,54 @@ async function main() {
   assert.deepEqual(result.rows[0], {
     field_name: 'endDate', old_value: '2027-01-10', new_value: '2027-01-11',
   });
+
+  const seaSnapshot = await fixture('nmmba-snapshot.json', [
+    { Source: 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=good',
+      '特展名稱': '海洋特展', '展出地點': '特展廳', 'app用開始時間': '1150618', 'app用結束時間': '1160301' },
+    { Source: 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=review',
+      '特展名稱': '缺結束日展覽', '展出地點': '特展廳', 'app用開始時間': '2023-12-15', 'app用結束時間': '' },
+  ]);
+  const seaArgs = ['--experimental-strip-types', 'src/ingest.ts', '--source', 'nmmba', '--snapshot', seaSnapshot];
+  const seaEnv = { ...process.env, DATABASE_URL: testUrl.href };
+  const seaFirst = JSON.parse(execFileSync(process.execPath, seaArgs,
+    { cwd: project, env: seaEnv, encoding: 'utf8' }));
+  assert.equal(seaFirst.inserted, 1);
+  assert.equal(seaFirst.review, 1);
+  execFileSync(process.execPath, seaArgs, { cwd: project, env: seaEnv, encoding: 'utf8' });
+  result = await testDb.query(`SELECT status,reason FROM source_records
+    WHERE museum_id='nmmba' AND status='review'`);
+  assert.equal(result.rows.length, 1);
+  assert.match(result.rows[0].reason, /缺少展期/);
+  result = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nmmba'");
+  assert.equal(result.rows[0].count, 1, '重跑不得新增同一特展，也不得公開待審資料');
+  const reviewOnly = await fixture('nmmba-review-only.json', [
+    { Source: 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=only-review',
+      '特展名稱': '未確認展期', 'app用開始時間': '', 'app用結束時間': '' },
+  ]);
+  const reviewResult = JSON.parse(execFileSync(process.execPath,
+    ['--experimental-strip-types', 'src/ingest.ts', '--source', 'nmmba', '--snapshot', reviewOnly],
+    { cwd: project, env: seaEnv, encoding: 'utf8' }));
+  assert.equal(reviewResult.inserted, 0);
+  assert.equal(reviewResult.review, 1, '全部不合格時仍須保存待審原始資料');
+  result = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nmmba'");
+  assert.equal(result.rows[0].count, 1);
+  const northSnapshot = await fixture('npm-north-snapshot.json', [
+    { sno: '04014505', link: 'https://www.npm.gov.tw/Articles.aspx?sno=04014505',
+      title: '故宮北院特展', time: '2026-05-09 ~ 2026-11-08', location: '北部院區　第一展覽館' },
+    { sno: '04014534', link: 'https://www.npm.gov.tw/Articles.aspx?sno=04014534',
+      title: '故宮南院特展', time: '2026-05-09 ~ 2026-11-08', location: '南部院區' },
+    { sno: '04012832', link: 'https://www.npm.gov.tw/Articles.aspx?sno=04012832',
+      title: '未有結束日的展示', time: '2021-12-24 ~ ', location: '北部院區' },
+  ]);
+  const northArgs = ['--experimental-strip-types', 'src/ingest.ts', '--source', 'npm-north',
+    '--snapshot', northSnapshot];
+  const northResult = JSON.parse(execFileSync(process.execPath, northArgs,
+    { cwd: project, env: seaEnv, encoding: 'utf8' }));
+  assert.equal(northResult.inserted, 1);
+  assert.equal(northResult.skipped, 1);
+  assert.equal(northResult.review, 1);
+  result = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='npm-north'");
+  assert.equal(result.rows[0].count, 1);
   process.stdout.write('匯入回滾、同源與跨來源去重、欄位異動紀錄：通過\n');
 }
 

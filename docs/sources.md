@@ -1,14 +1,15 @@
-# 博物館來源盤點（2026-10-04）
+# 博物館來源盤點（更新至 2026-10-05）
 
 | 優先 | 館別 | 官方入口 | 取得狀態 | 理由 |
 | --- | --- | --- | --- | --- |
 | 1 | 奇美博物館（臺南） | https://www.chimeimuseum.org/index.php/exhibition-event | 官網有特展頁及供奇美官網前端使用的內部資料呼叫；未找到對外公開的 API 文件或再利用授權。目前只有人工核對的一筆資料，尚未自動同步 | 使用者指定，國際特展有明確展期與票價 |
 | 1 | 國立自然科學博物館（臺中） | https://data.gov.tw/dataset/7499 | 政府資料開放平臺提供可讀 JSON 特展資源；個人 API key 另候審查 | 科學與自然類特展 |
 | 1 | 國立臺灣博物館（臺北） | https://www.ntm.gov.tw/ | 官方展覽頁已找到，API 待查 | 自然、人文、建築等展覽 |
-| 1 | 國立故宮博物院北部院區（臺北） | https://www.npm.gov.tw/ | 官網展覽頁已找到，API 待查 | 可在下一階段擴充多場館資料模型 |
+| 1 | 國立故宮博物院北部院區（臺北） | https://odapi.npm.gov.tw/data/open/api/v1/exhibition/current.json | 官方公開 JSON 已接入本機；逐筆分院、驗證展期及隔離待審，尚未線上同步 | 故宮官方資料可能混入南院、過期及長期展示 |
 | 1 | 國立故宮博物院南部院區（嘉義） | https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3112 | 當期與預告官方頁已接入本機匯入；不是公開 API，線上排程尚未啟用 | 展名、展期、展廳與官方詳情連結可直接核對 |
 | 1 | 國立臺灣歷史博物館（臺南） | https://www.nmth.gov.tw/default.aspx | 官網已找到，API 待查 | 臺灣史主題 |
-| 2 | 國立科學工藝博物館（高雄） | https://www.nstm.gov.tw/ | 官網展覽頁已找到，API 待查 | 科學技術類與南部覆蓋 |
+| 2 | 國立科學工藝博物館（高雄） | https://websrv.nstm.gov.tw/OtherInfo/OpenData/ExhibitionInfoOpenData.ashx | 公開 JSON 已核對，但當期特展缺逐筆館方詳情網址，尚未接入 | 科學技術類與南部覆蓋 |
+| 2 | 國立海洋生物博物館（屏東） | https://www.nmmba.gov.tw/OpenData.aspx?SN=BF6D6EB9CB6876BB | 官方公開 JSON 已接入本機；缺展期隔離待審，尚未線上同步 | 海洋生物特展及南部覆蓋 |
 | 2 | 國立臺灣科學教育館（臺北） | https://www.ntsec.gov.tw/ | 官網常設展與特展頁已找到，API 待查 | 人體、生態、物質科學與科技教育 |
 | 2 | 國立臺灣美術館（臺中） | https://www.ntmofa.gov.tw/ | 官網當期展覽頁已找到，API 待查 | 美術類與中部覆蓋 |
 | 2 | 臺南市美術館（臺南） | https://www.tnam.museum/ | 官網展覽頁已找到，API 待查 | 美術類與在地覆蓋 |
