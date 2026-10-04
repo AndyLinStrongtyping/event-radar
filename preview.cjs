@@ -18,6 +18,10 @@ const files = {
   '/transport.js': ['transport.js', 'text/javascript; charset=utf-8'],
   '/assets/hero-ruins.png': ['assets/hero-ruins.png', 'image/png'],
   '/assets/nstm-switchboard.jpg': ['assets/nstm-switchboard.jpg', 'image/jpeg'],
+  '/assets/nmns-mummy-commons.jpg': ['assets/nmns-mummy-commons.jpg', 'image/jpeg'],
+  '/assets/nmns-dinosaur-user.jpg': ['assets/nmns-dinosaur-user.jpg', 'image/jpeg'],
+  '/assets/nmns-amethyst-user.jpg': ['assets/nmns-amethyst-user.jpg', 'image/jpeg'],
+  '/assets/nmns-fluorescent-minerals-user.jpg': ['assets/nmns-fluorescent-minerals-user.jpg', 'image/jpeg'],
 };
 const museums = [
   { id: 'chimei', name: '奇美博物館', city: '臺南市' },

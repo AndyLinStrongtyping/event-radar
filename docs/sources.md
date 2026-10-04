@@ -39,14 +39,16 @@
 
 ## 常設展照片來源與使用
 
-目前只放入兩張館方展覽照片，並在圖片旁標示來源與使用依據：
+館方展覽照片、授權明確的外部照片與使用者提供的展場照片，分別標示來源。使用者照片只作拍攝當時的展場紀錄，不代表目前固定展件清單。
 
 | 頁面 | 圖片 | 來源與使用依據 | 保存方式 |
 | --- | --- | --- | --- |
 | 科工館 | 「電信@臺灣」磁石式電話交換機展項 | [館方展廳頁](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=422a9a67-5ad4-460b-9e01-7633be54ebcf)的「本廳必看」圖片；[網站資料開放宣告](https://www.nstm.gov.tw/Other/DataOpen.htm)載明 CC BY-SA 4.0，未見此張照片另有特別限制 | 原圖存為 `web/assets/nstm-switchboard.jpg`，檔案未修圖，頁面可能裁切顯示 |
 | 科教館 | 「HOMING 找家」小公象模型 | [館方展覽頁照片集](https://www.ntsec.gov.tw/article/detail.aspx?a=78)標示攝影者劉德祥；[網站資料開放宣告](https://www.ntsec.gov.tw/article/detail.aspx?a=39)要求註明出處，未見此張照片另有特別限制 | 以館方圖片網址顯示；原網址失效時須重新核對 |
+| 科博館 | 古埃及木乃伊人型棺柩 | [Wikimedia Commons 原始檔案頁](https://commons.wikimedia.org/wiki/File:%E7%A7%91%E5%8D%9A%E9%A4%A8%E5%85%A7%E7%9A%84%E5%9F%83%E5%8F%8A%E6%9C%A8%E4%B9%83%E4%BC%8A.jpg)，攝影者弟魯，授權 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)；拍到棺柩而非木乃伊本體 | 原檔存為 `web/assets/nmns-mummy-commons.jpg`，未修圖，版面可能裁切顯示；頁面提供署名與授權連結 |
+| 科博館 | 恐龍骨架、紫水晶洞、螢光礦物 | 使用者於本對話提供的原創展場照片；未從科博館官網複製 | 複本存為 `web/assets/nmns-dinosaur-user.jpg`、`web/assets/nmns-amethyst-user.jpg`、`web/assets/nmns-fluorescent-minerals-user.jpg`；原附件未修改 |
 
-科博館[網站宣告](https://www.nmns.edu.tw/ch/privacy-policy/index.html)將可開放的圖像導向政府資料開放平臺，臺博館另設[圖像授權申請](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5558)，奇美[會員條款](https://www.chimeimuseum.org/memberAccept)也保留官網圖片權利；因此這些館的官網照片尚未複製到本站。不能因圖片可在網頁看到，就推定可供本網站重新發布。
+科博館[網站宣告](https://www.nmns.edu.tw/ch/privacy-policy/index.html)將可開放的圖像導向政府資料開放平臺，臺博館另設[圖像授權申請](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5558)，奇美[會員條款](https://www.chimeimuseum.org/memberAccept)也保留官網圖片權利；因此這些館的官網照片尚未複製到本站。科博館頁使用的木乃伊照片是第三方於 Wikimedia Commons 以 CC BY-SA 4.0 發布的作品，使用依據與科博館官網圖片分開核對。不能因圖片可在網頁看到，就推定可供本網站重新發布。
 
 ## 交通規劃的依據與界線
 

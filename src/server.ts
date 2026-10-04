@@ -49,6 +49,10 @@ const staticFiles = new Map<string, [string, string]>([
   ['/transport.js', ['../web/transport.js', 'text/javascript; charset=utf-8']],
   ['/assets/hero-ruins.png', ['../web/assets/hero-ruins.png', 'image/png']],
   ['/assets/nstm-switchboard.jpg', ['../web/assets/nstm-switchboard.jpg', 'image/jpeg']],
+  ['/assets/nmns-mummy-commons.jpg', ['../web/assets/nmns-mummy-commons.jpg', 'image/jpeg']],
+  ['/assets/nmns-dinosaur-user.jpg', ['../web/assets/nmns-dinosaur-user.jpg', 'image/jpeg']],
+  ['/assets/nmns-amethyst-user.jpg', ['../web/assets/nmns-amethyst-user.jpg', 'image/jpeg']],
+  ['/assets/nmns-fluorescent-minerals-user.jpg', ['../web/assets/nmns-fluorescent-minerals-user.jpg', 'image/jpeg']],
 ]);
 
 const server = createServer(async (request, response) => {
