@@ -10,6 +10,7 @@ const files = {
   '/guides/nmns.html': ['guides/nmns.html', 'text/html; charset=utf-8'],
   '/guides/ntm.html': ['guides/ntm.html', 'text/html; charset=utf-8'],
   '/guides/nmth.html': ['guides/nmth.html', 'text/html; charset=utf-8'],
+  '/guides/npm-south.html': ['guides/npm-south.html', 'text/html; charset=utf-8'],
   '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
   '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
   '/assets/hero-ruins.png': ['assets/hero-ruins.png', 'image/png'],
