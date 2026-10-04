@@ -2,7 +2,7 @@
 
 目標是從臺灣各博物館的官方資訊取得特展資料，整理展期、展館、城市與簡介，供人依地點與日期查詢，並回到官方公告核對。第一版聚焦**特展與期間限定展**，不收市集、音樂會或一般演出。
 
-目前是 **v0.1 開發骨架**：資料庫、查詢 API、策展資料匯入、驗證測試與來源盤點已寫入。尚未完成自動抓取或公開部署，因此不列為作品集中的已完成系統。
+目前是 **v0.1 本機 MVP**：資料庫、查詢 API、科博館公開資料匯入、奇美人工整理資料、驗證測試與來源盤點已寫入並完成本機驗證。每日同步排程尚未啟用，也尚未公開部署，因此不列為作品集中的已完成系統。
 
 ## 範圍
 
@@ -27,13 +27,13 @@ test/                 測試與官方資訊範例
 
 ## 本機執行
 
-需要 Node.js 22.10+、PostgreSQL 17 或 Docker。本機已確認 Node.js 24；Docker 目前未安裝或不在 PATH，資料庫端到端流程尚未驗證。
+需要 Node.js 22.10+、PostgreSQL 17 或 Docker。本機已用 Node.js 24 與 Docker Desktop 的 PostgreSQL 17 驗證資料匯入和 API。此電腦的 Docker 執行檔位於使用者目錄，若終端機找不到 `docker`，可呼叫 `C:\Users\user\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe`。
 
 若要先看介面，執行 `npm run preview`，開啟 `http://127.0.0.1:4180/`。這個預覽不需資料庫，頁面會標示資料是官方頁快照，並可主動顯示模擬資料；**它不是即時同步**。主視覺採「考古探索未知文明」方向，使用專案內的原創影像資產。
 
 ```powershell
 Copy-Item .env.example .env
-npm install
+npm ci
 docker compose up -d db
 $env:DATABASE_URL='postgres://event_radar:event_radar@localhost:5432/event_radar'
 npm test
@@ -45,8 +45,8 @@ npm run ingest -- --source nmns --official
 npm start
 ```
 
-已有 PostgreSQL 時，可手動執行 `db/001_init.sql`。試查詢：`http://127.0.0.1:3000/exhibitions?city=臺南市`。範例資料根據 [奇美博物館官方展覽頁](https://www.chimeimuseum.org/special-exhibition/68a68f0a422a6/68a68fa1d1a3b)記錄；展期與票價以館方最新公告為準。
+已有 PostgreSQL 時，可手動執行 `db/001_init.sql`。試查詢：`http://127.0.0.1:3000/exhibitions?city=臺南市`。也可匯入 `postman/EventRadar.postman_collection.json` 操作 API。範例資料根據 [奇美博物館官方展覽頁](https://www.chimeimuseum.org/special-exhibition/68a68f0a422a6/68a68fa1d1a3b)記錄；展期與票價以館方最新公告為準。
 
 ## 已完成與未完成
 
-已完成：規格、schema、手動 JSON 匯入、科博館公開 JSON adapter、查詢 API 程式、正規化單元測試、每日同步 workflow 設計。未完成：公開來源在本機的網路擷取與資料庫端到端驗證、奇美自動擷取、排程啟用、異動歷史、通知、部署。
+已完成：規格、schema、手動 JSON 匯入、科博館公開 JSON adapter、查詢 API、網站介面、正規化單元測試、本機資料庫與 API 端到端驗證，以及每日同步 workflow 設計。未完成：奇美自動擷取、排程啟用、異動歷史、通知、公開部署。

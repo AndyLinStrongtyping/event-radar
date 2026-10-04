@@ -29,6 +29,7 @@ function numeric(value: string | null, fallback: number, max: number, name: stri
 }
 
 const fields = `e.id,e.title,e.museum_id AS "museumId",m.name AS "museumName",m.city,
+  m.source_status AS "sourceStatus",
   e.venue,to_char(e.start_date,'YYYY-MM-DD') AS "startDate",
   to_char(e.end_date,'YYYY-MM-DD') AS "endDate",e.price_note AS "priceNote",
   e.source_url AS "sourceUrl",e.summary,e.last_seen_at AS "lastSeenAt",

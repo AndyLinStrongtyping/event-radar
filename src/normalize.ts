@@ -59,7 +59,7 @@ export function normalizeExhibition(row: Record<string, unknown>, expectedMuseum
   if (row.isSample !== undefined && typeof row.isSample !== 'boolean') throw new Error('isSample 必須是布林值');
   const sourceKey = isSample ? optionalText(row.sourceKey, 200) : sourceUrl;
   if (!sourceKey) throw new Error('模擬資料需要 sourceKey');
-  const data = {
+  const data: Omit<ExhibitionDraft, 'contentHash'> = {
     museumId: expectedMuseum,
     sourceKey,
     title,

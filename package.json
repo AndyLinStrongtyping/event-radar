@@ -7,7 +7,8 @@
     "start": "node --experimental-strip-types src/server.ts",
     "preview": "node preview.cjs",
     "ingest": "node --experimental-strip-types src/ingest.ts",
-    "test": "node --experimental-strip-types --test test/*.test.ts"
+    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "typecheck": "tsc --noEmit"
   },
   "engines": { "node": ">=22.10" },
   "dependencies": { "pg": "^8.16.3" },

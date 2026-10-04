@@ -34,6 +34,7 @@ async function main(): Promise<void> {
     if (!Array.isArray(payload)) throw new Error('匯入檔必須是 JSON 陣列');
   }
   const officialRows = official ? normalizeNmnsFeed(payload) : null;
+  if (officialRows && officialRows.length === 0) throw new Error('科博館官方來源回傳 0 筆，已停止匯入以便檢查');
   const rows: unknown[] = officialRows ?? (payload as unknown[]);
   const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
   let runId: string | undefined;

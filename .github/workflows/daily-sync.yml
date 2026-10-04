@@ -27,6 +27,6 @@ jobs:
         with:
           node-version: '24'
       - name: Install dependencies
-        run: npm install --ignore-scripts --no-audit --no-fund
+        run: npm ci --ignore-scripts --no-audit --no-fund
       - name: Sync official NMNS exhibition data
         run: npm run ingest -- --source nmns --official

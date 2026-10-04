@@ -12,13 +12,15 @@ function card(item, index) {
   const title = escapeHtml(item.title);
   const venue = escapeHtml(item.venue || '以館方公告為準');
   const summary = escapeHtml(item.summary || '前往官方頁面查看展覽介紹與參觀資訊。');
+  const sourceLabel = item.isSample ? '模擬資料' : item.sourceStatus === 'curated' ? '館方頁整理' : '公開資料';
+  const seen = item.lastSeenAt ? new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(item.lastSeenAt)) : null;
   const url = new URL(item.sourceUrl);
   if (url.protocol !== 'https:') return '';
   return `<article class="card" data-url="${escapeHtml(url.href)}">
-    <div class="card-top"><span class="card-number">FILE ${String(index + 1).padStart(3, '0')}</span><span class="badge ${item.isSample ? 'sample' : ''}">${item.isSample ? '模擬資料' : '官方來源'}</span></div>
+    <div class="card-top"><span class="card-number">FILE ${String(index + 1).padStart(3, '0')}</span><span class="badge ${item.isSample ? 'sample' : ''}">${sourceLabel}</span></div>
     <p class="card-museum">${escapeHtml(item.museumName)} · ${escapeHtml(item.city)}</p>
     <h3>${title}</h3><p class="card-summary">${summary}</p>
-    <div class="card-meta"><div><strong>展期</strong><span>${escapeHtml(item.startDate)} — ${escapeHtml(item.endDate)}</span></div><div><strong>展區</strong><span>${venue}</span></div></div>
+    <div class="card-meta"><div><strong>展期</strong><span>${escapeHtml(item.startDate)} — ${escapeHtml(item.endDate)}</span></div><div><strong>展區</strong><span>${venue}</span></div>${seen ? `<div><strong>核對</strong><span>${escapeHtml(seen)}</span></div>` : ''}</div>
     <a class="card-link" href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer" aria-label="前往 ${title} 的官方頁面">查看官方資訊 <span aria-hidden="true">↗</span></a>
   </article>`;
 }
@@ -29,6 +31,7 @@ async function loadMuseums() {
   const { items } = await response.json();
   const select = form.elements.museum;
   for (const museum of items) {
+    if (museum.sourceStatus === 'planned') continue;
     const option = document.createElement('option');
     option.value = museum.id;
     option.textContent = museum.name;

@@ -1,0 +1,52 @@
+{
+  "info": {
+    "name": "Event Radar local API",
+    "description": "本機博物館特展 API 驗證；先啟動 PostgreSQL 和 npm start。",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://127.0.0.1:3000" }
+  ],
+  "item": [
+    {
+      "name": "Health",
+      "request": { "method": "GET", "url": "{{baseUrl}}/health" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('服務與資料庫可用', () => {",
+        "  pm.response.to.have.status(200);",
+        "  pm.expect(pm.response.json().database).to.eql('ok');",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "Museums and source status",
+      "request": { "method": "GET", "url": "{{baseUrl}}/museums" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('館所清單包含來源狀態', () => {",
+        "  pm.response.to.have.status(200);",
+        "  pm.expect(pm.response.json().items).to.be.an('array');",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "Real NMNS exhibitions",
+      "request": { "method": "GET", "url": "{{baseUrl}}/exhibitions?museum=nmns" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('預設不顯示模擬資料', () => {",
+        "  pm.response.to.have.status(200);",
+        "  pm.expect(pm.response.json().items.every(item => !item.isSample)).to.be.true;",
+        "});"
+      ] } }]
+    },
+    {
+      "name": "Include development samples",
+      "request": { "method": "GET", "url": "{{baseUrl}}/exhibitions?museum=nmns&includeSample=true" },
+      "event": [{ "listen": "test", "script": { "exec": [
+        "pm.test('明確指定時才允許查詢模擬資料', () => {",
+        "  pm.response.to.have.status(200);",
+        "  pm.expect(pm.response.json().items).to.be.an('array');",
+        "});"
+      ] } }]
+    }
+  ]
+}
