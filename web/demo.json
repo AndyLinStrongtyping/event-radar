@@ -1,0 +1,30 @@
+[
+  {
+    "id": "preview-chimei-1", "museumId": "chimei", "museumName": "奇美博物館", "city": "臺南市",
+    "title": "大英博物館鉅獻《埃及之王：法老》", "venue": "特展廳",
+    "startDate": "2026-01-29", "endDate": "2027-01-10",
+    "summary": "奇美博物館與大英博物館合作的古埃及法老主題特展。",
+    "sourceUrl": "https://www.chimeimuseum.org/special-exhibition/68a68f0a422a6/68a68fa1d1a3b", "isSample": false
+  },
+  {
+    "id": "preview-nmns-1", "museumId": "nmns", "museumName": "國立自然科學博物館", "city": "臺中市",
+    "title": "微光寄旅－第九屆科學攝影展", "venue": "人類文化廳／2F（迴廊展區）",
+    "startDate": "2026-06-18", "endDate": "2027-03-28",
+    "summary": "科博館官方公開資料中的科學攝影展；介紹與開放情形請查官方公告。",
+    "sourceUrl": "https://www.nmns.edu.tw/ch/exhibitions/special-exhibitions/Exhibition-000609/", "isSample": false
+  },
+  {
+    "id": "preview-nmns-2", "museumId": "nmns", "museumName": "國立自然科學博物館", "city": "臺中市",
+    "title": "碳鎖未來：碳捕捉、應用與封存", "venue": "地球環境廳／1F",
+    "startDate": "2026-06-04", "endDate": "2027-04-06",
+    "summary": "科博館官方公開資料中的碳捕捉主題展；介紹與開放情形請查官方公告。",
+    "sourceUrl": "https://www.nmns.edu.tw/ch/exhibitions/special-exhibitions/Exhibition-000611/", "isSample": false
+  },
+  {
+    "id": "preview-mock-1", "museumId": "nmns", "museumName": "國立自然科學博物館", "city": "臺中市",
+    "title": "模擬資料｜科博館自然科學特展", "venue": "模擬展廳",
+    "startDate": "2026-10-01", "endDate": "2026-12-31",
+    "summary": "僅供開發與測試，不是真實展覽。",
+    "sourceUrl": "https://www.nmns.edu.tw/ch/exhibitions/special-exhibitions/index.html", "isSample": true
+  }
+]

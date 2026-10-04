@@ -20,13 +20,16 @@ db/001_init.sql       PostgreSQL 資料表與索引
 docs/                 需求、API、來源盤點
 src/normalize.ts      特展資料驗證、正規化與 hash
 src/ingest.ts         JSON 匯入指令
-src/server.ts         查詢 API
+src/server.ts         查詢 API 與網站服務
+web/                  搜尋介面與考古主視覺
 test/                 測試與官方資訊範例
 ```
 
 ## 本機執行
 
 需要 Node.js 22.10+、PostgreSQL 17 或 Docker。本機已確認 Node.js 24；Docker 目前未安裝或不在 PATH，資料庫端到端流程尚未驗證。
+
+若要先看介面，執行 `npm run preview`，開啟 `http://127.0.0.1:4180/`。這個預覽不需資料庫，頁面會標示資料是官方頁快照，並可主動顯示模擬資料；**它不是即時同步**。主視覺採「考古探索未知文明」方向，使用專案內的原創影像資產。
 
 ```powershell
 Copy-Item .env.example .env

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#142b30">
+  <meta name="description" content="Event Radar 整理臺灣博物館特展展期、地點與官方資訊，幫你找到下一場值得看的展覽。">
+  <title>Event Radar｜臺灣博物館特展情報</title>
+  <link rel="stylesheet" href="/styles.css">
+  <script type="module" src="/app.js"></script>
+</head>
+<body>
+  <a class="skip" href="#results">跳到特展結果</a>
+  <header class="topbar">
+    <a class="brand" href="/" aria-label="Event Radar 首頁"><span class="brand-mark" aria-hidden="true">✧</span> EVENT RADAR</a>
+    <span class="topbar-note">FIELD NOTES <span aria-hidden="true">/</span> TAIWAN MUSEUMS</span>
+  </header>
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-inner">
+        <p class="eyebrow">ARCHIVE 001 <span aria-hidden="true">/</span> 臺灣博物館特展情報</p>
+        <h1 id="hero-title">穿越展廳，發掘<br><em>未知的線索。</em></h1>
+        <p class="hero-copy">從古代文明到自然科學，每一場展覽都是一道通往新知的入口。沿著官方資訊留下的線索，找到你的下一場探索。</p>
+        <div class="hero-rule"><span>向下探索展覽檔案</span><span aria-hidden="true">↓</span></div>
+      </div>
+      <div class="hero-coordinate" aria-hidden="true">24° 08′ N<br>ARCHIVE / 001</div>
+    </section>
+
+    <section class="explore" aria-labelledby="explore-title">
+      <div class="section-heading">
+        <div><p class="eyebrow dark">THE EXHIBITION ARCHIVE</p><h2 id="explore-title">探索檔案</h2></div>
+        <p class="section-intro">每筆資訊都附官方來源。票價、休館日與入場規定請以館方公告為準。</p>
+      </div>
+      <div id="preview-notice" class="notice" hidden role="status">目前為本機預覽：展覽資料是官方頁面整理的快照，並非即時同步。模擬資料需主動勾選才顯示。</div>
+      <form id="filters" class="filters" role="search">
+        <label>關鍵字<input type="search" name="q" placeholder="展名、主題…" autocomplete="off"></label>
+        <label>城市<select name="city"><option value="">全臺灣</option><option>臺北市</option><option>臺中市</option><option>臺南市</option><option>嘉義縣</option><option>高雄市</option></select></label>
+        <label>博物館<select name="museum"><option value="">所有博物館</option></select></label>
+        <label>參觀日期<input type="date" name="from" aria-label="從此日期開始查看"></label>
+        <button type="submit">搜尋特展 <span aria-hidden="true">↗</span></button>
+      </form>
+      <div class="results-line"><p id="result-count" aria-live="polite">載入特展中…</p><label class="sample-toggle"><input id="include-sample" type="checkbox">顯示測試資料</label></div>
+      <div id="results" class="cards" aria-live="polite"></div>
+      <div id="empty" class="empty" hidden>目前沒有符合條件的特展。試試其他城市或日期。</div>
+    </section>
+  </main>
+  <footer><span>EVENT RADAR <small>© 2026</small></span><p>資訊取自各博物館與政府公開資料，展覽細節以官方公告為準。</p></footer>
+</body>
+</html>

@@ -1,4 +1,5 @@
 import { createServer, type ServerResponse } from 'node:http';
+import { readFile } from 'node:fs/promises';
 import process from 'node:process';
 import pg from 'pg';
 
@@ -33,6 +34,13 @@ const fields = `e.id,e.title,e.museum_id AS "museumId",m.name AS "museumName",m.
   e.source_url AS "sourceUrl",e.summary,e.last_seen_at AS "lastSeenAt",
   e.is_sample AS "isSample"`;
 
+const staticFiles = new Map<string, [string, string]>([
+  ['/', ['../web/index.html', 'text/html; charset=utf-8']],
+  ['/styles.css', ['../web/styles.css', 'text/css; charset=utf-8']],
+  ['/app.js', ['../web/app.js', 'text/javascript; charset=utf-8']],
+  ['/assets/hero-ruins.png', ['../web/assets/hero-ruins.png', 'image/png']],
+]);
+
 const server = createServer(async (request, response) => {
   try {
     if (request.method !== 'GET') {
@@ -40,6 +48,12 @@ const server = createServer(async (request, response) => {
       return;
     }
     const url = new URL(request.url ?? '/', 'http://localhost');
+    const asset = staticFiles.get(url.pathname);
+    if (asset) {
+      response.writeHead(200, { 'content-type': asset[1] });
+      response.end(await readFile(new URL(asset[0], import.meta.url)));
+      return;
+    }
     if (url.pathname === '/health') {
       await pool.query('SELECT 1');
       json(response, 200, { status: 'ok', database: 'ok' });
