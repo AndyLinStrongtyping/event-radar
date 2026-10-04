@@ -115,6 +115,21 @@ const server = createServer(async (request, response) => {
       } else json(response, 200, result.rows[0]);
       return;
     }
+    const changesMatch = url.pathname.match(/^\/exhibitions\/([0-9a-f-]{36})\/changes$/i);
+    if (changesMatch) {
+      const includeSample = url.searchParams.get('includeSample') === 'true';
+      const exhibition = await pool.query('SELECT 1 FROM exhibitions WHERE id=$1 AND ($2::boolean OR NOT is_sample)',
+        [changesMatch[1], includeSample]);
+      if (!exhibition.rowCount) {
+        json(response, 404, { error: { code: 'NOT_FOUND', message: '找不到特展' } });
+        return;
+      }
+      const changes = await pool.query(`SELECT field_name AS "field",old_value AS "oldValue",
+        new_value AS "newValue",detected_at AS "detectedAt" FROM exhibition_changes
+        WHERE exhibition_id=$1 ORDER BY detected_at DESC,id DESC LIMIT 100`, [changesMatch[1]]);
+      json(response, 200, { items: changes.rows });
+      return;
+    }
     json(response, 404, { error: { code: 'NOT_FOUND', message: '找不到路徑' } });
   } catch (error) {
     if (error instanceof Error && /必須是有效的|不可早於|參數無效|太長/.test(error.message)) {

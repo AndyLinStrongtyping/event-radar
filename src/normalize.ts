@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 const museums = {
   chimei: { city: '臺南市', host: 'chimeimuseum.org' },
   nmns: { city: '臺中市', host: 'nmns.edu.tw' },
+  'npm-south': { city: '嘉義縣', host: 'south.npm.gov.tw' },
 } as const;
 
 export type ExhibitionDraft = {
@@ -40,7 +41,7 @@ function validDate(value: unknown): string {
 }
 
 export function normalizeExhibition(row: Record<string, unknown>, expectedMuseum: string): ExhibitionDraft {
-  if (expectedMuseum !== 'chimei' && expectedMuseum !== 'nmns') {
+  if (expectedMuseum !== 'chimei' && expectedMuseum !== 'nmns' && expectedMuseum !== 'npm-south') {
     throw new Error('此館尚無匯入 adapter');
   }
   if (row.museumId !== expectedMuseum) throw new Error('資料列館別與匯入來源不一致');

@@ -7,8 +7,10 @@
     "start": "node --experimental-strip-types src/server.ts",
     "preview": "node preview.cjs",
     "ingest": "node --experimental-strip-types src/ingest.ts",
+    "migrate": "node --experimental-strip-types src/migrate.ts",
     "check:chimei": "node --experimental-strip-types src/check-chimei.ts",
     "test": "node --experimental-strip-types --test test/*.test.ts",
+    "test:integration": "node test/ingest.integration.cjs",
     "typecheck": "tsc --noEmit"
   },
   "engines": { "node": ">=22.10" },

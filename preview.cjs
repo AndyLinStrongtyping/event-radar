@@ -21,6 +21,7 @@ const files = {
 const museums = [
   { id: 'chimei', name: '奇美博物館', city: '臺南市' },
   { id: 'nmns', name: '國立自然科學博物館', city: '臺中市' },
+  { id: 'npm-south', name: '國立故宮博物院南部院區', city: '嘉義縣' },
 ];
 
 createServer(async (request, response) => {

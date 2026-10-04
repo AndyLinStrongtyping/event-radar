@@ -12,7 +12,8 @@ function card(item, index) {
   const title = escapeHtml(item.title);
   const venue = escapeHtml(item.venue || '以館方公告為準');
   const summary = escapeHtml(item.summary || '前往官方頁面查看展覽介紹與參觀資訊。');
-  const sourceLabel = item.isSample ? '模擬資料' : item.sourceStatus === 'curated' ? '館方頁整理' : '公開資料';
+  const sourceLabel = item.isSample ? '模擬資料' : item.sourceStatus === 'curated' ? '人工核對'
+    : item.sourceStatus === 'official_page' ? '館方頁同步' : '公開資料';
   const seen = item.lastSeenAt ? new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(item.lastSeenAt)) : null;
   const url = new URL(item.sourceUrl);
   if (url.protocol !== 'https:') return '';

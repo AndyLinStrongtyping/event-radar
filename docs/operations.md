@@ -5,13 +5,17 @@
 `.github/workflows/daily-sync.yml` 已備妥，但**尚未啟用**。啟用條件：
 
 1. 專案放到獨立 GitHub repo 的預設分支。
-2. 建立可從 GitHub Actions 連線的 PostgreSQL，先執行 `db/001_init.sql`。
+2. 建立可從 GitHub Actions 連線的 PostgreSQL，先執行 `db/001_init.sql`，再執行 `npm run migrate`。
 3. Repository secrets 設 `DATABASE_URL` 與 `NMNS_OPEN_DATA_URL`。後者從 [政府資料開放平臺的科博館 JSON 資源](https://data.gov.tw/dataset/7499)複製；URL 可能變動，需追蹤。個人申請的 API key 暫不需要。
 4. Repository variable 設 `EVENT_RADAR_SYNC_ENABLED=true`，先手動執行一次並確認 `ingestion_runs` 與 `/health`，才依排程運作。
 
-`last_success_at` 表示最後成功匯入時間，不能只看排程是否有觸發。日後應加上「超過 48 小時未成功」告警，以及來源回傳空集合／欄位格式改變的告警。
+每日同步目前涵蓋科博館公開 JSON 與故宮南院官方當期／預告頁。匯入先驗證整批資料，再在交易中寫入；來源為空、頁面格式改變或任何資料列錯誤時，交易回滾並將 `ingestion_runs` 記為失敗，`last_success_at` 不前進。故宮南院只收有起訖日期的展覽，跨當期與預告頁以官方詳情網址合併。
 
-條件式請求（ETag、`If-Modified-Since`）只在官方端實際提供標頭且驗證 `304` 行為後實作。奇美官網尚未確認可自動擷取與使用條件，日程初期只同步科博館公開資料。
+`last_success_at` 表示最後成功匯入時間，不能只看排程是否有觸發。日後仍應加上「超過 48 小時未成功」告警；現階段 workflow 失敗紀錄可供人工檢查。
+
+同館跨來源以官方詳情網址優先去重；不同網址只在展名、展廳相同且展期重疊時合併。來源別名保存在 `exhibition_sources`，欄位舊值與新值保存在 `exhibition_changes`，可從 `GET /exhibitions/:id/changes` 查詢。這不會把不同館的巡迴展誤併成同一場。若候選超過一筆，匯入失敗並等待人工判斷。
+
+條件式請求（ETag、`If-Modified-Since`）只在官方端實際提供標頭且驗證 `304` 行為後實作。奇美官網尚未確認可自動擷取與使用條件，不列入每日資料庫同步。
 
 ## 奇美每週變更檢查
 

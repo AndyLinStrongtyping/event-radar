@@ -9,7 +9,7 @@ services:
       - "127.0.0.1:5432:5432"
     volumes:
       - event_radar_data:/var/lib/postgresql/data
-      - ./db/001_init.sql:/docker-entrypoint-initdb.d/001_init.sql:ro
+      - ./db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U event_radar -d event_radar"]
       interval: 5s

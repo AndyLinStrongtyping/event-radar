@@ -1,0 +1,35 @@
+name: Verify Event Radar
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: event_radar
+          POSTGRES_PASSWORD: event_radar
+          POSTGRES_DB: event_radar
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U event_radar -d event_radar"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    env:
+      DATABASE_URL: postgres://event_radar:event_radar@localhost:5432/event_radar
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run test:integration
