@@ -3,6 +3,10 @@ const results = document.querySelector('#results');
 const count = document.querySelector('#result-count');
 const empty = document.querySelector('#empty');
 const sampleToggle = document.querySelector('#include-sample');
+const citySelect = form.elements.city;
+const museumSelect = form.elements.museum;
+let availableMuseums = [];
+let searchGeneration = 0;
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -26,23 +30,32 @@ function card(item, index) {
   </article>`;
 }
 
+function updateMuseumOptions() {
+  const selected = museumSelect.value;
+  const city = citySelect.value;
+  const placeholder = new Option(city ? '該地區所有博物館' : '所有博物館', '');
+  const options = availableMuseums.filter((museum) => !city || museum.city === city)
+    .map((museum) => new Option(museum.name, museum.id));
+  museumSelect.replaceChildren(placeholder, ...options);
+  museumSelect.value = options.some((option) => option.value === selected) ? selected : '';
+}
+
 async function loadMuseums() {
   const response = await fetch('/museums');
   if (!response.ok) throw new Error('館所清單無法載入');
   const { items } = await response.json();
-  const select = form.elements.museum;
-  for (const museum of items) {
-    if (museum.sourceStatus === 'planned') continue;
-    const option = document.createElement('option');
-    option.value = museum.id;
-    option.textContent = museum.name;
-    select.append(option);
-  }
+  availableMuseums = items.filter((museum) => museum.sourceStatus !== 'planned');
   const requestedMuseum = new URLSearchParams(location.search).get('museum');
-  if ([...select.options].some((option) => option.value === requestedMuseum)) select.value = requestedMuseum;
+  const requested = availableMuseums.find((museum) => museum.id === requestedMuseum);
+  if (requested && [...citySelect.options].some((option) => option.value === requested.city)) {
+    citySelect.value = requested.city;
+  }
+  updateMuseumOptions();
+  if (requested) museumSelect.value = requested.id;
 }
 
 async function search() {
+  const generation = ++searchGeneration;
   count.textContent = '搜尋中…';
   const params = new URLSearchParams();
   for (const name of ['q', 'city', 'museum', 'from']) {
@@ -50,21 +63,32 @@ async function search() {
     if (value) params.set(name, value);
   }
   if (sampleToggle.checked) params.set('includeSample', 'true');
-  const response = await fetch(`/exhibitions?${params}`);
-  if (!response.ok) throw new Error('特展資料暫時無法載入');
-  const data = await response.json();
-  results.innerHTML = data.items.map(card).join('');
-  count.textContent = `找到 ${data.total} 場特展`;
-  empty.hidden = data.total !== 0;
+  try {
+    const response = await fetch(`/exhibitions?${params}`);
+    if (!response.ok) throw new Error('特展資料暫時無法載入');
+    const data = await response.json();
+    if (generation !== searchGeneration) return;
+    results.innerHTML = data.items.map(card).join('');
+    count.textContent = `找到 ${data.total} 場特展`;
+    empty.hidden = data.total !== 0;
+  } catch (error) {
+    if (generation !== searchGeneration) return;
+    count.textContent = error.message;
+    results.replaceChildren();
+    empty.hidden = true;
+  }
 }
 
 form.addEventListener('submit', (event) => {
   event.preventDefault();
-  search().catch((error) => { count.textContent = error.message; results.replaceChildren(); });
+  search();
 });
-sampleToggle.addEventListener('change', () => {
-  search().catch((error) => { count.textContent = error.message; results.replaceChildren(); });
+citySelect.addEventListener('change', () => {
+  updateMuseumOptions();
+  search();
 });
+museumSelect.addEventListener('change', search);
+sampleToggle.addEventListener('change', search);
 
 loadMuseums().then(search).catch((error) => { count.textContent = error.message; });
 fetch('/preview-status').then((response) => response.ok ? response.json() : null).then((status) => {
