@@ -61,7 +61,9 @@ export function normalizeExhibition(row: Record<string, unknown>, expectedMuseum
   if (endDate < startDate) throw new Error('結束日早於開始日');
   const isSample = row.isSample === true;
   if (row.isSample !== undefined && typeof row.isSample !== 'boolean') throw new Error('isSample 必須是布林值');
-  const sourceKey = isSample ? optionalText(row.sourceKey, 200) : sourceUrl;
+  const northId = expectedMuseum === 'npm-north' && typeof row.sourceKey === 'string'
+    && /^\d{5,20}$/.test(row.sourceKey) ? row.sourceKey : null;
+  const sourceKey = isSample ? optionalText(row.sourceKey, 200) : northId || sourceUrl;
   if (!sourceKey) throw new Error('模擬資料需要 sourceKey');
   const data: Omit<ExhibitionDraft, 'contentHash'> = {
     museumId: expectedMuseum,

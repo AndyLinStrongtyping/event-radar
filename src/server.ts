@@ -42,6 +42,8 @@ const staticFiles = new Map<string, [string, string]>([
   ['/guides/ntm.html', ['../web/guides/ntm.html', 'text/html; charset=utf-8']],
   ['/guides/nmth.html', ['../web/guides/nmth.html', 'text/html; charset=utf-8']],
   ['/guides/npm-south.html', ['../web/guides/npm-south.html', 'text/html; charset=utf-8']],
+  ['/guides/npm-north.html', ['../web/guides/npm-north.html', 'text/html; charset=utf-8']],
+  ['/guides/nmmba.html', ['../web/guides/nmmba.html', 'text/html; charset=utf-8']],
   ['/guides/nstm.html', ['../web/guides/nstm.html', 'text/html; charset=utf-8']],
   ['/guides/ntsec.html', ['../web/guides/ntsec.html', 'text/html; charset=utf-8']],
   ['/styles.css', ['../web/styles.css', 'text/css; charset=utf-8']],
@@ -102,7 +104,7 @@ const server = createServer(async (request, response) => {
         AND ($3::text IS NULL OR e.title ILIKE '%' || $3 || '%')
         AND ($4::date IS NULL OR e.end_date >= $4)
         AND ($5::date IS NULL OR e.start_date <= $5)
-        AND ($6::boolean OR NOT e.is_sample)`;
+        AND ($6::boolean OR NOT e.is_sample) AND e.visible`;
       const params = [city, museum, keyword, from, to, includeSample];
       const [items, total] = await Promise.all([
         pool.query(`SELECT ${fields} FROM exhibitions e JOIN museums m ON m.id=e.museum_id
@@ -117,7 +119,7 @@ const server = createServer(async (request, response) => {
     if (match) {
       const includeSample = url.searchParams.get('includeSample') === 'true';
       const result = await pool.query(`SELECT ${fields} FROM exhibitions e JOIN museums m ON m.id=e.museum_id
-        WHERE e.id=$1`, [match[1]]);
+        WHERE e.id=$1 AND e.visible`, [match[1]]);
       if (!result.rowCount || (result.rows[0].isSample && !includeSample)) {
         json(response, 404, { error: { code: 'NOT_FOUND', message: '找不到特展' } });
       } else json(response, 200, result.rows[0]);
@@ -126,7 +128,7 @@ const server = createServer(async (request, response) => {
     const changesMatch = url.pathname.match(/^\/exhibitions\/([0-9a-f-]{36})\/changes$/i);
     if (changesMatch) {
       const includeSample = url.searchParams.get('includeSample') === 'true';
-      const exhibition = await pool.query('SELECT 1 FROM exhibitions WHERE id=$1 AND ($2::boolean OR NOT is_sample)',
+      const exhibition = await pool.query('SELECT 1 FROM exhibitions WHERE id=$1 AND visible AND ($2::boolean OR NOT is_sample)',
         [changesMatch[1], includeSample]);
       if (!exhibition.rowCount) {
         json(response, 404, { error: { code: 'NOT_FOUND', message: '找不到特展' } });

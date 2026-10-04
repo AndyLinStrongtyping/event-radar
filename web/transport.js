@@ -24,6 +24,16 @@ const transportByGuide = {
     note: '從高鐵嘉義站可依館方資訊轉搭接駁車或公車；班次與停靠站請以當日公告為準。',
     official: 'https://south.npm.gov.tw/FAQDetailC005400.aspx?Cond=6994b5f5-ccd6-48b3-bdb2-5449457e8bc9',
   },
+  'npm-north.html': {
+    name: '故宮北院', city: '臺北市', destination: '國立故宮博物院北部院區 臺北市士林區至善路二段221號',
+    note: '可依館方指引從捷運士林站轉乘公車；路線、站點及班次請在出發前核對。',
+    official: 'https://www.npm.gov.tw/Articles.aspx?l=1&sno=03009216',
+  },
+  'nmmba.html': {
+    name: '國立海洋生物博物館', city: '屏東縣', destination: '國立海洋生物博物館 屏東縣車城鄉後灣村後灣路2號',
+    note: '館方交通頁提供開車與大眾運輸資訊；車班、轉乘及最後一段路請在出發前核對。',
+    official: 'https://www.nmmba.gov.tw/cp.aspx?n=F88AE745629C8209&s=70BFA54CEA821391',
+  },
   'nstm.html': {
     name: '國立科學工藝博物館北館', city: '高雄市', destination: '國立科學工藝博物館北館 高雄市三民區九如一路720號',
     note: '臺鐵「科工館站」下車後，館方估計步行約 10 分鐘；本頁展廳位於北館。',

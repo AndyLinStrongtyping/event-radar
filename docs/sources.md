@@ -26,6 +26,8 @@
 
 ## 常設展靜態導覽的依據
 
+第二階段新增故宮北院與海生館兩頁。[故宮北院常設展與參觀路線](https://www.npm.gov.tw/Articles.aspx?l=1&sno=03012836)及館方[玉器](https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04000590)、[青銅器](https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04000576)、[陶瓷](https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04000569)展覽介紹，支撐本站三段閱讀路線；展件可能輪替。[海生館官方展區介紹](https://www.nmmba.gov.tw/cp.aspx?n=3A3E61574AC53193&s=D7F94F9DBC1C6F5D)列出臺灣水域館、珊瑚王國館與世界水域館，本站依此寫靜態導覽；活體展示與設施以館方當日資訊為準。兩頁目前只用文字及官方連結，未複製館方圖片。
+
 首頁的常設展頁面由人工撰寫，不計入上表的特展資料取得狀態。臺博館頁依[「博物臺灣」館方介紹](https://www.ntm.gov.tw/News_Content.aspx?n=5651&s=147780)整理自然臺灣、浮生臺灣兩個展廳；臺史博頁依[官方線上常設展](https://the.nmth.gov.tw/nmth/zh-TW/Home/PermanentExhibition)整理閱讀路線。兩館特展尚未匯入資料庫，頁面因此連回館方查最新展覽。
 
 科博館導覽的植物園段落依[植物園官方介紹](https://www.nmns.edu.tw/ch/exhibitions/galleries/botanical-garden/index.html)與[亞馬遜河魚展示](https://www.nmns.edu.tw/ch/exhibitions/galleries/botanical-garden/amazonslargestfish/)撰寫；館方目前列有食人魚。[箭毒蛙展示的館方專文](https://www.nmns.edu.tw/ch/exhibitions/galleries/botanical-garden/flowers/Theme-F00608/)發表已久，因此頁面明確提醒是否仍展出要以當日公告為準。故宮南院導覽依[亞洲茶文化](https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=9963f5e2-df38-4cb3-bfdf-b689c14ca3f7)、[佛教藝術](https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=be0bda12-a244-4702-9c92-059f13f33c3b)與[亞洲織品展](https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=176c8367-b382-40d9-a462-412f512e97cf&State=&appname=)的館方說明整理；織品展件與展名可能輪替。南院有明確起訖日期的展覽已由官方頁匯入本機資料庫，開放式常設展廳仍只保留在人工導覽。
@@ -55,6 +57,8 @@
 科博館[網站宣告](https://www.nmns.edu.tw/ch/privacy-policy/index.html)將可開放的圖像導向政府資料開放平臺，臺博館另設[圖像授權申請](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5558)，奇美[會員條款](https://www.chimeimuseum.org/memberAccept)也保留官網圖片權利；因此這些館的官網照片尚未複製到本站。科博館木乃伊與奇美樂器廳照片是第三方於 Wikimedia Commons 授權發布的作品；故宮茶碗影像則來自故宮 Open Data，使用依據皆逐張核對。不能因圖片可在網頁看到，就推定可供本網站重新發布。
 
 ## 交通規劃的依據與界線
+
+第二階段新增的目的地與交通說明依[故宮北院官方交通資訊](https://www.npm.gov.tw/Articles.aspx?l=1&sno=03009216)及[海生館官方交通資訊](https://www.nmmba.gov.tw/cp.aspx?n=F88AE745629C8209&s=70BFA54CEA821391)核對，沿用既有地圖路線入口。
 
 七館導覽的交通提示與目的地依各館官方資訊核對：[奇美](https://www.chimeimuseum.org/index.php/visit)、[科博館](https://www.nmns.edu.tw/ch/visit/traffic/)、[臺博館](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5459)、[臺史博](https://www.nmth.gov.tw/cp.aspx?Create=1&n=4101)、[故宮南院](https://south.npm.gov.tw/FAQDetailC005400.aspx?Cond=6994b5f5-ccd6-48b3-bdb2-5449457e8bc9)、[科工館](https://www.nstm.gov.tw/Reference/VisitorInformation/TrafficInfo.htm)及[科教館](https://www.ntsec.gov.tw/article/detail.aspx?a=22)。路線連結使用 [Google Maps URLs 官方格式](https://developers.google.com/maps/documentation/urls/get-started)，不需 API key。選縣市但未提供確切起點時，使用該縣市政府作示意；真實路線、班次、費用與時間由地圖服務及交通業者決定，本站不宣稱能選出最適合的交通方式。
 

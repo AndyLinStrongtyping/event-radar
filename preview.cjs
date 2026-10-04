@@ -11,6 +11,8 @@ const files = {
   '/guides/ntm.html': ['guides/ntm.html', 'text/html; charset=utf-8'],
   '/guides/nmth.html': ['guides/nmth.html', 'text/html; charset=utf-8'],
   '/guides/npm-south.html': ['guides/npm-south.html', 'text/html; charset=utf-8'],
+  '/guides/npm-north.html': ['guides/npm-north.html', 'text/html; charset=utf-8'],
+  '/guides/nmmba.html': ['guides/nmmba.html', 'text/html; charset=utf-8'],
   '/guides/nstm.html': ['guides/nstm.html', 'text/html; charset=utf-8'],
   '/guides/ntsec.html': ['guides/ntsec.html', 'text/html; charset=utf-8'],
   '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
@@ -30,6 +32,8 @@ const museums = [
   { id: 'chimei', name: '奇美博物館', city: '臺南市' },
   { id: 'nmns', name: '國立自然科學博物館', city: '臺中市' },
   { id: 'npm-south', name: '國立故宮博物院南部院區', city: '嘉義縣' },
+  { id: 'npm-north', name: '國立故宮博物院北部院區', city: '臺北市' },
+  { id: 'nmmba', name: '國立海洋生物博物館', city: '屏東縣' },
 ];
 
 createServer(async (request, response) => {

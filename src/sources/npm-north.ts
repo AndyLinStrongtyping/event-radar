@@ -34,7 +34,7 @@ export function classifyNpmNorthFeed(payload: unknown, today = new Intl.DateTime
       if (!location.includes('北部院區')) throw new Error('無法確認為北部院區');
       const [startDate, endDate] = parseRange(raw.time);
       const row = normalizeExhibition({ museumId: 'npm-north', title: raw.title,
-        venue: location, startDate, endDate, sourceUrl, isSample: false,
+        venue: location, startDate, endDate, sourceUrl, sourceKey, isSample: false,
       }, 'npm-north');
       if (endDate < today) {
         record.status = 'ignored'; record.reason = '展期已結束'; continue;

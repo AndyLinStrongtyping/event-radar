@@ -7,7 +7,7 @@ export type SourceRecord = {
   sourceKey: string;
   sourceUrl: string | null;
   raw: Record<string, unknown>;
-  status: 'ready' | 'review' | 'ignored';
+  status: 'ready' | 'review' | 'ignored' | 'approved';
   reason: string | null;
 };
 

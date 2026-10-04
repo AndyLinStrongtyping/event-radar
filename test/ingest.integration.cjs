@@ -41,6 +41,7 @@ async function main() {
   await testDb.query(await readFile(join(project, 'db/001_init.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/002_sources_and_changes.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/003_source_review.sql'), 'utf8'));
+  await testDb.query(await readFile(join(project, 'db/004_review_corrections.sql'), 'utf8'));
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const [original] = JSON.parse(await readFile(join(project, 'test/fixtures/chimei.json'), 'utf8'));
 
@@ -105,6 +106,29 @@ async function main() {
   assert.equal(reviewResult.review, 1, '全部不合格時仍須保存待審原始資料');
   result = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nmmba'");
   assert.equal(result.rows[0].count, 1);
+  const approvedUrl = 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=only-review';
+  execFileSync(process.execPath, ['--experimental-strip-types', 'src/approve-review.ts',
+    '--source', 'nmmba', '--key', approvedUrl, '--start', '2026-09-01', '--end', '2026-12-31',
+    '--evidence', approvedUrl, '--reviewer', 'integration-test', '--note', '館方詳情頁已核對展期'],
+  { cwd: project, env: seaEnv, encoding: 'utf8' });
+  const correctedRun = JSON.parse(execFileSync(process.execPath,
+    ['--experimental-strip-types', 'src/ingest.ts', '--source', 'nmmba', '--snapshot', reviewOnly],
+    { cwd: project, env: seaEnv, encoding: 'utf8' }));
+  assert.equal(correctedRun.inserted, 1);
+  result = await testDb.query("SELECT status FROM source_records WHERE museum_id='nmmba' AND source_key=$1", [approvedUrl]);
+  assert.equal(result.rows[0].status, 'approved');
+  result = await testDb.query('SELECT count(*)::int AS count FROM review_corrections');
+  assert.equal(result.rows[0].count, 1, '人工核對必須留下證據及審查歷史');
+  const changedReview = await fixture('nmmba-source-changed.json', [
+    { Source: approvedUrl, '特展名稱': '來源已變更的展覽',
+      'app用開始時間': '', 'app用結束時間': '' },
+  ]);
+  execFileSync(process.execPath,
+    ['--experimental-strip-types', 'src/ingest.ts', '--source', 'nmmba', '--snapshot', changedReview],
+    { cwd: project, env: seaEnv, encoding: 'utf8' });
+  result = await testDb.query('SELECT visible FROM exhibitions WHERE museum_id=$1 AND source_url=$2',
+    ['nmmba', approvedUrl]);
+  assert.equal(result.rows[0].visible, false, '來源變更時舊人工補正不得繼續公開');
   const northSnapshot = await fixture('npm-north-snapshot.json', [
     { sno: '04014505', link: 'https://www.npm.gov.tw/Articles.aspx?sno=04014505',
       title: '故宮北院特展', time: '2026-05-09 ~ 2026-11-08', location: '北部院區　第一展覽館' },
@@ -122,6 +146,29 @@ async function main() {
   assert.equal(northResult.review, 1);
   result = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='npm-north'");
   assert.equal(result.rows[0].count, 1);
+  const northReview = await fixture('npm-north-review.json', [
+    { sno: '04012832', link: 'https://www.npm.gov.tw/Articles.aspx?sno=04012832',
+      title: '未有結束日的展示', time: '2021-12-24 ~ ', location: '北部院區' },
+  ]);
+  const northReviewArgs = ['--experimental-strip-types', 'src/ingest.ts', '--source', 'npm-north',
+    '--snapshot', northReview];
+  execFileSync(process.execPath, ['--experimental-strip-types', 'src/approve-review.ts',
+    '--source', 'npm-north', '--key', '04012832', '--start', '2026-09-01',
+    '--end', '2026-12-31', '--evidence', 'https://www.npm.gov.tw/Articles.aspx?sno=04012832',
+    '--reviewer', 'integration-test', '--note', '館方展期已人工核對'],
+  { cwd: project, env: seaEnv, encoding: 'utf8' });
+  execFileSync(process.execPath, northReviewArgs, { cwd: project, env: seaEnv, encoding: 'utf8' });
+  result = await testDb.query("SELECT visible FROM exhibitions WHERE museum_id='npm-north' AND source_key='04012832'");
+  assert.equal(result.rows[0].visible, true);
+  const northChangedLink = await fixture('npm-north-changed-link.json', [
+    { sno: '04012832', link: 'https://www.npm.gov.tw/Articles.aspx?sno=04012833',
+      title: '未有結束日的展示', time: '2021-12-24 ~ ', location: '北部院區' },
+  ]);
+  execFileSync(process.execPath,
+    ['--experimental-strip-types', 'src/ingest.ts', '--source', 'npm-north', '--snapshot', northChangedLink],
+    { cwd: project, env: seaEnv, encoding: 'utf8' });
+  result = await testDb.query("SELECT visible FROM exhibitions WHERE museum_id='npm-north' AND source_key='04012832'");
+  assert.equal(result.rows[0].visible, false, '館方連結改變時舊補正展覽必須隱藏');
   process.stdout.write('匯入回滾、同源與跨來源去重、欄位異動紀錄：通過\n');
 }
 

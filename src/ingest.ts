@@ -7,6 +7,7 @@ import { normalizeNmnsFeed } from './sources/nmns.ts';
 import { mergeNpmSouthPages, npmSouthPages } from './sources/npm-south.ts';
 import { classifyNmmbaFeed, nmmbaDataUrl, type SourceRecord } from './sources/nmmba.ts';
 import { classifyNpmNorthFeed, npmNorthDataUrl } from './sources/npm-north.ts';
+import { correctedDraft, sourceHash } from './corrections.ts';
 
 function arg(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -66,11 +67,52 @@ async function sourceRows(museum: string, file: string | undefined, snapshot: st
   throw new Error('此館尚無官方來源匯入器');
 }
 
-type Stored = ExhibitionDraft & { id: string; primaryProvider: string };
+type Stored = ExhibitionDraft & { id: string; primaryProvider: string; visible: boolean };
+
+async function hideCorrectedExhibition(client: pg.PoolClient, museum: string,
+  provider: string, record: SourceRecord, previousUrl: string | null): Promise<void> {
+  await client.query(`UPDATE exhibitions SET visible=false,updated_at=now()
+    WHERE museum_id=$1 AND (source_url=$2 OR source_url=$5 OR id IN (
+      SELECT exhibition_id FROM exhibition_sources
+      WHERE museum_id=$1 AND provider=$3 AND source_key=$4))`,
+  [museum, record.sourceUrl, provider, record.sourceKey, previousUrl]);
+}
+
+async function applyCorrections(client: pg.PoolClient, museum: string, provider: string,
+  rows: ExhibitionDraft[], records: SourceRecord[]): Promise<void> {
+  for (const record of records) {
+    const decision = await client.query<{ source_hash: string; start_date: string;
+      end_date: string; evidence_url: string; source_url: string | null }>(`SELECT source_hash,source_url,
+        to_char(start_date,'YYYY-MM-DD') AS start_date,
+        to_char(end_date,'YYYY-MM-DD') AS end_date,evidence_url
+      FROM review_corrections WHERE museum_id=$1 AND provider=$2 AND source_key=$3
+      ORDER BY created_at DESC,id DESC LIMIT 1`, [museum, provider, record.sourceKey]);
+    if (!decision.rows.length) continue;
+    const rowIndex = rows.findIndex((row) => row.sourceUrl === record.sourceUrl);
+    if (rowIndex >= 0) rows.splice(rowIndex, 1);
+    const latest = decision.rows[0];
+    if (latest.source_hash !== sourceHash(record.raw)) {
+      record.status = 'review';
+      record.reason = '來源內容已變更，原人工補正須重新核對';
+      await hideCorrectedExhibition(client, museum, provider, record, latest.source_url);
+      continue;
+    }
+    try {
+      rows.push(correctedDraft(museum, record.raw,
+        latest.start_date, latest.end_date, latest.evidence_url));
+      record.status = 'approved';
+      record.reason = '展期依人工核對紀錄補正';
+    } catch (error) {
+      record.status = 'review';
+      record.reason = `人工補正無法套用：${error instanceof Error ? error.message : String(error)}`;
+      await hideCorrectedExhibition(client, museum, provider, record, latest.source_url);
+    }
+  }
+}
 
 async function findStored(client: pg.PoolClient, row: ExhibitionDraft, provider: string): Promise<Stored | null> {
   const columns = `id,primary_provider AS "primaryProvider",museum_id AS "museumId",source_key AS "sourceKey",
-    title,venue,to_char(start_date,'YYYY-MM-DD') AS "startDate",
+    title,venue,visible,to_char(start_date,'YYYY-MM-DD') AS "startDate",
     to_char(end_date,'YYYY-MM-DD') AS "endDate",price_note AS "priceNote",
     source_url AS "sourceUrl",summary,is_sample AS "isSample",content_hash AS "contentHash"`;
   const alias = await client.query<{ exhibition_id: string }>(
@@ -118,6 +160,7 @@ async function main(): Promise<void> {
     await client.query('BEGIN');
     inTransaction = true;
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [museum]);
+    await applyCorrections(client, museum, provider, rows, records);
     const counts = { fetched: records.length || rows.length, inserted: 0, updated: 0,
       unchanged: 0, linked: 0, skipped: records.filter((record) => record.status === 'ignored').length,
       review: records.filter((record) => record.status === 'review').length };
@@ -150,10 +193,10 @@ async function main(): Promise<void> {
         } else {
           const changes = changedValues(previous, row);
           const sampleChanged = previous.isSample !== row.isSample;
-          if (changes.length || sampleChanged) {
+          if (changes.length || sampleChanged || !previous.visible) {
             await client.query(`UPDATE exhibitions SET title=$2,venue=$3,start_date=$4,end_date=$5,
               price_note=$6,source_url=$7,summary=$8,is_sample=$9,content_hash=$10,
-              primary_provider=$11,last_seen_at=now(),updated_at=now() WHERE id=$1`,
+              primary_provider=$11,visible=true,last_seen_at=now(),updated_at=now() WHERE id=$1`,
             [exhibitionId, row.title, row.venue, row.startDate, row.endDate, row.priceNote,
               row.sourceUrl, row.summary, row.isSample, row.contentHash, provider]);
             for (const change of changes) {
