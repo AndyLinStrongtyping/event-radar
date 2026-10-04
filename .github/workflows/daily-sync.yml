@@ -1,0 +1,32 @@
+name: Daily museum exhibition sync
+
+on:
+  schedule:
+    - cron: '15 4 * * *'
+      timezone: 'Asia/Taipei'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: event-radar-daily-sync
+  cancel-in-progress: false
+
+jobs:
+  sync-nmns:
+    if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NMNS_OPEN_DATA_URL: ${{ secrets.NMNS_OPEN_DATA_URL }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: Install dependencies
+        run: npm install --ignore-scripts --no-audit --no-fund
+      - name: Sync official NMNS exhibition data
+        run: npm run ingest -- --source nmns --official

@@ -1,0 +1,14 @@
+{
+  "name": "event-radar",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node --experimental-strip-types src/server.ts",
+    "ingest": "node --experimental-strip-types src/ingest.ts",
+    "test": "node --experimental-strip-types --test test/*.test.ts"
+  },
+  "engines": { "node": ">=22.10" },
+  "dependencies": { "pg": "^8.16.3" },
+  "devDependencies": { "@types/pg": "^8.15.5", "typescript": "^5.9.3", "@types/node": "^24.0.0" }
+}

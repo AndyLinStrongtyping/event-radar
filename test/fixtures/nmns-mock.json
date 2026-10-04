@@ -1,0 +1,14 @@
+[
+  {
+    "museumId": "nmns",
+    "sourceKey": "mock-nmns-001",
+    "title": "模擬資料｜科博館自然科學特展",
+    "venue": "模擬展廳",
+    "startDate": "2026-10-01",
+    "endDate": "2026-12-31",
+    "priceNote": "模擬資料，無實際票價",
+    "sourceUrl": "https://www.nmns.edu.tw/ch/exhibitions/special-exhibitions/index.html",
+    "summary": "僅供開發與測試，不是真實展覽。",
+    "isSample": true
+  }
+]
