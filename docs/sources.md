@@ -37,6 +37,17 @@
 
 臺史博常設展中的錢幣依[館方數位資源](https://taiwanindex.nmth.gov.tw/theme/detail/77)；故宮南院單柄壺依[東亞茶文化展介紹](https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=9963f5e2-df38-4cb3-bfdf-b689c14ca3f7)，展件可能輪替；科工館磁石電話機與交換機依[電信@臺灣](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=422a9a67-5ad4-460b-9e01-7633be54ebcf)；科教館 P5000 設備依[館方展覽資訊](https://www.ntsec.gov.tw/article/detail.aspx?a=6014&print=1)。模型、數位重建與展示設備在頁面中明確標示，不當成原始出土文物。
 
+## 常設展照片來源與使用
+
+目前只放入兩張館方展覽照片，並在圖片旁標示來源與使用依據：
+
+| 頁面 | 圖片 | 來源與使用依據 | 保存方式 |
+| --- | --- | --- | --- |
+| 科工館 | 「電信@臺灣」磁石式電話交換機展項 | [館方展廳頁](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=422a9a67-5ad4-460b-9e01-7633be54ebcf)的「本廳必看」圖片；[網站資料開放宣告](https://www.nstm.gov.tw/Other/DataOpen.htm)載明 CC BY-SA 4.0，未見此張照片另有特別限制 | 原圖存為 `web/assets/nstm-switchboard.jpg`，檔案未修圖，頁面可能裁切顯示 |
+| 科教館 | 「HOMING 找家」小公象模型 | [館方展覽頁照片集](https://www.ntsec.gov.tw/article/detail.aspx?a=78)標示攝影者劉德祥；[網站資料開放宣告](https://www.ntsec.gov.tw/article/detail.aspx?a=39)要求註明出處，未見此張照片另有特別限制 | 以館方圖片網址顯示；原網址失效時須重新核對 |
+
+科博館[網站宣告](https://www.nmns.edu.tw/ch/privacy-policy/index.html)將可開放的圖像導向政府資料開放平臺，臺博館另設[圖像授權申請](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5558)，奇美[會員條款](https://www.chimeimuseum.org/memberAccept)也保留官網圖片權利；因此這些館的官網照片尚未複製到本站。不能因圖片可在網頁看到，就推定可供本網站重新發布。
+
 ## 交通規劃的依據與界線
 
 七館導覽的交通提示與目的地依各館官方資訊核對：[奇美](https://www.chimeimuseum.org/index.php/visit)、[科博館](https://www.nmns.edu.tw/ch/visit/traffic/)、[臺博館](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5459)、[臺史博](https://www.nmth.gov.tw/cp.aspx?Create=1&n=4101)、[故宮南院](https://south.npm.gov.tw/FAQDetailC005400.aspx?Cond=6994b5f5-ccd6-48b3-bdb2-5449457e8bc9)、[科工館](https://www.nstm.gov.tw/Reference/VisitorInformation/TrafficInfo.htm)及[科教館](https://www.ntsec.gov.tw/article/detail.aspx?a=22)。路線連結使用 [Google Maps URLs 官方格式](https://developers.google.com/maps/documentation/urls/get-started)，不需 API key。選縣市但未提供確切起點時，使用該縣市政府作示意；真實路線、班次、費用與時間由地圖服務及交通業者決定，本站不宣稱能選出最適合的交通方式。

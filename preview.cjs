@@ -17,6 +17,7 @@ const files = {
   '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
   '/transport.js': ['transport.js', 'text/javascript; charset=utf-8'],
   '/assets/hero-ruins.png': ['assets/hero-ruins.png', 'image/png'],
+  '/assets/nstm-switchboard.jpg': ['assets/nstm-switchboard.jpg', 'image/jpeg'],
 };
 const museums = [
   { id: 'chimei', name: '奇美博物館', city: '臺南市' },
