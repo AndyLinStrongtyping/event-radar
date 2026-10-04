@@ -8,6 +8,7 @@
 | 1 | 國立故宮博物院（臺北／嘉義） | https://www.npm.gov.tw/ | 官網展覽頁已找到，API 待查 | 南北院區可測多場館資料模型 |
 | 1 | 國立臺灣歷史博物館（臺南） | https://www.nmth.gov.tw/default.aspx | 官網已找到，API 待查 | 臺灣史主題 |
 | 2 | 國立科學工藝博物館（高雄） | https://www.nstm.gov.tw/ | 官網展覽頁已找到，API 待查 | 科學技術類與南部覆蓋 |
+| 2 | 國立臺灣科學教育館（臺北） | https://www.ntsec.gov.tw/ | 官網常設展與特展頁已找到，API 待查 | 人體、生態、物質科學與科技教育 |
 | 2 | 國立臺灣美術館（臺中） | https://www.ntmofa.gov.tw/ | 官網當期展覽頁已找到，API 待查 | 美術類與中部覆蓋 |
 | 2 | 臺南市美術館（臺南） | https://www.tnam.museum/ | 官網展覽頁已找到，API 待查 | 美術類與在地覆蓋 |
 
@@ -18,6 +19,8 @@
 首頁的常設展頁面由人工撰寫，不計入上表的特展資料取得狀態。臺博館頁依[「博物臺灣」館方介紹](https://www.ntm.gov.tw/News_Content.aspx?n=5651&s=147780)整理自然臺灣、浮生臺灣兩個展廳；臺史博頁依[官方線上常設展](https://the.nmth.gov.tw/nmth/zh-TW/Home/PermanentExhibition)整理閱讀路線。兩館特展尚未匯入資料庫，頁面因此連回館方查最新展覽。
 
 科博館導覽的植物園段落依[植物園官方介紹](https://www.nmns.edu.tw/ch/exhibitions/galleries/botanical-garden/index.html)與[亞馬遜河魚展示](https://www.nmns.edu.tw/ch/exhibitions/galleries/botanical-garden/amazonslargestfish/)撰寫；館方目前列有食人魚。[箭毒蛙展示的館方專文](https://www.nmns.edu.tw/ch/exhibitions/galleries/botanical-garden/flowers/Theme-F00608/)發表已久，因此頁面明確提醒是否仍展出要以當日公告為準。故宮南院導覽依[亞洲茶文化](https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=9963f5e2-df38-4cb3-bfdf-b689c14ca3f7)、[佛教藝術](https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=be0bda12-a244-4702-9c92-059f13f33c3b)與[亞洲織品展](https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=176c8367-b382-40d9-a462-412f512e97cf&State=&appname=)的館方說明整理；織品展件與展名可能輪替。故宮南院特展尚未匯入資料庫。
+
+科工館導覽依官方[動力與機械](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=e0da1041-aee2-4627-b98a-13c78c9f0b68)、[電信@臺灣](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=422a9a67-5ad4-460b-9e01-7633be54ebcf)及[臺灣工業史蹟廳](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=0d760d96-a968-4791-9d54-4d0109f7a286)整理。科教館導覽依官方[常設展列表](https://www.ntsec.gov.tw/article/list.aspx?a=27)選取 3–6 樓的[人體奧妙](https://www.ntsec.gov.tw/article/detail.aspx?a=5106)、[生物多樣性](https://www.ntsec.gov.tw/article/detail.aspx?a=78)、[物質科學](https://www.ntsec.gov.tw/article/detail.aspx?a=64)與[半導體未來館](https://www.ntsec.gov.tw/article/detail.aspx?a=5117)。兩館導覽都是人工靜態內容，兩館近期特展尚未匯入資料庫。
 
 ## 中央平台評估
 

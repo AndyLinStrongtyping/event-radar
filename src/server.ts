@@ -42,6 +42,8 @@ const staticFiles = new Map<string, [string, string]>([
   ['/guides/ntm.html', ['../web/guides/ntm.html', 'text/html; charset=utf-8']],
   ['/guides/nmth.html', ['../web/guides/nmth.html', 'text/html; charset=utf-8']],
   ['/guides/npm-south.html', ['../web/guides/npm-south.html', 'text/html; charset=utf-8']],
+  ['/guides/nstm.html', ['../web/guides/nstm.html', 'text/html; charset=utf-8']],
+  ['/guides/ntsec.html', ['../web/guides/ntsec.html', 'text/html; charset=utf-8']],
   ['/styles.css', ['../web/styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['../web/app.js', 'text/javascript; charset=utf-8']],
   ['/assets/hero-ruins.png', ['../web/assets/hero-ruins.png', 'image/png']],
