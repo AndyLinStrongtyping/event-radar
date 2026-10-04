@@ -17,7 +17,7 @@
 - 七頁導覽新增交通規劃：可選出發縣市並選填更精確的地址或車站，分別開啟 Google Maps 大眾運輸與開車路線，旁邊保留館方交通連結。只選縣市時以該縣市政府作示意起點；本站不計算即時車程、票價或「最佳」交通方式，也不儲存輸入地點。
 - 奇美公開特展頁已有**本機可執行的每週連結變更檢查**（`npm run check:chimei`）。GitHub Actions 排程檔設定為週一臺灣時間 09:20，但專案尚無 GitHub 遠端，因此線上排程尚未運作。檢查只讀官方公開頁與 `robots.txt`，比對頁面明確連出的個別特展網址；有新增、消失或頁面格式異常時失敗，提醒人工核對。這不是奇美 API 同步，不會改動資料庫，也不檢查音樂節、工作坊或售票名額。`data/chimei-known-links.json` 是核對後的基準，確認變更後才更新。
 
-詳見 [需求規格](docs/requirements.md)、[API 契約](docs/api.md)、[來源盤點](docs/sources.md)與[每日同步運作設計](docs/operations.md)。
+詳見 [需求規格](docs/requirements.md)、[API 契約](docs/api.md)、[來源盤點](docs/sources.md)、[每日同步運作設計](docs/operations.md)與[後續方向（館所與 Queue）](docs/future-roadmap.md)。
 
 ## 結構
 
