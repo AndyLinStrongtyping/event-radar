@@ -6,6 +6,8 @@ const root = join(__dirname, 'web');
 const port = Number(process.env.PORT || 4180);
 const files = {
   '/': ['index.html', 'text/html; charset=utf-8'],
+  '/guides/chimei.html': ['guides/chimei.html', 'text/html; charset=utf-8'],
+  '/guides/nmns.html': ['guides/nmns.html', 'text/html; charset=utf-8'],
   '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
   '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
   '/assets/hero-ruins.png': ['assets/hero-ruins.png', 'image/png'],

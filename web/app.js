@@ -37,6 +37,8 @@ async function loadMuseums() {
     option.textContent = museum.name;
     select.append(option);
   }
+  const requestedMuseum = new URLSearchParams(location.search).get('museum');
+  if ([...select.options].some((option) => option.value === requestedMuseum)) select.value = requestedMuseum;
 }
 
 async function search() {
@@ -63,7 +65,7 @@ sampleToggle.addEventListener('change', () => {
   search().catch((error) => { count.textContent = error.message; results.replaceChildren(); });
 });
 
-Promise.all([loadMuseums(), search()]).catch((error) => { count.textContent = error.message; });
+loadMuseums().then(search).catch((error) => { count.textContent = error.message; });
 fetch('/preview-status').then((response) => response.ok ? response.json() : null).then((status) => {
   if (status?.preview) document.querySelector('#preview-notice').hidden = false;
 }).catch(() => {});

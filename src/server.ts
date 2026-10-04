@@ -37,6 +37,8 @@ const fields = `e.id,e.title,e.museum_id AS "museumId",m.name AS "museumName",m.
 
 const staticFiles = new Map<string, [string, string]>([
   ['/', ['../web/index.html', 'text/html; charset=utf-8']],
+  ['/guides/chimei.html', ['../web/guides/chimei.html', 'text/html; charset=utf-8']],
+  ['/guides/nmns.html', ['../web/guides/nmns.html', 'text/html; charset=utf-8']],
   ['/styles.css', ['../web/styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['../web/app.js', 'text/javascript; charset=utf-8']],
   ['/assets/hero-ruins.png', ['../web/assets/hero-ruins.png', 'image/png']],
