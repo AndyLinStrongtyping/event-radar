@@ -13,6 +13,7 @@
 - 奇美已列入資料來源表。官網有特展頁；目前未查到公開活動 API 文件，先用可追溯的人工整理資料驗證產品流程，再確認正式取得方式與授權。
 - 科博館的[官方公開特展 JSON 資料集](https://data.gov.tw/dataset/7499)可先介接；個人 API key 另候審查。公開資源網址從政府平台取得，放在本機 `NMNS_OPEN_DATA_URL`，不硬寫在程式。私人金鑰也不提交到 Git。
 - 首頁的「常設展導覽」另有[奇美](web/guides/chimei.html)、[科博館（含植物園）](web/guides/nmns.html)、[臺博館](web/guides/ntm.html)、[臺史博](web/guides/nmth.html)、[故宮南院](web/guides/npm-south.html)、[科工館](web/guides/nstm.html)與[科教館](web/guides/ntsec.html)七頁人工編寫介紹。它們不是 API 同步資料，頁面標示最後核對日期並連向館方資訊；開放狀態須以館方最新公告為準。除奇美與科博館以外，這些館所的近期特展尚未接入本站資料庫。
+- 七頁導覽新增交通規劃：可選出發縣市並選填更精確的地址或車站，分別開啟 Google Maps 大眾運輸與開車路線，旁邊保留館方交通連結。只選縣市時以該縣市政府作示意起點；本站不計算即時車程、票價或「最佳」交通方式，也不儲存輸入地點。
 
 詳見 [需求規格](docs/requirements.md)、[API 契約](docs/api.md)、[來源盤點](docs/sources.md)與[每日同步運作設計](docs/operations.md)。
 

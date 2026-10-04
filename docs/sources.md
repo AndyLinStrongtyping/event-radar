@@ -22,6 +22,10 @@
 
 科工館導覽依官方[動力與機械](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=e0da1041-aee2-4627-b98a-13c78c9f0b68)、[電信@臺灣](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=422a9a67-5ad4-460b-9e01-7633be54ebcf)及[臺灣工業史蹟廳](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=0d760d96-a968-4791-9d54-4d0109f7a286)整理。科教館導覽依官方[常設展列表](https://www.ntsec.gov.tw/article/list.aspx?a=27)選取 3–6 樓的[人體奧妙](https://www.ntsec.gov.tw/article/detail.aspx?a=5106)、[生物多樣性](https://www.ntsec.gov.tw/article/detail.aspx?a=78)、[物質科學](https://www.ntsec.gov.tw/article/detail.aspx?a=64)與[半導體未來館](https://www.ntsec.gov.tw/article/detail.aspx?a=5117)。兩館導覽都是人工靜態內容，兩館近期特展尚未匯入資料庫。
 
+## 交通規劃的依據與界線
+
+七館導覽的交通提示與目的地依各館官方資訊核對：[奇美](https://www.chimeimuseum.org/index.php/visit)、[科博館](https://www.nmns.edu.tw/ch/visit/traffic/)、[臺博館](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5459)、[臺史博](https://www.nmth.gov.tw/cp.aspx?Create=1&n=4101)、[故宮南院](https://south.npm.gov.tw/FAQDetailC005400.aspx?Cond=6994b5f5-ccd6-48b3-bdb2-5449457e8bc9)、[科工館](https://www.nstm.gov.tw/Reference/VisitorInformation/TrafficInfo.htm)及[科教館](https://www.ntsec.gov.tw/article/detail.aspx?a=22)。路線連結使用 [Google Maps URLs 官方格式](https://developers.google.com/maps/documentation/urls/get-started)，不需 API key。選縣市但未提供確切起點時，使用該縣市政府作示意；真實路線、班次、費用與時間由地圖服務及交通業者決定，本站不宣稱能選出最適合的交通方式。
+
 ## 中央平台評估
 
 - [文化部「展覽資訊」資料集](https://data.gov.tw/dataset/6012)：比「藝文活動所有類別」更貼近本產品，含展名、展期、場地及來源名稱，採政府資料開放授權條款第 1 版，更新頻率每日。可作第二條自動來源，但需確認館所覆蓋率及同展重複紀錄。

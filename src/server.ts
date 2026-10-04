@@ -46,6 +46,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/guides/ntsec.html', ['../web/guides/ntsec.html', 'text/html; charset=utf-8']],
   ['/styles.css', ['../web/styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['../web/app.js', 'text/javascript; charset=utf-8']],
+  ['/transport.js', ['../web/transport.js', 'text/javascript; charset=utf-8']],
   ['/assets/hero-ruins.png', ['../web/assets/hero-ruins.png', 'image/png']],
 ]);
 
