@@ -47,8 +47,11 @@
 | 科教館 | 「HOMING 找家」小公象模型 | [館方展覽頁照片集](https://www.ntsec.gov.tw/article/detail.aspx?a=78)標示攝影者劉德祥；[網站資料開放宣告](https://www.ntsec.gov.tw/article/detail.aspx?a=39)要求註明出處，未見此張照片另有特別限制 | 以館方圖片網址顯示；原網址失效時須重新核對 |
 | 科博館 | 古埃及木乃伊人型棺柩 | [Wikimedia Commons 原始檔案頁](https://commons.wikimedia.org/wiki/File:%E7%A7%91%E5%8D%9A%E9%A4%A8%E5%85%A7%E7%9A%84%E5%9F%83%E5%8F%8A%E6%9C%A8%E4%B9%83%E4%BC%8A.jpg)，攝影者弟魯，授權 [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)；拍到棺柩而非木乃伊本體 | 原檔存為 `web/assets/nmns-mummy-commons.jpg`，未修圖，版面可能裁切顯示；頁面提供署名與授權連結 |
 | 科博館 | 恐龍骨架、紫水晶洞、螢光礦物 | 使用者於本對話提供的原創展場照片；未從科博館官網複製 | 複本存為 `web/assets/nmns-dinosaur-user.jpg`、`web/assets/nmns-amethyst-user.jpg`、`web/assets/nmns-fluorescent-minerals-user.jpg`；原附件未修改 |
+| 奇美 | 樂器廳內景 | [Wikimedia Commons 原始檔案頁](https://commons.wikimedia.org/wiki/File:Interiors_of_the_Chi_Mei_Museum-41.2023-07-14.jpg)，攝影者阿道，[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)；為 2023 年展場影像，展件可能調整 | 使用 Wikimedia 產生的 1280px 縮圖，存為 `web/assets/chimei-instrument-hall-commons.jpg`；頁面可能裁切顯示 |
+| 故宮南院 | 南院一館外觀 | [Wikimedia Commons 原始檔案頁](https://commons.wikimedia.org/wiki/File:20250718_102929_NPMSB_Museum_1_building.jpg)，攝影者 Saimmx，[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)；非展廳照片 | 使用 1280px 縮圖，存為 `web/assets/npm-south-building-commons.jpg`；頁面可能裁切顯示 |
+| 故宮南院 | 越南黎朝白瓷印花菊花碗 | [國立故宮博物院 Open Data 影像於 Wikimedia Commons 的檔案頁](https://commons.wikimedia.org/wiki/File:Teacup_impressed_with_chrysanthemum_decoration_in_white_glaze.tif)，[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)；不代表當期在南院展出 | 使用 Commons 由原 TIFF 產生的 1280px JPG 縮圖，存為 `web/assets/npm-teacup-commons.jpg`；頁面可能裁切顯示 |
 
-科博館[網站宣告](https://www.nmns.edu.tw/ch/privacy-policy/index.html)將可開放的圖像導向政府資料開放平臺，臺博館另設[圖像授權申請](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5558)，奇美[會員條款](https://www.chimeimuseum.org/memberAccept)也保留官網圖片權利；因此這些館的官網照片尚未複製到本站。科博館頁使用的木乃伊照片是第三方於 Wikimedia Commons 以 CC BY-SA 4.0 發布的作品，使用依據與科博館官網圖片分開核對。不能因圖片可在網頁看到，就推定可供本網站重新發布。
+科博館[網站宣告](https://www.nmns.edu.tw/ch/privacy-policy/index.html)將可開放的圖像導向政府資料開放平臺，臺博館另設[圖像授權申請](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5558)，奇美[會員條款](https://www.chimeimuseum.org/memberAccept)也保留官網圖片權利；因此這些館的官網照片尚未複製到本站。科博館木乃伊與奇美樂器廳照片是第三方於 Wikimedia Commons 授權發布的作品；故宮茶碗影像則來自故宮 Open Data，使用依據皆逐張核對。不能因圖片可在網頁看到，就推定可供本網站重新發布。
 
 ## 交通規劃的依據與界線
 

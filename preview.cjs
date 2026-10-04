@@ -22,6 +22,9 @@ const files = {
   '/assets/nmns-dinosaur-user.jpg': ['assets/nmns-dinosaur-user.jpg', 'image/jpeg'],
   '/assets/nmns-amethyst-user.jpg': ['assets/nmns-amethyst-user.jpg', 'image/jpeg'],
   '/assets/nmns-fluorescent-minerals-user.jpg': ['assets/nmns-fluorescent-minerals-user.jpg', 'image/jpeg'],
+  '/assets/chimei-instrument-hall-commons.jpg': ['assets/chimei-instrument-hall-commons.jpg', 'image/jpeg'],
+  '/assets/npm-south-building-commons.jpg': ['assets/npm-south-building-commons.jpg', 'image/jpeg'],
+  '/assets/npm-teacup-commons.jpg': ['assets/npm-teacup-commons.jpg', 'image/jpeg'],
 };
 const museums = [
   { id: 'chimei', name: '奇美博物館', city: '臺南市' },
