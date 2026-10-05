@@ -26,6 +26,8 @@ const files = {
   '/assets/nmns-fluorescent-minerals-user.jpg': ['assets/nmns-fluorescent-minerals-user.jpg', 'image/jpeg'],
   '/assets/chimei-instrument-hall-commons.jpg': ['assets/chimei-instrument-hall-commons.jpg', 'image/jpeg'],
   '/assets/npm-south-building-commons.jpg': ['assets/npm-south-building-commons.jpg', 'image/jpeg'],
+  '/assets/npm-north-building-commons.jpg': ['assets/npm-north-building-commons.jpg', 'image/jpeg'],
+  '/assets/nmmba-kelp-commons.jpg': ['assets/nmmba-kelp-commons.jpg', 'image/jpeg'],
   '/assets/npm-teacup-commons.jpg': ['assets/npm-teacup-commons.jpg', 'image/jpeg'],
 };
 const museums = [

@@ -58,6 +58,8 @@ const staticFiles = new Map<string, [string, string]>([
   ['/assets/nmns-fluorescent-minerals-user.jpg', ['../web/assets/nmns-fluorescent-minerals-user.jpg', 'image/jpeg']],
   ['/assets/chimei-instrument-hall-commons.jpg', ['../web/assets/chimei-instrument-hall-commons.jpg', 'image/jpeg']],
   ['/assets/npm-south-building-commons.jpg', ['../web/assets/npm-south-building-commons.jpg', 'image/jpeg']],
+  ['/assets/npm-north-building-commons.jpg', ['../web/assets/npm-north-building-commons.jpg', 'image/jpeg']],
+  ['/assets/nmmba-kelp-commons.jpg', ['../web/assets/nmmba-kelp-commons.jpg', 'image/jpeg']],
   ['/assets/npm-teacup-commons.jpg', ['../web/assets/npm-teacup-commons.jpg', 'image/jpeg']],
 ]);
 
