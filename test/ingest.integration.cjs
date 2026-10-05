@@ -123,7 +123,11 @@ async function checkPublicApiContract() {
     const missing = await get('/exhibitions/00000000-0000-0000-0000-000000000000', 404);
     assert.equal(missing.error.code, 'NOT_FOUND');
   } finally {
-    server.kill();
+    if (server.exitCode === null && server.signalCode === null) {
+      const exited = new Promise((resolve) => server.once('exit', resolve));
+      server.kill();
+      await exited;
+    }
   }
 }
 
