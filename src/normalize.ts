@@ -4,6 +4,7 @@ const museums = {
   chimei: { city: '臺南市', host: 'chimeimuseum.org' },
   nmns: { city: '臺中市', host: 'nmns.edu.tw' },
   nmmba: { city: '屏東縣', host: 'nmmba.gov.tw' },
+  nstm: { city: '高雄市', host: 'nstm.gov.tw' },
   'npm-north': { city: '臺北市', host: 'npm.gov.tw' },
   'npm-south': { city: '嘉義縣', host: 'south.npm.gov.tw' },
 } as const;
@@ -44,7 +45,7 @@ function validDate(value: unknown): string {
 
 export function normalizeExhibition(row: Record<string, unknown>, expectedMuseum: string): ExhibitionDraft {
   if (expectedMuseum !== 'chimei' && expectedMuseum !== 'nmns' && expectedMuseum !== 'npm-south'
-    && expectedMuseum !== 'nmmba' && expectedMuseum !== 'npm-north') {
+    && expectedMuseum !== 'nmmba' && expectedMuseum !== 'npm-north' && expectedMuseum !== 'nstm') {
     throw new Error('此館尚無匯入 adapter');
   }
   if (row.museumId !== expectedMuseum) throw new Error('資料列館別與匯入來源不一致');

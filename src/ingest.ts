@@ -7,6 +7,8 @@ import { normalizeNmnsFeed } from './sources/nmns.ts';
 import { mergeNpmSouthPages, npmSouthPages } from './sources/npm-south.ts';
 import { classifyNmmbaFeed, nmmbaDataUrl, type SourceRecord } from './sources/nmmba.ts';
 import { classifyNpmNorthFeed, npmNorthDataUrl } from './sources/npm-north.ts';
+import { classifyNstmFeed, nstmDataUrl, nstmListUrl } from './sources/nstm.ts';
+import { classifyMocChimei, mocExhibitionsUrl, verifiedMocChimeiRows } from './sources/moc-chimei.ts';
 import { correctedDraft, sourceHash } from './corrections.ts';
 
 function arg(name: string): string | undefined {
@@ -30,12 +32,29 @@ async function fetchSource(url: string, host: string): Promise<string> {
 type SourceBatch = { rows: ExhibitionDraft[]; records: SourceRecord[] };
 
 async function sourceRows(museum: string, file: string | undefined, snapshot: string | undefined,
-  official: boolean): Promise<SourceBatch> {
+  official: boolean, provider: string): Promise<SourceBatch> {
   if (snapshot) {
     const payload: unknown = JSON.parse(await readFile(snapshot, 'utf8'));
     if (museum === 'nmmba') return classifyNmmbaFeed(payload);
     if (museum === 'npm-north') return classifyNpmNorthFeed(payload);
-    throw new Error('原始快照目前只支援海生館或故宮北院');
+    if (museum === 'nstm' && payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      const snapshot = payload as { data?: unknown; html?: unknown; today?: unknown };
+      if (typeof snapshot.html !== 'string' || typeof snapshot.today !== 'string') {
+        throw new Error('科工館快照需要 data、html、today');
+      }
+      return classifyNstmFeed(snapshot.data, snapshot.html, snapshot.today);
+    }
+    if (museum === 'chimei' && provider === 'culture' && payload && typeof payload === 'object'
+      && !Array.isArray(payload)) {
+      const item = payload as { data?: unknown; pages?: unknown };
+      if (!item.pages || typeof item.pages !== 'object' || Array.isArray(item.pages)) {
+        throw new Error('文化部快照需要 data 與 pages');
+      }
+      const { groups, records } = classifyMocChimei(item.data);
+      const pages = new Map(Object.entries(item.pages as Record<string, string>));
+      return { rows: verifiedMocChimeiRows(groups, pages), records };
+    }
+    throw new Error('原始快照目前只支援海生館、故宮北院或科工館');
   }
   if (file) {
     const payload: unknown = JSON.parse(await readFile(file, 'utf8'));
@@ -46,6 +65,12 @@ async function sourceRows(museum: string, file: string | undefined, snapshot: st
     }), records: [] };
   }
   if (!official) throw new Error('必須指定 --file 或 --official');
+  if (museum === 'chimei' && provider === 'culture') {
+    const { groups, records } = classifyMocChimei(JSON.parse(await fetchSource(mocExhibitionsUrl, 'cloud.culture.tw')));
+    const pages = new Map<string, string>();
+    for (const group of groups) pages.set(group.url, await fetchSource(group.url, 'www.chimeimuseum.org'));
+    return { rows: verifiedMocChimeiRows(groups, pages), records };
+  }
   if (museum === 'nmns') {
     const source = process.env.NMNS_OPEN_DATA_URL;
     if (!source) throw new Error('請設定 NMNS_OPEN_DATA_URL');
@@ -63,6 +88,16 @@ async function sourceRows(museum: string, file: string | undefined, snapshot: st
   }
   if (museum === 'npm-north') {
     return classifyNpmNorthFeed(JSON.parse(await fetchSource(npmNorthDataUrl, 'odapi.npm.gov.tw')));
+  }
+  if (museum === 'nstm') {
+    const [json, html] = await Promise.all([
+      fetchSource(nstmDataUrl, 'websrv.nstm.gov.tw'),
+      fetchSource(nstmListUrl, 'www.nstm.gov.tw'),
+    ]);
+    const today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date());
+    return classifyNstmFeed(JSON.parse(json), html, today);
   }
   throw new Error('此館尚無官方來源匯入器');
 }
@@ -155,7 +190,7 @@ async function main(): Promise<void> {
     const run = await client.query<{ id: string }>(
       `INSERT INTO ingestion_runs (museum_id,status) VALUES ($1,'running') RETURNING id`, [museum]);
     runId = run.rows[0].id;
-    const { rows, records } = await sourceRows(museum, file, snapshot, official);
+    const { rows, records } = await sourceRows(museum, file, snapshot, official, provider);
     if (rows.length === 0 && records.length === 0) throw new Error('來源回傳 0 筆資料，已停止匯入');
     await client.query('BEGIN');
     inTransaction = true;

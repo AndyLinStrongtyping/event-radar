@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { execFileSync } = require('node:child_process');
+const { execFileSync, spawn } = require('node:child_process');
 const { readFile, writeFile, mkdtemp, unlink, rmdir } = require('node:fs/promises');
 const { tmpdir } = require('node:os');
 const { join, resolve } = require('node:path');
@@ -42,6 +42,8 @@ async function main() {
   await testDb.query(await readFile(join(project, 'db/002_sources_and_changes.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/003_source_review.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/004_review_corrections.sql'), 'utf8'));
+  await testDb.query(await readFile(join(project, 'db/005_sync_attempts.sql'), 'utf8'));
+  await testDb.query(await readFile(join(project, 'db/006_nstm.sql'), 'utf8'));
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const [original] = JSON.parse(await readFile(join(project, 'test/fixtures/chimei.json'), 'utf8'));
 
@@ -169,6 +171,39 @@ async function main() {
     { cwd: project, env: seaEnv, encoding: 'utf8' });
   result = await testDb.query("SELECT visible FROM exhibitions WHERE museum_id='npm-north' AND source_key='04012832'");
   assert.equal(result.rows[0].visible, false, '館方連結改變時舊補正展覽必須隱藏');
+  const adminPort = 31000 + Math.floor(Math.random() * 2000);
+  const adminBase = `http://127.0.0.1:${adminPort}`;
+  const admin = spawn(process.execPath, ['--experimental-strip-types', 'src/admin-server.ts'], {
+    cwd: project, env: { ...seaEnv, EVENT_RADAR_ADMIN_PASSWORD: 'test-admin-password-24-characters', ADMIN_PORT: String(adminPort) },
+    stdio: 'ignore',
+  });
+  try {
+    let ready = false;
+    for (let attempt = 0; attempt < 30; attempt++) {
+      try { await fetch(adminBase); ready = true; break; } catch { await new Promise((resolve) => setTimeout(resolve, 100)); }
+    }
+    assert.equal(ready, true, '本機審核服務應可啟動');
+    let response = await fetch(`${adminBase}/record?museum=nmmba&key=secret`);
+    assert.equal(response.status, 401, '未登入不能讀取審核紀錄');
+    response = await fetch(`${adminBase}/login`, { method: 'POST',
+      headers: { 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'password=test-admin-password-24-characters' });
+    assert.equal(response.status, 403, '沒有同源 Origin 的 POST 必須拒絕');
+    response = await fetch(`${adminBase}/login`, { method: 'POST',
+      headers: { origin: adminBase, 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'password=test-admin-password-24-characters' });
+    assert.equal(response.status, 200);
+    const cookie = response.headers.get('set-cookie').split(';')[0];
+    response = await fetch(adminBase, { headers: { cookie } });
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /待審來源紀錄/);
+    response = await fetch(`${adminBase}/approve`, { method: 'POST',
+      headers: { origin: adminBase, cookie, 'content-type': 'application/x-www-form-urlencoded' },
+      body: 'csrf=wrong' });
+    assert.equal(response.status, 403, '未持有有效 CSRF token 不能建立補正');
+  } finally {
+    admin.kill();
+  }
   process.stdout.write('匯入回滾、同源與跨來源去重、欄位異動紀錄：通過\n');
 }
 

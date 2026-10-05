@@ -2,13 +2,13 @@
 
 | 優先 | 館別 | 官方入口 | 取得狀態 | 理由 |
 | --- | --- | --- | --- | --- |
-| 1 | 奇美博物館（臺南） | https://www.chimeimuseum.org/index.php/exhibition-event | 官網有特展頁及供奇美官網前端使用的內部資料呼叫；未找到對外公開的 API 文件或再利用授權。目前只有人工核對的一筆資料，尚未自動同步 | 使用者指定，國際特展有明確展期與票價 |
+| 1 | 奇美博物館（臺南） | https://www.chimeimuseum.org/index.php/exhibition-event | 館方公開 API 未確認。文化部 iCulture 展覽 JSON 已作本機**補充來源**，同展分段合併後再核對館方逐筆頁；未涵蓋完整清單 | 使用者指定，國際特展有明確展期與票價 |
 | 1 | 國立自然科學博物館（臺中） | https://data.gov.tw/dataset/7499 | 政府資料開放平臺提供可讀 JSON 特展資源；個人 API key 另候審查 | 科學與自然類特展 |
 | 1 | 國立臺灣博物館（臺北） | https://www.ntm.gov.tw/ | 官方展覽頁已找到，API 待查 | 自然、人文、建築等展覽 |
 | 1 | 國立故宮博物院北部院區（臺北） | https://odapi.npm.gov.tw/data/open/api/v1/exhibition/current.json | 官方公開 JSON 已接入本機；逐筆分院、驗證展期及隔離待審，尚未線上同步 | 故宮官方資料可能混入南院、過期及長期展示 |
 | 1 | 國立故宮博物院南部院區（嘉義） | https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3112 | 當期與預告官方頁已接入本機匯入；不是公開 API，線上排程尚未啟用 | 展名、展期、展廳與官方詳情連結可直接核對 |
 | 1 | 國立臺灣歷史博物館（臺南） | https://www.nmth.gov.tw/default.aspx | 官網已找到，API 待查 | 臺灣史主題 |
-| 2 | 國立科學工藝博物館（高雄） | https://websrv.nstm.gov.tw/OtherInfo/OpenData/ExhibitionInfoOpenData.ashx | 公開 JSON 已核對，但當期特展缺逐筆館方詳情網址，尚未接入 | 科學技術類與南部覆蓋 |
+| 2 | 國立科學工藝博物館（高雄） | https://websrv.nstm.gov.tw/OtherInfo/OpenData/ExhibitionInfoOpenData.ashx | 公開 JSON 已與[官方特展列表](https://www.nstm.gov.tw/ExhibitionList.aspx?ExhibitionType=2&Period=2&Pindex=1)展名、展期唯一比對後本機匯入；無法對應者隔離 | 科學技術類與南部覆蓋 |
 | 2 | 國立海洋生物博物館（屏東） | https://www.nmmba.gov.tw/OpenData.aspx?SN=BF6D6EB9CB6876BB | 官方公開 JSON 已接入本機；缺展期隔離待審，尚未線上同步 | 海洋生物特展及南部覆蓋 |
 | 2 | 國立臺灣科學教育館（臺北） | https://www.ntsec.gov.tw/ | 官網常設展與特展頁已找到，API 待查 | 人體、生態、物質科學與科技教育 |
 | 2 | 國立臺灣美術館（臺中） | https://www.ntmofa.gov.tw/ | 官網當期展覽頁已找到，API 待查 | 美術類與中部覆蓋 |
@@ -21,6 +21,7 @@
 - [官方特展列表](https://www.chimeimuseum.org/index.php/exhibition-event)公開顯示展名、簡介、展期與展覽連結。頁面程式會向官網自己的 `/exhibition-event/api` 發送帶 CSRF token 的 POST 請求；這是官網內部資料呼叫，不能據此稱為提供第三方使用的公開 API。
 - 官網 `robots.txt` 只列出 `/weyacms/` 與 `/admin/` 禁止擷取；robots 規則不是內容再利用授權。[主站著作權與隱私權頁](https://www.chimeimuseum.org/privacy)也未提供特展資料的開放授權或 API 條款。線上商店的使用條款適用於不同網域，不應直接當成主站特展資料條款。
 - 因此目前不依賴內部端點建置每日同步。先維持有官方連結、最後核對時間的人工資料；下一步向館方確認是否提供正式資料介接或再利用方式。若採公開頁面定期讀取，也須先確認可接受的方式，僅保存必要欄位，遇格式變動時停止更新並標記過期。
+- 2026-10-05 新增[文化部 iCulture 展覽 JSON](https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindTypeJ&category=6)作補充來源。只挑主辦單位含奇美、官方逐筆網址為奇美特展頁且館方頁可核對完整展期者；相鄰分段合併。這是文化部彙整資料，不是奇美官方 API，也未證明涵蓋所有奇美展覽。實測 10 筆相關紀錄，1 筆合併連至既有展覽、8 筆隔離。
 - 2026-10-04 再核對：`/exhibition-event` 與 `/index.php/exhibition-event` 都是官方特展頁，但初始 HTML 的展覽卡是前端模板（例如 `${item.title}`），單純定期下載該頁無法可靠取得完整展覽清單。可先規劃每週一次的低頻變更檢查，供人工核對新特展；正式自動匯入仍取決於可持續且可接受的資料取得方式。Event Radar v0.1 僅收特展，音樂節、工作坊與售票名額不混入特展資料。
 - 變更檢查若日後實作，應使用可辨識的 User-Agent、遵守 `robots.txt` 與伺服器回應，限制請求數及逾時；不以冒充 Chrome 標頭或固定延遲作為取得資料的保證。這也不表示奇美特展已啟用自動同步。
 
@@ -32,7 +33,7 @@
 
 科博館導覽的植物園段落依[植物園官方介紹](https://www.nmns.edu.tw/ch/exhibitions/galleries/botanical-garden/index.html)與[亞馬遜河魚展示](https://www.nmns.edu.tw/ch/exhibitions/galleries/botanical-garden/amazonslargestfish/)撰寫；館方目前列有食人魚。[箭毒蛙展示的館方專文](https://www.nmns.edu.tw/ch/exhibitions/galleries/botanical-garden/flowers/Theme-F00608/)發表已久，因此頁面明確提醒是否仍展出要以當日公告為準。故宮南院導覽依[亞洲茶文化](https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=9963f5e2-df38-4cb3-bfdf-b689c14ca3f7)、[佛教藝術](https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=be0bda12-a244-4702-9c92-059f13f33c3b)與[亞洲織品展](https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=176c8367-b382-40d9-a462-412f512e97cf&State=&appname=)的館方說明整理；織品展件與展名可能輪替。南院有明確起訖日期的展覽已由官方頁匯入本機資料庫，開放式常設展廳仍只保留在人工導覽。
 
-科工館導覽依官方[動力與機械](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=e0da1041-aee2-4627-b98a-13c78c9f0b68)、[電信@臺灣](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=422a9a67-5ad4-460b-9e01-7633be54ebcf)及[臺灣工業史蹟廳](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=0d760d96-a968-4791-9d54-4d0109f7a286)整理。科教館導覽依官方[常設展列表](https://www.ntsec.gov.tw/article/list.aspx?a=27)選取 3–6 樓的[人體奧妙](https://www.ntsec.gov.tw/article/detail.aspx?a=5106)、[生物多樣性](https://www.ntsec.gov.tw/article/detail.aspx?a=78)、[物質科學](https://www.ntsec.gov.tw/article/detail.aspx?a=64)與[半導體未來館](https://www.ntsec.gov.tw/article/detail.aspx?a=5117)。兩館導覽都是人工靜態內容，兩館近期特展尚未匯入資料庫。
+科工館導覽依官方[動力與機械](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=e0da1041-aee2-4627-b98a-13c78c9f0b68)、[電信@臺灣](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=422a9a67-5ad4-460b-9e01-7633be54ebcf)及[臺灣工業史蹟廳](https://www.nstm.gov.tw/Exhibition.aspx?KeyID=0d760d96-a968-4791-9d54-4d0109f7a286)整理。科教館導覽依官方[常設展列表](https://www.ntsec.gov.tw/article/list.aspx?a=27)選取 3–6 樓的[人體奧妙](https://www.ntsec.gov.tw/article/detail.aspx?a=5106)、[生物多樣性](https://www.ntsec.gov.tw/article/detail.aspx?a=78)、[物質科學](https://www.ntsec.gov.tw/article/detail.aspx?a=64)與[半導體未來館](https://www.ntsec.gov.tw/article/detail.aspx?a=5117)。兩館導覽都是人工靜態內容；科工館限期特展另有本機匯入器，科教館近期特展尚未匯入資料庫。
 
 ## 常設展特色線索的依據
 
@@ -53,6 +54,8 @@
 | 奇美 | 樂器廳內景 | [Wikimedia Commons 原始檔案頁](https://commons.wikimedia.org/wiki/File:Interiors_of_the_Chi_Mei_Museum-41.2023-07-14.jpg)，攝影者阿道，[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)；為 2023 年展場影像，展件可能調整 | 使用 Wikimedia 產生的 1280px 縮圖，存為 `web/assets/chimei-instrument-hall-commons.jpg`；頁面可能裁切顯示 |
 | 故宮南院 | 南院一館外觀 | [Wikimedia Commons 原始檔案頁](https://commons.wikimedia.org/wiki/File:20250718_102929_NPMSB_Museum_1_building.jpg)，攝影者 Saimmx，[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)；非展廳照片 | 使用 1280px 縮圖，存為 `web/assets/npm-south-building-commons.jpg`；頁面可能裁切顯示 |
 | 故宮南院 | 越南黎朝白瓷印花菊花碗 | [國立故宮博物院 Open Data 影像於 Wikimedia Commons 的檔案頁](https://commons.wikimedia.org/wiki/File:Teacup_impressed_with_chrysanthemum_decoration_in_white_glaze.tif)，[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)；不代表當期在南院展出 | 使用 Commons 由原 TIFF 產生的 1280px JPG 縮圖，存為 `web/assets/npm-teacup-commons.jpg`；頁面可能裁切顯示 |
+| 故宮北院 | 主建築與入口階梯外觀 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:National_Palace_Museum,_Taipei.jpg)，攝影 Jason Zhang，[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)；2017 年館舍照片，非當期展覽 | 1280px 縮圖 `web/assets/npm-north-building-commons.jpg`，版面可能裁切顯示 |
+| 海生館 | 世界水域館海藻森林展示缸 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:Kelp_Forests,_National_Museum_of_Marine_Biology_and_Aquarium_20130825.jpg)，攝影 Mk2010，[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)；2013 年展場照片，不代表今日展示狀態 | 1280px 縮圖 `web/assets/nmmba-kelp-commons.jpg`，版面可能裁切顯示 |
 
 科博館[網站宣告](https://www.nmns.edu.tw/ch/privacy-policy/index.html)將可開放的圖像導向政府資料開放平臺，臺博館另設[圖像授權申請](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5558)，奇美[會員條款](https://www.chimeimuseum.org/memberAccept)也保留官網圖片權利；因此這些館的官網照片尚未複製到本站。科博館木乃伊與奇美樂器廳照片是第三方於 Wikimedia Commons 授權發布的作品；故宮茶碗影像則來自故宮 Open Data，使用依據皆逐張核對。不能因圖片可在網頁看到，就推定可供本網站重新發布。
 
