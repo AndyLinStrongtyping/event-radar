@@ -1,4 +1,4 @@
-name: Daily museum exhibition sync
+name: 每日博物館特展同步
 
 on:
   schedule:
@@ -15,6 +15,7 @@ concurrency:
 
 jobs:
   sync-nmns:
+    name: 同步科博館
     if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -23,70 +24,88 @@ jobs:
       NMNS_API_KEY: ${{ secrets.NMNS_API_KEY }}
       NMNS_OPEN_DATA_URL: ${{ secrets.NMNS_OPEN_DATA_URL }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: 取得專案程式碼
+        uses: actions/checkout@v7
+      - name: 設定 Node.js 24
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - name: Install dependencies
+      - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Sync official NMNS exhibition data
+      - name: 匯入科博館官方特展
         run: npm run sync -- --source nmns
   sync-npm-south:
+    name: 同步故宮南院
     if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: 取得專案程式碼
+        uses: actions/checkout@v7
+      - name: 設定 Node.js 24
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Sync official NPM South exhibition pages
+      - name: 安裝專案依賴
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: 匯入故宮南院官方展覽
         run: npm run sync -- --source npm-south
 
   sync-npm-north:
+    name: 同步故宮北院
     if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: 取得專案程式碼
+        uses: actions/checkout@v7
+      - name: 設定 Node.js 24
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Sync official NPM exhibition JSON for North Branch
+      - name: 安裝專案依賴
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: 匯入故宮北院官方展覽
         run: npm run sync -- --source npm-north
 
   sync-nmmba:
+    name: 同步海生館
     if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: 取得專案程式碼
+        uses: actions/checkout@v7
+      - name: 設定 Node.js 24
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Sync NMMBA exhibition open data
+      - name: 安裝專案依賴
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: 匯入海生館官方特展
         run: npm run sync -- --source nmmba
 
   sync-nstm:
+    name: 同步科工館
     if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: 取得專案程式碼
+        uses: actions/checkout@v7
+      - name: 設定 Node.js 24
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: Sync NSTM open data checked against official detail pages
+      - name: 安裝專案依賴
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: 匯入科工館官方展覽
         run: npm run sync -- --source nstm

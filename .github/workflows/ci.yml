@@ -1,4 +1,4 @@
-name: Verify Event Radar
+name: 驗證 Event Radar
 
 on:
   push:
@@ -9,6 +9,7 @@ permissions:
 
 jobs:
   test:
+    name: 程式與資料庫測試
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -25,11 +26,17 @@ jobs:
     env:
       DATABASE_URL: postgres://event_radar:event_radar@localhost:5432/event_radar
     steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
+      - name: 取得專案程式碼
+        uses: actions/checkout@v7
+      - name: 設定 Node.js 24
+        uses: actions/setup-node@v7
         with:
           node-version: '24'
-      - run: npm ci --ignore-scripts --no-audit --no-fund
-      - run: npm run typecheck
-      - run: npm test
-      - run: npm run test:integration
+      - name: 安裝專案依賴
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: 檢查 TypeScript 型別
+        run: npm run typecheck
+      - name: 執行單元測試
+        run: npm test
+      - name: 執行資料庫整合測試
+        run: npm run test:integration
