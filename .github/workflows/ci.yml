@@ -38,5 +38,5 @@ jobs:
         run: npm run typecheck
       - name: 執行單元測試
         run: npm test
-      - name: 執行資料庫整合測試
+      - name: 驗證資料庫匯入與公開 API 回應格式
         run: npm run test:integration

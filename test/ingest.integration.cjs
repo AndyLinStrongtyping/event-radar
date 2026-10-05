@@ -34,6 +34,99 @@ async function fixture(name, value) {
   return path;
 }
 
+function assertExhibition(value) {
+  assert.equal(typeof value.id, 'string');
+  assert.match(value.id, /^[0-9a-f-]{36}$/i);
+  for (const field of ['title', 'museumId', 'museumName', 'city', 'sourceStatus', 'sourceUrl', 'startDate', 'endDate', 'lastSeenAt']) {
+    assert.equal(typeof value[field], 'string', `${field} 必須是字串`);
+  }
+  for (const field of ['venue', 'priceNote', 'summary']) {
+    assert.ok(value[field] === null || typeof value[field] === 'string', `${field} 必須是字串或 null`);
+  }
+  assert.match(value.startDate, /^\d{4}-\d{2}-\d{2}$/);
+  assert.match(value.endDate, /^\d{4}-\d{2}-\d{2}$/);
+  assert.ok(value.endDate >= value.startDate);
+  assert.equal(typeof value.isSample, 'boolean');
+  assert.match(value.sourceUrl, /^https:\/\//);
+  assert.ok(!Number.isNaN(Date.parse(value.lastSeenAt)));
+}
+
+async function checkPublicApiContract() {
+  const port = 33000 + Math.floor(Math.random() * 2000);
+  const base = `http://127.0.0.1:${port}`;
+  const server = spawn(process.execPath, ['--experimental-strip-types', 'src/server.ts'], {
+    cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href, PORT: String(port), NMNS_API_KEY: '' },
+    stdio: 'ignore',
+  });
+  async function get(path, status = 200) {
+    const response = await fetch(base + path);
+    assert.equal(response.status, status, `${path} 應回傳 ${status}`);
+    assert.match(response.headers.get('content-type') ?? '', /^application\/json/);
+    return response.json();
+  }
+  try {
+    let ready = false;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      try { await get('/health'); ready = true; break; }
+      catch { await new Promise((resolve) => setTimeout(resolve, 100)); }
+    }
+    assert.equal(ready, true, '公開 API 應可啟動並連接測試資料庫');
+    assert.deepEqual(await get('/health'), { status: 'ok', database: 'ok' });
+
+    const museums = await get('/museums');
+    assert.ok(Array.isArray(museums.items) && museums.items.length > 0);
+    for (const museum of museums.items) {
+      for (const field of ['id', 'name', 'city', 'homepageUrl', 'sourceStatus']) {
+        assert.equal(typeof museum[field], 'string', `museum.${field} 必須是字串`);
+      }
+      assert.ok(museum.lastSuccessAt === null || !Number.isNaN(Date.parse(museum.lastSuccessAt)));
+    }
+
+    const list = await get('/exhibitions?from=2026-01-01&to=2027-12-31&museum=chimei&limit=2');
+    assert.equal(typeof list.total, 'number');
+    assert.equal(list.limit, 2);
+    assert.equal(list.offset, 0);
+    assert.ok(Array.isArray(list.items) && list.items.length > 0);
+    assert.ok(list.items.length <= list.limit);
+    list.items.forEach(assertExhibition);
+    assert.ok(list.items.every((item) => item.museumId === 'chimei' && !item.isSample));
+
+    const detail = await get(`/exhibitions/${list.items[0].id}`);
+    assertExhibition(detail);
+    assert.deepEqual(detail, list.items[0], '清單與詳情的 Exhibition 格式需一致');
+    const changes = await get(`/exhibitions/${detail.id}/changes`);
+    assert.ok(Array.isArray(changes.items));
+    assert.ok(changes.items.length > 0, '測試資料須有可驗證的異動紀錄');
+    for (const change of changes.items) {
+      assert.equal(typeof change.field, 'string');
+      assert.ok(change.oldValue === null || typeof change.oldValue === 'string');
+      assert.ok(change.newValue === null || typeof change.newValue === 'string');
+      assert.ok(!Number.isNaN(Date.parse(change.detectedAt)));
+    }
+
+    const empty = await get('/exhibitions?from=2026-01-01&museum=chimei&q=___no_such_exhibition___');
+    assert.deepEqual(empty.items, []);
+    assert.equal(empty.total, 0);
+    const visit = await get('/visit-status?museum=chimei&date=2026-10-07');
+    assert.equal(visit.museumId, 'chimei');
+    assert.equal(visit.date, '2026-10-07');
+    assert.ok(['open', 'closed', 'unknown'].includes(visit.status));
+    assert.equal(typeof visit.message, 'string');
+    assert.match(visit.sourceUrl, /^https:\/\//);
+
+    for (const path of ['/exhibitions?limit=0', '/exhibitions?from=2026-02-30',
+      '/visit-status?museum=chimei&date=bad']) {
+      const error = await get(path, 400);
+      assert.equal(error.error.code, 'BAD_REQUEST');
+      assert.equal(typeof error.error.message, 'string');
+    }
+    const missing = await get('/exhibitions/00000000-0000-0000-0000-000000000000', 404);
+    assert.equal(missing.error.code, 'NOT_FOUND');
+  } finally {
+    server.kill();
+  }
+}
+
 async function main() {
   await maintenance.query(`CREATE DATABASE "${testDbName}"`);
   created = true;
@@ -214,7 +307,8 @@ async function main() {
   } finally {
     admin.kill();
   }
-  process.stdout.write('匯入回滾、同源與跨來源去重、欄位異動紀錄：通過\n');
+  await checkPublicApiContract();
+  process.stdout.write('匯入回滾、去重、欄位異動及公開 API 回應契約：通過\n');
 }
 
 main().catch((error) => {
