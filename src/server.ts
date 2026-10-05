@@ -2,6 +2,7 @@ import { createServer, type ServerResponse } from 'node:http';
 import { readFile } from 'node:fs/promises';
 import process from 'node:process';
 import pg from 'pg';
+import { visitStatus, validVisitDate } from './visit-status.ts';
 
 if (!process.env.DATABASE_URL) throw new Error('請先設定 DATABASE_URL');
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -82,6 +83,17 @@ const server = createServer(async (request, response) => {
       const result = await pool.query(`SELECT id,name,city,homepage_url AS "homepageUrl",
         source_status AS "sourceStatus",last_success_at AS "lastSuccessAt" FROM museums ORDER BY name`);
       json(response, 200, { items: result.rows });
+      return;
+    }
+    if (url.pathname === '/visit-status') {
+      const museum = url.searchParams.get('museum') ?? '';
+      const requestedDate = url.searchParams.get('date') ?? '';
+      if (!validVisitDate(requestedDate) || !/^[a-z0-9-]{1,40}$/.test(museum)) {
+        json(response, 400, { error: { code: 'BAD_REQUEST', message: '館所或日期無效' } });
+        return;
+      }
+      try { json(response, 200, await visitStatus(museum, requestedDate)); }
+      catch { json(response, 400, { error: { code: 'BAD_REQUEST', message: '館所或日期無效' } }); }
       return;
     }
     if (url.pathname === '/exhibitions') {

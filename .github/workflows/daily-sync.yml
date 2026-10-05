@@ -20,6 +20,7 @@ jobs:
     timeout-minutes: 10
     env:
       DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      NMNS_API_KEY: ${{ secrets.NMNS_API_KEY }}
       NMNS_OPEN_DATA_URL: ${{ secrets.NMNS_OPEN_DATA_URL }}
     steps:
       - uses: actions/checkout@v7

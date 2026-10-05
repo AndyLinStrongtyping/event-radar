@@ -3,7 +3,7 @@
 | 優先 | 館別 | 官方入口 | 取得狀態 | 理由 |
 | --- | --- | --- | --- | --- |
 | 1 | 奇美博物館（臺南） | https://www.chimeimuseum.org/index.php/exhibition-event | 館方公開 API 未確認。文化部 iCulture 展覽 JSON 已作本機**補充來源**，同展分段合併後再核對館方逐筆頁；未涵蓋完整清單 | 使用者指定，國際特展有明確展期與票價 |
-| 1 | 國立自然科學博物館（臺中） | https://data.gov.tw/dataset/7499 | 政府資料開放平臺提供可讀 JSON 特展資源；個人 API key 另候審查 | 科學與自然類特展 |
+| 1 | 國立自然科學博物館（臺中） | https://www.nmns.edu.tw/ch/about/info-central/opendata/index.html | 個人金鑰已核發；本機實測展覽 API 7 筆與未來一週開放時間 API。原公開 JSON 保留備援，線上排程未啟用 | 科學與自然類特展及逐日休館提醒 |
 | 1 | 國立臺灣博物館（臺北） | https://www.ntm.gov.tw/ | 官方展覽頁已找到，API 待查 | 自然、人文、建築等展覽 |
 | 1 | 國立故宮博物院北部院區（臺北） | https://odapi.npm.gov.tw/data/open/api/v1/exhibition/current.json | 官方公開 JSON 已接入本機；逐筆分院、驗證展期及隔離待審，尚未線上同步 | 故宮官方資料可能混入南院、過期及長期展示 |
 | 1 | 國立故宮博物院南部院區（嘉義） | https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3112 | 當期與預告官方頁已接入本機匯入；不是公開 API，線上排程尚未啟用 | 展名、展期、展廳與官方詳情連結可直接核對 |

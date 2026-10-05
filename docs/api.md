@@ -6,6 +6,7 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 | --- | --- | --- |
 | GET | `/health` | 檢查服務與資料庫 |
 | GET | `/museums` | 博物館及來源狀態 |
+| GET | `/visit-status?museum=<id>&date=YYYY-MM-DD` | 指定日期的休館提醒與館方核對入口 |
 | GET | `/exhibitions` | 搜尋特展 |
 | GET | `/exhibitions/:id` | 特展詳情 |
 | GET | `/exhibitions/:id/changes` | 欄位異動紀錄（最近 100 筆） |
@@ -15,5 +16,7 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 400：參數錯誤；404：找不到資源；500：伺服器錯誤。v0.1 不開放公開寫入 API，匯入由 CLI 執行。
 
 `GET /exhibitions/:id` 同樣預設隱藏模擬資料；開發時可加 `?includeSample=true` 查看。
+
+`GET /visit-status?museum=nmns&date=2026-10-05` 回傳 `museumId,date,status,message,sourceUrl`，若成功核對科博館 API 另有 `checkedAt`。`status` 為 `open`、`closed` 或 `unknown`；科博館僅在金鑰可用且日期落於 API 未來一週資料內才宣稱開／休館。奇美週三依館方規則回 `closed`，其他日期回 `unknown` 並提供 `newsUrl` 查看臨時公告。其他館目前只有官方網站連結與 `unknown`，不將特展展期推論為開館日。
 
 `sourceStatus` 分為 `curated`（人工核對）、`open_data`（官方公開資料）、`official_page`（館方公開頁同步）與 `planned`（尚未接入）。`GET /exhibitions/:id/changes` 回傳 `{ "items": [{ "field": "endDate", "oldValue": "2026-12-06", "newValue": "2026-12-07", "detectedAt": "..." }] }`；沒有異動時為空陣列，不表示資料未曾被核對。

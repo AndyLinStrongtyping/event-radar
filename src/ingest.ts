@@ -4,6 +4,7 @@ import pg from 'pg';
 import { changedValues, duplicateCandidates, type ExistingExhibition } from './dedupe.ts';
 import { normalizeExhibition, type ExhibitionDraft } from './normalize.ts';
 import { normalizeNmnsFeed } from './sources/nmns.ts';
+import { fetchNmnsApi } from './nmns-api.ts';
 import { mergeNpmSouthPages, npmSouthPages } from './sources/npm-south.ts';
 import { classifyNmmbaFeed, nmmbaDataUrl, type SourceRecord } from './sources/nmmba.ts';
 import { classifyNpmNorthFeed, npmNorthDataUrl } from './sources/npm-north.ts';
@@ -72,8 +73,11 @@ async function sourceRows(museum: string, file: string | undefined, snapshot: st
     return { rows: verifiedMocChimeiRows(groups, pages), records };
   }
   if (museum === 'nmns') {
+    if (process.env.NMNS_API_KEY) {
+      return { rows: normalizeNmnsFeed(await fetchNmnsApi('Exhibition/list')), records: [] };
+    }
     const source = process.env.NMNS_OPEN_DATA_URL;
-    if (!source) throw new Error('請設定 NMNS_OPEN_DATA_URL');
+    if (!source) throw new Error('請設定 NMNS_API_KEY 或 NMNS_OPEN_DATA_URL');
     const url = new URL(source);
     if (url.protocol !== 'https:' || url.hostname !== 'www.nmns.edu.tw') throw new Error('來源網址必須是科博館官方 HTTPS 網域');
     return { rows: normalizeNmnsFeed(JSON.parse(await fetchSource(url.href, 'www.nmns.edu.tw'))), records: [] };

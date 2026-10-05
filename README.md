@@ -1,6 +1,6 @@
 # Event Radar｜臺灣博物館特展情報
 
-**2026-10-05 第三階段更新：**加入僅限本機的審核頁、同步嘗試紀錄與失敗重跑、科工館官方資料匯入、文化部奇美補充來源及兩張有授權的導覽照片。詳細狀態見[統一進度](STATUS.md)與[第三階段紀錄](docs/stage-2026-10-05-phase3.md)。
+**2026-10-05 第四階段更新：**科博館個人 API Key 已在本機驗證並接入當期展覽與未來一週開放時間；搜尋頁新增休館提醒與奇美館方行事曆／消息入口。詳細狀態見[統一進度](STATUS.md)與[第四階段紀錄](docs/stage-2026-10-05-phase4.md)。
 
 目前做到哪裡、哪些尚未接入：請先看 [統一進度](STATUS.md)。
 
@@ -15,7 +15,7 @@
 - **首批來源目標**：奇美博物館、國立自然科學博物館、國立臺灣博物館、國立故宮博物院（北／南院）、國立臺灣歷史博物館。
 - **第二批**：國立科學工藝博物館、國立臺灣科學教育館、國立臺灣美術館、臺南市美術館。
 - 奇美已列入資料來源表。官網有特展頁；目前未查到館方公開活動 API 文件。文化部 iCulture 展覽 JSON 可作不完整的補充來源，分段展期須與奇美官方逐筆頁交叉核對；既有人工整理資料保留。
-- 科博館的[官方公開特展 JSON 資料集](https://data.gov.tw/dataset/7499)可先介接；個人 API key 另候審查。公開資源網址從政府平台取得，放在本機 `NMNS_OPEN_DATA_URL`，不硬寫在程式。私人金鑰也不提交到 Git。
+- 科博館的[官方 OpenAPI](https://www.nmns.edu.tw/ch/about/info-central/opendata/index.html)個人金鑰已核發並在本機驗證。`NMNS_API_KEY` 優先供展覽與未來一週開放時間使用；無金鑰時展覽匯入仍可使用原 `NMNS_OPEN_DATA_URL`，開放時間只顯示官網核對入口。金鑰只存在 Git 忽略的本機 `.env`，不提交到 Git。
 - 故宮南院的[當期展覽](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3112)與[展覽預告](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3111)是第三個真實來源。匯入有起訖日期的特別展覽與限期輪替展，保留官方詳情連結；無結束日的常設展與年度期程不列入搜尋。這是官方網頁同步，不是館方提供的公開 API。
 - 故宮北院[公開展覽 JSON](https://odapi.npm.gov.tw/data/open/api/v1/exhibition/current.json)與海生館[公開特展 JSON](https://www.nmmba.gov.tw/OpenData.aspx?SN=BF6D6EB9CB6876BB)已接入本機。逐筆保留原始值，分流有效、待審與略過資料；故宮按院區與展期保守篩選，海生館缺起訖日不推測為常設展。用 `npm run review -- --source nmmba` 或 `--source npm-north` 查看待審原因。
 - 首頁的「常設展導覽」另有[奇美](web/guides/chimei.html)、[科博館（含植物園）](web/guides/nmns.html)、[臺博館](web/guides/ntm.html)、[臺史博](web/guides/nmth.html)、[故宮南院](web/guides/npm-south.html)、[科工館](web/guides/nstm.html)、[科教館](web/guides/ntsec.html)、[故宮北院](web/guides/npm-north.html)與[海生館](web/guides/nmmba.html)九頁人工編寫介紹。多頁附照片及[圖片依據](docs/sources.md#常設展照片來源與使用)。它們不是 API 同步資料，展件與開放狀態須以館方最新公告為準。臺博館、臺史博與科教館的近期特展尚未接入本站資料庫。未來 React 視覺改版方向見[設計筆記](docs/react-visual-direction.md)。
@@ -52,8 +52,9 @@ npm test
 npm run test:integration
 npm run ingest -- --file test/fixtures/chimei.json --source chimei
 npm run ingest -- --file test/fixtures/nmns-mock.json --source nmns
-# 從政府資料開放平台的「JSON」資源連結複製公開 URL 到本機環境變數後：
-$env:NMNS_OPEN_DATA_URL='<官方 JSON 資源網址>'
+# 私人金鑰可設在 Git 忽略的 .env：NMNS_API_KEY=<金鑰>
+# 若沒有金鑰，展覽匯入可用政府資料開放平臺的 JSON 資源 URL：
+# $env:NMNS_OPEN_DATA_URL='<官方 JSON 資源網址>'
 npm run ingest -- --source nmns --official
 npm run ingest -- --source npm-south --official
 npm run ingest -- --source npm-north --official
@@ -71,4 +72,4 @@ npm start
 
 ## 已完成與未完成
 
-已完成本機驗證：規格、schema 與 migration、五館公開資料或官方頁 adapter、文化部奇美補充 adapter、查詢 API、網站介面、原始資料隔離、密碼保護的本機審核頁、有限次來源重試與嘗試紀錄、同館跨來源保守去重、欄位異動歷史、單元與資料庫整合測試。未完成：科博館私人 Key 驗證、完整奇美自動來源、持久化 Queue／worker、線上每日同步、跨館同展關聯、通知、公開部署與 AWS。
+已完成本機驗證：規格、schema 與 migration、科博館私人 Key 展覽／開放時間 API、其他四館公開資料或官方頁 adapter、文化部奇美補充 adapter、查詢 API、休館提醒介面、原始資料隔離、密碼保護的本機審核頁、有限次來源重試與嘗試紀錄、同館跨來源保守去重、欄位異動歷史、單元與資料庫整合測試。未完成：奇美新聞自動同步、其他館逐日休館資料、持久化 Queue／worker、線上每日同步、跨館同展關聯、通知、公開部署與 AWS。

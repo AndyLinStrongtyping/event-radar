@@ -57,6 +57,9 @@
         <label>參觀日期<input type="date" name="from" aria-label="從此日期開始查看"></label>
         <button type="submit">搜尋特展 <span aria-hidden="true">↗</span></button>
       </form>
+      <aside id="visit-status" class="visit-status" aria-live="polite">
+        <strong>出發前核對開館資訊</strong><p>選擇博物館與參觀日期後，可查看休館提醒及館方公告入口。</p>
+      </aside>
       <div class="results-line"><p id="result-count" aria-live="polite">載入特展中…</p><label class="sample-toggle"><input id="include-sample" type="checkbox">顯示測試資料</label></div>
       <div id="results" class="cards" aria-live="polite"></div>
       <div id="empty" class="empty" hidden>目前沒有符合條件的特展。試試其他城市或日期。</div>

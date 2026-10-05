@@ -5,8 +5,10 @@ const empty = document.querySelector('#empty');
 const sampleToggle = document.querySelector('#include-sample');
 const citySelect = form.elements.city;
 const museumSelect = form.elements.museum;
+const visitPanel = document.querySelector('#visit-status');
 let availableMuseums = [];
 let searchGeneration = 0;
+let visitGeneration = 0;
 
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
@@ -55,6 +57,7 @@ async function loadMuseums() {
 }
 
 async function search() {
+  updateVisitStatus();
   const generation = ++searchGeneration;
   count.textContent = '搜尋中…';
   const params = new URLSearchParams();
@@ -76,6 +79,34 @@ async function search() {
     count.textContent = error.message;
     results.replaceChildren();
     empty.hidden = true;
+  }
+}
+
+async function updateVisitStatus() {
+  const generation = ++visitGeneration;
+  const museum = museumSelect.value;
+  if (!museum) {
+    visitPanel.innerHTML = '<strong>出發前核對開館資訊</strong><p>選擇博物館與參觀日期後，可查看休館提醒及館方公告入口。</p>';
+    return;
+  }
+  const date = form.elements.from.value || new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(new Date());
+  visitPanel.innerHTML = '<strong>開館資訊核對中…</strong>';
+  try {
+    const response = await fetch(`/visit-status?${new URLSearchParams({ museum, date })}`);
+    if (!response.ok) throw new Error('無法取得開館資訊');
+    const info = await response.json();
+    if (generation !== visitGeneration) return;
+    const source = new URL(info.sourceUrl);
+    if (source.protocol !== 'https:') throw new Error('來源網址無效');
+    const news = info.newsUrl ? new URL(info.newsUrl) : null;
+    visitPanel.className = `visit-status visit-${info.status}`;
+    visitPanel.innerHTML = `<strong>${info.status === 'closed' ? '休館提醒' : info.status === 'open' ? '館方行事曆顯示開館' : '請向館方確認'}</strong>
+      <p>${escapeHtml(info.message)}</p><div class="visit-links"><a href="${escapeHtml(source.href)}" target="_blank" rel="noopener noreferrer">查看館方開放資訊 ↗</a>${news?.protocol === 'https:' ? `<a href="${escapeHtml(news.href)}" target="_blank" rel="noopener noreferrer">查看奇美館方訊息 ↗</a>` : ''}</div>
+      ${info.checkedAt ? `<small>API 核對時間：${escapeHtml(new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(info.checkedAt)))}</small>` : ''}`;
+  } catch {
+    if (generation === visitGeneration) visitPanel.innerHTML = '<strong>開館資訊暫時無法核對</strong><p>請查看館方最新公告後再出發。</p>';
   }
 }
 

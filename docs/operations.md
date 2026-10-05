@@ -6,10 +6,10 @@
 
 1. 專案放到獨立 GitHub repo 的預設分支。
 2. 建立可從 GitHub Actions 連線的 PostgreSQL，先執行 `db/001_init.sql`，再執行 `npm run migrate`。
-3. Repository secrets 設 `DATABASE_URL` 與 `NMNS_OPEN_DATA_URL`。後者從 [政府資料開放平臺的科博館 JSON 資源](https://data.gov.tw/dataset/7499)複製；URL 可能變動，需追蹤。個人申請的 API key 暫不需要。
+3. Repository secrets 設 `DATABASE_URL` 與 `NMNS_API_KEY`。後者只在決定啟用線上同步時設定，切勿寫入程式碼、文件或 workflow 日誌；`NMNS_OPEN_DATA_URL` 可作展覽匯入的無金鑰備援，不能提供逐日開放時間。
 4. Repository variable 設 `EVENT_RADAR_SYNC_ENABLED=true`，先手動執行一次並確認 `ingestion_runs` 與 `/health`，才依排程運作。
 
-每日同步 workflow 定義五個相互獨立的工作：科博館公開 JSON、故宮南院官方當期／預告頁、故宮北院公開 JSON、海生館公開 JSON、科工館公開 JSON 加官方特展列表核對。文化部奇美資料目前只在本機手動匯入，因官方 OpenAPI 未確認分頁及完整涵蓋率。匯入先驗證整批資料，再在交易中寫入；來源為空、頁面格式改變或任何資料列錯誤時，交易回滾並將 `ingestion_runs` 記為失敗，`last_success_at` 不前進。故宮南院只收有起訖日期的展覽，跨當期與預告頁以官方詳情網址合併。
+每日同步 workflow 定義五個相互獨立的工作：科博館官方 OpenAPI（有 Key 時優先；公開 JSON 備援）、故宮南院官方當期／預告頁、故宮北院公開 JSON、海生館公開 JSON、科工館公開 JSON 加官方特展列表核對。文化部奇美資料目前只在本機手動匯入，因官方 OpenAPI 未確認分頁及完整涵蓋率。匯入先驗證整批資料，再在交易中寫入；來源為空、頁面格式改變或任何資料列錯誤時，交易回滾並將 `ingestion_runs` 記為失敗，`last_success_at` 不前進。故宮南院只收有起訖日期的展覽，跨當期與預告頁以官方詳情網址合併。
 
 本機 `npm run sync:status` 可查最新嘗試、最近成功時間、七日失敗／重試次數和待審量；`npm run sync:failed -- --source <館別>` 只在該來源最近嘗試失敗時重跑。`sync_attempts` 是持久化嘗試日誌，尚無工作佇列、死信佇列或主動告警。沒有嘗試紀錄也不能當作成功。
 

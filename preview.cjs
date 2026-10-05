@@ -54,6 +54,17 @@ createServer(async (request, response) => {
       response.end(JSON.stringify({ items: museums }));
       return;
     }
+    if (url.pathname === '/visit-status') {
+      const { visitStatus } = await import('./src/visit-status.ts');
+      const museum = url.searchParams.get('museum') || '';
+      const date = url.searchParams.get('date') || '';
+      try { response.end(JSON.stringify(await visitStatus(museum, date))); }
+      catch {
+        response.statusCode = 400;
+        response.end(JSON.stringify({ error: { code: 'BAD_REQUEST', message: '館所或日期無效' } }));
+      }
+      return;
+    }
     if (url.pathname === '/exhibitions') {
       const data = JSON.parse(await readFile(join(root, 'demo.json'), 'utf8'));
       const q = url.searchParams;
