@@ -201,6 +201,16 @@ async function main() {
       headers: { origin: adminBase, cookie, 'content-type': 'application/x-www-form-urlencoded' },
       body: 'csrf=wrong' });
     assert.equal(response.status, 403, '未持有有效 CSRF token 不能建立補正');
+    response = await fetch(`${adminBase}/login`, { method: 'POST',
+      headers: { origin: 'null', 'sec-fetch-site': 'same-origin',
+        'content-type': 'application/x-www-form-urlencoded' },
+      body: 'password=test-admin-password-24-characters' });
+    assert.equal(response.status, 200, '同站點瀏覽器的 null Origin 表單可以登入');
+    response = await fetch(`${adminBase}/login`, { method: 'POST',
+      headers: { origin: 'null', 'sec-fetch-site': 'cross-site',
+        'content-type': 'application/x-www-form-urlencoded' },
+      body: 'password=test-admin-password-24-characters' });
+    assert.equal(response.status, 403, '跨站點的 null Origin 表單仍須拒絕');
   } finally {
     admin.kill();
   }

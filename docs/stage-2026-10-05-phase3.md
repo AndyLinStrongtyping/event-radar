@@ -9,11 +9,12 @@
 3. 科工館採[官方展示廳公開 JSON](https://websrv.nstm.gov.tw/OtherInfo/OpenData/ExhibitionInfoOpenData.ashx)加[官方當期特展列表](https://www.nstm.gov.tw/ExhibitionList.aspx?ExhibitionType=2&Period=2&Pindex=1)交叉核對。只有展名與展期唯一吻合，才存入逐筆館方詳情網址；其餘隔離。2026-10-05 本機實測 8 筆尚未結束的特展候選，7 筆匯入、1 筆待審；第二次經 `sync` 執行為 7 筆不變，成功嘗試有日誌。
 4. 奇美的[文化部 iCulture 展覽 JSON](https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindTypeJ&category=6)接為**補充來源**：只取奇美相關資料、排除常設展、合併同一特展相鄰的分段日期，並向奇美官方逐筆頁核對完整展期。本機實測 10 筆相關原始紀錄，1 筆通過並連結既有展覽，8 筆隔離。文化部不是奇美官方 API；尚未證明 JSON 回應有完整分頁或涵蓋所有奇美展覽，因此未納入每日 workflow。
 5. 故宮北院加入 2017 年館舍外觀照片，海生館加入 2013 年海藻森林展缸照片，皆來自 Wikimedia Commons 個別檔案頁。頁面標示作者、授權與拍攝時間；照片為歷史展場／館舍紀錄，**不是當期展示保證**。詳見[圖片依據](sources.md#常設展照片來源與使用)。
-6. 已在 `AndyLinStrongtyping` 帳號建立**私人**的獨立 `event-radar` repo，與 Stellar Archive 團隊 repo 無關。程式碼推送與 CI 結果見下方驗證；線上同步 workflow 與奇美每週檢查都以 `EVENT_RADAR_SYNC_ENABLED` 閘門預設關閉。
+6. 已在 `AndyLinStrongtyping` 帳號建立**私人**的獨立 [event-radar repo](https://github.com/AndyLinStrongtyping/event-radar)，與 Stellar Archive 團隊 repo 無關。程式碼已推送到 `main`；首次 [GitHub 測試 CI](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/37254843421) 成功。線上同步 workflow 與奇美每週檢查都以 `EVENT_RADAR_SYNC_ENABLED` 閘門預設關閉。
 
 ## 驗證與限制
 
 - `npm run typecheck`、`npm test`（20/20）、`npm run test:integration` 通過。整合測試涵蓋管理頁未登入拒絕、跨來源表單與無效 CSRF 拒絕，以及原有匯入回滾、去重與異動紀錄。
+- 瀏覽器實測發現同來源表單會傳 `Origin: null`；已限定必須同時具備 `Sec-Fetch-Site: same-origin` 並驗證 loopback Host，保留跨站拒絕。修正後登入、待審清單及單筆補正表單可在本機 Chrome 實際操作，尚未送出任何人工補正。
 - 新增資料庫 migration `005_sync_attempts.sql`、`006_nstm.sql` 已在本機套用；科工館與文化部奇美都對官方即時資料執行過匯入。`sync:failed` 曾在沒有失敗紀錄時正確跳過；未做故障注入，不能宣稱已驗證真實第三方服務恢復。
 - 科博館私人 Key 尚未提供；現有公開 JSON 匯入不會假裝是私人 API。Key 核發後仍須驗證回應格式、授權、分頁、速率限制，再決定是否替換 adapter。
 - 遠端 PostgreSQL、Repository Secret、線上同步、正式網站、Queue、通知與 AWS 均未建立或啟用。推送程式碼只會觸發測試 CI。網站先維持本機預覽。

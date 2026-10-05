@@ -69,7 +69,13 @@ function samePassword(value: string): boolean {
 const server = createServer(async (request, response) => {
   try {
     const url = new URL(request.url ?? '/', origin);
-    if (request.method === 'POST' && request.headers.origin !== origin) {
+    if (request.headers.host !== `127.0.0.1:${port}`) {
+      fail(response, 403, '主機不符'); return;
+    }
+    const sameSite = request.headers['sec-fetch-site'] === 'same-origin';
+    const submittedOrigin = request.headers.origin;
+    if (request.method === 'POST' && submittedOrigin !== origin
+      && !((submittedOrigin === 'null' || submittedOrigin === undefined) && sameSite)) {
       fail(response, 403, '來源不符'); return;
     }
     const user = session(request);
