@@ -349,7 +349,17 @@ main().catch((error) => {
   process.exitCode = 1;
 }).finally(async () => {
   if (testDb) await testDb.end();
-  if (created) await maintenance.query(`DROP DATABASE "${testDbName}" WITH (FORCE)`);
+  if (created) {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      try {
+        await maintenance.query(`DROP DATABASE "${testDbName}"`);
+        break;
+      } catch (error) {
+        if (error.code !== '55006' || attempt === 19) throw error;
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      }
+    }
+  }
   await maintenance.end();
   for (const path of files) await unlink(path);
   if (directory) await rmdir(directory);
