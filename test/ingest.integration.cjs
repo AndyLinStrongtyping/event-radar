@@ -324,7 +324,11 @@ async function main() {
       body: 'password=test-admin-password-24-characters' });
     assert.equal(response.status, 403, '跨站點的 null Origin 表單仍須拒絕');
   } finally {
-    admin.kill();
+    if (admin.exitCode === null && admin.signalCode === null) {
+      const exited = new Promise((resolve) => admin.once('exit', resolve));
+      admin.kill();
+      await exited;
+    }
   }
   for (const [key, title, start, end] of [
     ['ended', '測試已結束', '2026-01-01', '2026-02-01'],
