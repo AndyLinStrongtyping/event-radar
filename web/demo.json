@@ -159,5 +159,20 @@
     "sourceUrl": "https://south.npm.gov.tw/ExhibitionsDetailC003110.aspx?Cond=162a1a63-285e-4f51-8b31-17f0747864c3",
     "lastSeenAt": "2026-10-04T10:47:28.336Z",
     "isSample": false
+  },
+  {
+    "id": "preview-free-sample",
+    "museumId": "nmns",
+    "museumName": "國立自然科學博物館",
+    "city": "臺中市",
+    "sourceStatus": "open_data",
+    "title": "模擬資料｜免費展覽篩選示範",
+    "venue": "模擬展廳",
+    "startDate": "2026-10-01",
+    "endDate": "2027-10-31",
+    "priceNote": "免費",
+    "summary": "僅供測試免費篩選，不是真實展覽或票價公告。",
+    "sourceUrl": "https://www.nmns.edu.tw/ch/exhibitions/special-exhibitions/index.html",
+    "isSample": true
   }
 ]

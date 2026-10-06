@@ -20,14 +20,18 @@ function card(item, index) {
   const summary = escapeHtml(item.summary || '前往官方頁面查看展覽介紹與參觀資訊。');
   const sourceLabel = item.isSample ? '模擬資料' : item.sourceStatus === 'curated' ? '人工核對'
     : item.sourceStatus === 'official_page' ? '館方頁同步' : '公開資料';
+  const statusLabel = { ongoing: '展出中', upcoming: '即將開始', ended: '已結束' }[item.exhibitionStatus] || '展期待核對';
+  const admissionLabel = item.admissionStatus === 'free' ? '免費（以館方公告為準）'
+    : item.priceNote ? escapeHtml(item.priceNote) : '尚未提供，請查館方';
   const seen = item.lastSeenAt ? new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(item.lastSeenAt)) : null;
   const url = new URL(item.sourceUrl);
   if (url.protocol !== 'https:') return '';
   return `<article class="card" data-url="${escapeHtml(url.href)}">
     <div class="card-top"><span class="card-number">FILE ${String(index + 1).padStart(3, '0')}</span><span class="badge ${item.isSample ? 'sample' : ''}">${sourceLabel}</span></div>
+    <p class="card-state">${statusLabel}${item.admissionStatus === 'free' ? ' · 免費' : ''}</p>
     <p class="card-museum">${escapeHtml(item.museumName)} · ${escapeHtml(item.city)}</p>
     <h3>${title}</h3><p class="card-summary">${summary}</p>
-    <div class="card-meta"><div><strong>展期</strong><span>${escapeHtml(item.startDate)} — ${escapeHtml(item.endDate)}</span></div><div><strong>展區</strong><span>${venue}</span></div>${seen ? `<div><strong>核對</strong><span>${escapeHtml(seen)}</span></div>` : ''}</div>
+    <div class="card-meta"><div><strong>展期</strong><span>${escapeHtml(item.startDate)} — ${escapeHtml(item.endDate)}</span></div><div><strong>展區</strong><span>${venue}</span></div><div><strong>入場</strong><span>${admissionLabel}</span></div>${seen ? `<div><strong>核對</strong><span>${escapeHtml(seen)}</span></div>` : ''}</div>
     <a class="card-link" href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer" aria-label="前往 ${title} 的官方頁面">查看官方資訊 <span aria-hidden="true">↗</span></a>
   </article>`;
 }
@@ -61,7 +65,7 @@ async function search() {
   const generation = ++searchGeneration;
   count.textContent = '搜尋中…';
   const params = new URLSearchParams();
-  for (const name of ['q', 'city', 'museum', 'from']) {
+  for (const name of ['q', 'city', 'museum', 'status', 'admission', 'asOf']) {
     const value = form.elements[name].value.trim();
     if (value) params.set(name, value);
   }
@@ -89,7 +93,7 @@ async function updateVisitStatus() {
     visitPanel.innerHTML = '<strong>出發前核對開館資訊</strong><p>選擇博物館與參觀日期後，可查看休館提醒及館方公告入口。</p>';
     return;
   }
-  const date = form.elements.from.value || new Intl.DateTimeFormat('en-CA', {
+  const date = form.elements.asOf.value || new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
   }).format(new Date());
   visitPanel.innerHTML = '<strong>開館資訊核對中…</strong>';
@@ -119,6 +123,9 @@ citySelect.addEventListener('change', () => {
   search();
 });
 museumSelect.addEventListener('change', search);
+form.elements.status.addEventListener('change', search);
+form.elements.admission.addEventListener('change', search);
+form.elements.asOf.addEventListener('change', search);
 sampleToggle.addEventListener('change', search);
 
 loadMuseums().then(search).catch((error) => { count.textContent = error.message; });

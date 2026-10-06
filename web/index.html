@@ -54,15 +54,18 @@
         <label>關鍵字<input type="search" name="q" placeholder="展名、主題…" autocomplete="off"></label>
         <label>城市<select name="city"><option value="">全臺灣</option><option>臺北市</option><option>臺中市</option><option>臺南市</option><option>嘉義縣</option><option>高雄市</option><option>屏東縣</option></select></label>
         <label>博物館<select name="museum"><option value="">所有博物館</option></select></label>
-        <label>參觀日期<input type="date" name="from" aria-label="從此日期開始查看"></label>
+        <label>展覽狀態<select name="status"><option value="active">未結束</option><option value="ongoing">展出中</option><option value="upcoming">即將開始</option><option value="ended">已結束</option><option value="all">全部展覽</option></select></label>
+        <label>入場資訊<select name="admission"><option value="all">不限票價</option><option value="free">明確標示免費</option></select></label>
+        <label>查詢基準日<input type="date" name="asOf" aria-label="以此日期判斷展覽狀態"></label>
         <button type="submit">搜尋特展 <span aria-hidden="true">↗</span></button>
       </form>
+      <p class="filter-hint">狀態依展期與查詢基準日計算；「免費」只收錄票價欄明確標示免費的資料。未提供票價的展覽不會列入免費結果。</p>
       <aside id="visit-status" class="visit-status" aria-live="polite">
         <strong>出發前核對開館資訊</strong><p>選擇博物館與參觀日期後，可查看休館提醒及館方公告入口。</p>
       </aside>
       <div class="results-line"><p id="result-count" aria-live="polite">載入特展中…</p><label class="sample-toggle"><input id="include-sample" type="checkbox">顯示測試資料</label></div>
       <div id="results" class="cards" aria-live="polite"></div>
-      <div id="empty" class="empty" hidden>目前沒有符合條件的特展。試試其他城市或日期。</div>
+      <div id="empty" class="empty" hidden>目前沒有符合條件的特展。試試其他城市、狀態或入場條件。</div>
     </section>
   </main>
   <footer><span>EVENT RADAR <small>© 2026</small></span><p>資訊取自各博物館與政府公開資料，展覽細節以官方公告為準。</p></footer>

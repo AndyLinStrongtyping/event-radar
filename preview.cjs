@@ -70,16 +70,42 @@ createServer(async (request, response) => {
     if (url.pathname === '/exhibitions') {
       const data = JSON.parse(await readFile(join(root, 'demo.json'), 'utf8'));
       const q = url.searchParams;
-      const from = q.get('from') || new Intl.DateTimeFormat('en-CA', {
+      const today = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
       }).format(new Date());
+      const asOf = q.get('asOf') || today;
+      const status = q.get('status') || 'active';
+      const admission = q.get('admission') || 'all';
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(asOf) || Number.isNaN(Date.parse(`${asOf}T00:00:00Z`))
+        || new Date(`${asOf}T00:00:00Z`).toISOString().slice(0, 10) !== asOf
+        || !['active', 'ongoing', 'upcoming', 'ended', 'all'].includes(status)
+        || !['all', 'free'].includes(admission)) {
+        response.statusCode = 400;
+        response.end(JSON.stringify({ error: { code: 'BAD_REQUEST', message: '篩選參數無效' } }));
+        return;
+      }
+      const free = (item) => ['免費', '免費入場', '免門票'].includes(item.priceNote);
       const items = data.filter((item) =>
         (q.get('includeSample') === 'true' || !item.isSample)
         && (!q.get('city') || item.city === q.get('city'))
         && (!q.get('museum') || item.museumId === q.get('museum'))
         && (!q.get('q') || item.title.includes(q.get('q')))
-        && item.endDate >= from);
-      response.end(JSON.stringify({ items, total: items.length, limit: 20, offset: 0 }));
+        && (!q.get('from') || item.endDate >= q.get('from'))
+        && (!q.get('to') || item.startDate <= q.get('to'))
+        && (status === 'all' || status === 'active' && item.endDate >= asOf
+          || status === 'ongoing' && item.startDate <= asOf && item.endDate >= asOf
+          || status === 'upcoming' && item.startDate > asOf
+          || status === 'ended' && item.endDate < asOf)
+        && (admission === 'all' || free(item)))
+        .map((item) => ({ ...item,
+          exhibitionStatus: item.endDate < asOf ? 'ended' : item.startDate > asOf ? 'upcoming' : 'ongoing',
+          admissionStatus: free(item) ? 'free' : 'unknown',
+        }));
+      items.sort((a, b) => status === 'ended' ? b.endDate.localeCompare(a.endDate)
+        : status === 'ongoing' ? a.endDate.localeCompare(b.endDate)
+        : status === 'all' ? b.startDate.localeCompare(a.startDate)
+        : a.startDate.localeCompare(b.startDate));
+      response.end(JSON.stringify({ items: items.slice(0, 20), total: items.length, limit: 20, offset: 0 }));
       return;
     }
     response.statusCode = 404;

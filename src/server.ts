@@ -29,6 +29,16 @@ function numeric(value: string | null, fallback: number, max: number, name: stri
   return Number(value);
 }
 
+const freePriceNotes = ['免費', '免費入場', '免門票'] as const;
+type ExhibitionRow = { startDate: string; endDate: string; priceNote: string | null } & Record<string, unknown>;
+function withSearchStatus(row: ExhibitionRow, asOf: string) {
+  return { ...row,
+    exhibitionStatus: row.endDate < asOf ? 'ended' : row.startDate > asOf ? 'upcoming' : 'ongoing',
+    admissionStatus: row.priceNote && freePriceNotes.includes(row.priceNote as typeof freePriceNotes[number])
+      ? 'free' : 'unknown',
+  };
+}
+
 const fields = `e.id,e.title,e.museum_id AS "museumId",m.name AS "museumName",m.city,
   m.source_status AS "sourceStatus",
   e.venue,to_char(e.start_date,'YYYY-MM-DD') AS "startDate",
@@ -103,9 +113,14 @@ const server = createServer(async (request, response) => {
       const today = new Intl.DateTimeFormat('en-CA', {
         timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
       }).format(new Date());
-      const from = date(q.get('from') ?? today, 'from');
+      const asOf = date(q.get('asOf') ?? today, 'asOf')!;
+      const from = date(q.get('from'), 'from');
       const to = date(q.get('to'), 'to');
       if (to && from && to < from) throw new Error('to 不可早於 from');
+      const status = q.get('status') ?? 'active';
+      const admission = q.get('admission') ?? 'all';
+      if (!['active', 'ongoing', 'upcoming', 'ended', 'all'].includes(status)
+        || !['all', 'free'].includes(admission)) throw new Error('篩選參數無效');
       const limit = numeric(q.get('limit'), 20, 100, 'limit');
       const offset = numeric(q.get('offset'), 0, 100000, 'offset');
       const city = q.get('city')?.trim() || null;
@@ -118,25 +133,37 @@ const server = createServer(async (request, response) => {
         AND ($3::text IS NULL OR e.title ILIKE '%' || $3 || '%')
         AND ($4::date IS NULL OR e.end_date >= $4)
         AND ($5::date IS NULL OR e.start_date <= $5)
-        AND ($6::boolean OR NOT e.is_sample) AND e.visible`;
-      const params = [city, museum, keyword, from, to, includeSample];
+        AND ($6::boolean OR NOT e.is_sample) AND e.visible
+        AND ($8::text='all' OR ($8='active' AND e.end_date >= $7::date)
+          OR ($8='ongoing' AND e.start_date <= $7::date AND e.end_date >= $7::date)
+          OR ($8='upcoming' AND e.start_date > $7::date)
+          OR ($8='ended' AND e.end_date < $7::date))
+        AND ($9::text='all' OR e.price_note IN ('免費','免費入場','免門票'))`;
+      const params = [city, museum, keyword, from, to, includeSample, asOf, status, admission];
+      const order = status === 'ended' ? 'e.end_date DESC,e.id'
+        : status === 'ongoing' ? 'e.end_date,e.id'
+        : status === 'all' ? 'e.start_date DESC,e.id' : 'e.start_date,e.id';
       const [items, total] = await Promise.all([
         pool.query(`SELECT ${fields} FROM exhibitions e JOIN museums m ON m.id=e.museum_id
-          WHERE ${where} ORDER BY e.start_date,e.id LIMIT $7 OFFSET $8`, [...params, limit, offset]),
+          WHERE ${where} ORDER BY ${order} LIMIT $10 OFFSET $11`, [...params, limit, offset]),
         pool.query(`SELECT count(*)::int AS total FROM exhibitions e JOIN museums m ON m.id=e.museum_id
           WHERE ${where}`, params),
       ]);
-      json(response, 200, { items: items.rows, total: total.rows[0].total, limit, offset });
+      json(response, 200, { items: items.rows.map((row) => withSearchStatus(row, asOf)),
+        total: total.rows[0].total, limit, offset });
       return;
     }
     const match = url.pathname.match(/^\/exhibitions\/([0-9a-f-]{36})$/i);
     if (match) {
       const includeSample = url.searchParams.get('includeSample') === 'true';
+      const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric',
+        month: '2-digit', day: '2-digit' }).format(new Date());
+      const asOf = date(url.searchParams.get('asOf') ?? today, 'asOf')!;
       const result = await pool.query(`SELECT ${fields} FROM exhibitions e JOIN museums m ON m.id=e.museum_id
         WHERE e.id=$1 AND e.visible`, [match[1]]);
       if (!result.rowCount || (result.rows[0].isSample && !includeSample)) {
         json(response, 404, { error: { code: 'NOT_FOUND', message: '找不到特展' } });
-      } else json(response, 200, result.rows[0]);
+      } else json(response, 200, withSearchStatus(result.rows[0], asOf));
       return;
     }
     const changesMatch = url.pathname.match(/^\/exhibitions\/([0-9a-f-]{36})\/changes$/i);

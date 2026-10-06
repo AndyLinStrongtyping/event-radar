@@ -11,7 +11,7 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 | GET | `/exhibitions/:id` | 特展詳情 |
 | GET | `/exhibitions/:id/changes` | 欄位異動紀錄（最近 100 筆） |
 
-`GET /exhibitions` 接受 `city`、`museum`（來源 ID）、`q`、`from`、`to`、`limit`（預設 20，最多 100）、`offset`（預設 0）、`includeSample=true`。日期範圍表示「展期與此範圍有交集」；`from` 預設今天，`to` 可省略。模擬資料預設隱藏，只在 `includeSample=true` 時顯示。回應 `{ "items": [Exhibition], "total": 42, "limit": 20, "offset": 0 }`，排序開始日與 ID。Exhibition 包含 `id, title, museumId, museumName, city, venue, startDate, endDate, priceNote, sourceUrl, summary, lastSeenAt, sourceStatus, isSample`。
+`GET /exhibitions` 接受 `city`、`museum`（來源 ID）、`q`、`from`、`to`、`asOf`、`status`、`admission`、`limit`（預設 20，最多 100）、`offset`（預設 0）、`includeSample=true`。`from`／`to` 是可選的展期交集範圍；`asOf` 是判斷展覽狀態的基準日，預設臺灣今天。`status` 預設 `active`（未結束），也可選 `ongoing`（展出中）、`upcoming`（即將開始）、`ended`（已結束）、`all`（含歷史展覽）。起日及迄日都包含當日。`admission` 預設 `all`，`free` 只收錄 `priceNote` 完全等於「免費」「免費入場」或「免門票」的資料；票價空白或含糊說明不推斷為免費。模擬資料預設隱藏，只在 `includeSample=true` 時顯示。回應 `{ "items": [Exhibition], "total": 42, "limit": 20, "offset": 0 }`。Exhibition 包含 `id, title, museumId, museumName, city, venue, startDate, endDate, priceNote, sourceUrl, summary, lastSeenAt, sourceStatus, isSample`，另有依 `asOf` 計算的 `exhibitionStatus` 及保守判斷的 `admissionStatus`（`free`／`unknown`）。
 
 400：參數錯誤；404：找不到資源；500：伺服器錯誤。v0.1 不開放公開寫入 API，匯入由 CLI 執行。
 

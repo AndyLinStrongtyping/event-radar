@@ -47,6 +47,8 @@ function assertExhibition(value) {
   assert.match(value.endDate, /^\d{4}-\d{2}-\d{2}$/);
   assert.ok(value.endDate >= value.startDate);
   assert.equal(typeof value.isSample, 'boolean');
+  assert.ok(['ongoing', 'upcoming', 'ended'].includes(value.exhibitionStatus));
+  assert.ok(['free', 'unknown'].includes(value.admissionStatus));
   assert.match(value.sourceUrl, /^https:\/\//);
   assert.ok(!Number.isNaN(Date.parse(value.lastSeenAt)));
 }
@@ -107,6 +109,18 @@ async function checkPublicApiContract() {
     const empty = await get('/exhibitions?from=2026-01-01&museum=chimei&q=___no_such_exhibition___');
     assert.deepEqual(empty.items, []);
     assert.equal(empty.total, 0);
+    for (const [status, title] of [
+      ['ended', '測試已結束'], ['ongoing', '測試展出中'], ['upcoming', '測試即將開始'],
+    ]) {
+      const result = await get(`/exhibitions?museum=chimei&includeSample=true&asOf=2026-10-05&status=${status}&admission=free&q=${encodeURIComponent(title)}`);
+      assert.equal(result.total, 1, `${status} 且明確免費的測試展覽應可搜尋`);
+      assert.equal(result.items[0].exhibitionStatus, status);
+      assert.equal(result.items[0].admissionStatus, 'free');
+      const hidden = await get(`/exhibitions?museum=chimei&asOf=2026-10-05&status=${status}&admission=free&q=${encodeURIComponent(title)}`);
+      assert.equal(hidden.total, 0, '未要求模擬資料時不得公開測試展覽');
+    }
+    const unknownPrice = await get('/exhibitions?museum=chimei&asOf=2026-10-05&admission=free&q=___no_such_exhibition___');
+    assert.equal(unknownPrice.total, 0);
     const visit = await get('/visit-status?museum=chimei&date=2026-10-07');
     assert.equal(visit.museumId, 'chimei');
     assert.equal(visit.date, '2026-10-07');
@@ -115,6 +129,7 @@ async function checkPublicApiContract() {
     assert.match(visit.sourceUrl, /^https:\/\//);
 
     for (const path of ['/exhibitions?limit=0', '/exhibitions?from=2026-02-30',
+      '/exhibitions?status=invalid', '/exhibitions?admission=invalid', '/exhibitions?asOf=2026-02-30',
       '/visit-status?museum=chimei&date=bad']) {
       const error = await get(path, 400);
       assert.equal(error.error.code, 'BAD_REQUEST');
@@ -310,6 +325,16 @@ async function main() {
     assert.equal(response.status, 403, '跨站點的 null Origin 表單仍須拒絕');
   } finally {
     admin.kill();
+  }
+  for (const [key, title, start, end] of [
+    ['ended', '測試已結束', '2026-01-01', '2026-02-01'],
+    ['ongoing', '測試展出中', '2026-09-01', '2026-11-01'],
+    ['upcoming', '測試即將開始', '2026-12-01', '2027-01-01'],
+  ]) {
+    await testDb.query(`INSERT INTO exhibitions
+      (museum_id,source_key,primary_provider,title,start_date,end_date,price_note,source_url,is_sample,content_hash)
+      VALUES ('chimei',$1,'chimei',$2,$3,$4,'免費','https://www.chimeimuseum.org/',true,repeat('0',64))`,
+    [`contract:${key}`, title, start, end]);
   }
   await checkPublicApiContract();
   process.stdout.write('匯入回滾、去重、欄位異動及公開 API 回應契約：通過\n');
