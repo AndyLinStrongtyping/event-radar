@@ -9,4 +9,5 @@ test('只對暫時性來源或連線錯誤安排有限次重試', () => {
   assert.equal(isTransientSyncFailure('connection terminated unexpectedly'), true);
   assert.equal(isTransientSyncFailure('展期缺少完整起訖日'), false);
   assert.equal(isTransientSyncFailure('來源鍵重複，已停止整批匯入'), false);
+  assert.equal(isTransientSyncFailure('來源沒有可公開的展覽；原始紀錄已保存，請人工核對來源與待審資料'), false);
 });

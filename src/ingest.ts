@@ -55,7 +55,7 @@ async function sourceRows(museum: string, file: string | undefined, snapshot: st
       const pages = new Map(Object.entries(item.pages as Record<string, string>));
       return { rows: verifiedMocChimeiRows(groups, pages), records };
     }
-    throw new Error('原始快照目前只支援海生館、故宮北院或科工館');
+    throw new Error('原始快照目前只支援海生館、故宮北院、科工館或文化部奇美補充來源');
   }
   if (file) {
     const payload: unknown = JSON.parse(await readFile(file, 'utf8'));
@@ -211,6 +211,17 @@ async function main(): Promise<void> {
           source_url=EXCLUDED.source_url,raw_record=EXCLUDED.raw_record,
           status=EXCLUDED.status,reason=EXCLUDED.reason,last_seen_at=now()`,
       [museum, provider, record.sourceKey, record.sourceUrl, JSON.stringify(record.raw), record.status, record.reason]);
+    }
+    if (rows.length === 0) {
+      const reason = '來源沒有可公開的展覽；原始紀錄已保存，請人工核對來源與待審資料';
+      await client.query(`UPDATE ingestion_runs SET status='failed',finished_at=now(),
+        fetched_count=$2,skipped_count=$3,review_count=$4,error_message=$5 WHERE id=$1`,
+      [runId, counts.fetched, counts.skipped, counts.review, reason]);
+      await client.query('COMMIT');
+      inTransaction = false;
+      process.stderr.write(`${reason}\n`);
+      process.exitCode = 1;
+      return;
     }
     for (const row of rows) {
       const previous = await findStored(client, row, provider);

@@ -200,6 +200,16 @@ async function main() {
   result = await testDb.query('SELECT count(*)::int AS count FROM exhibitions');
   assert.equal(result.rows[0].count, 1, '失敗批次不可留下部分寫入');
 
+  const successBeforeEmpty = await testDb.query("SELECT last_success_at FROM museums WHERE id='chimei'");
+  const emptyFile = await fixture('empty.json', []);
+  assert.throws(() => ingest(emptyFile), /Command failed/);
+  result = await testDb.query('SELECT status,error_message FROM ingestion_runs ORDER BY started_at DESC LIMIT 1');
+  assert.equal(result.rows[0].status, 'failed', '空來源不能被記成同步成功');
+  assert.match(result.rows[0].error_message, /0 筆資料/);
+  result = await testDb.query("SELECT last_success_at FROM museums WHERE id='chimei'");
+  assert.equal(result.rows[0].last_success_at.getTime(), successBeforeEmpty.rows[0].last_success_at.getTime(),
+    '空來源不得刷新最近成功匯入時間');
+
   const duplicateFile = await fixture('duplicate.json', [{
     ...original, sourceUrl: 'https://www.chimeimuseum.org/special-exhibition/alternate',
   }]);
@@ -241,11 +251,21 @@ async function main() {
     { Source: 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=only-review',
       '特展名稱': '未確認展期', 'app用開始時間': '', 'app用結束時間': '' },
   ]);
-  const reviewResult = JSON.parse(execFileSync(process.execPath,
+  const successBeforeReview = await testDb.query("SELECT last_success_at FROM museums WHERE id='nmmba'");
+  assert.throws(() => execFileSync(process.execPath,
     ['--experimental-strip-types', 'src/ingest.ts', '--source', 'nmmba', '--snapshot', reviewOnly],
-    { cwd: project, env: seaEnv, encoding: 'utf8' }));
-  assert.equal(reviewResult.inserted, 0);
-  assert.equal(reviewResult.review, 1, '全部不合格時仍須保存待審原始資料');
+    { cwd: project, env: seaEnv, encoding: 'utf8' }), /Command failed/);
+  result = await testDb.query('SELECT status,fetched_count,review_count,error_message FROM ingestion_runs ORDER BY started_at DESC LIMIT 1');
+  assert.equal(result.rows[0].status, 'failed', '全部待審不能被記成同步成功');
+  assert.equal(result.rows[0].fetched_count, 1);
+  assert.equal(result.rows[0].review_count, 1);
+  assert.match(result.rows[0].error_message, /沒有可公開的展覽/);
+  result = await testDb.query("SELECT status FROM source_records WHERE museum_id='nmmba' AND source_key=$1",
+    ['https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=only-review']);
+  assert.equal(result.rows[0].status, 'review', '失敗批次仍須保存待審原始資料');
+  result = await testDb.query("SELECT last_success_at FROM museums WHERE id='nmmba'");
+  assert.equal(result.rows[0].last_success_at.getTime(), successBeforeReview.rows[0].last_success_at.getTime(),
+    '全部待審時不得刷新最近成功匯入時間');
   result = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nmmba'");
   assert.equal(result.rows[0].count, 1);
   const approvedUrl = 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=only-review';
@@ -265,9 +285,9 @@ async function main() {
     { Source: approvedUrl, '特展名稱': '來源已變更的展覽',
       'app用開始時間': '', 'app用結束時間': '' },
   ]);
-  execFileSync(process.execPath,
+  assert.throws(() => execFileSync(process.execPath,
     ['--experimental-strip-types', 'src/ingest.ts', '--source', 'nmmba', '--snapshot', changedReview],
-    { cwd: project, env: seaEnv, encoding: 'utf8' });
+    { cwd: project, env: seaEnv, encoding: 'utf8' }), /Command failed/);
   result = await testDb.query('SELECT visible FROM exhibitions WHERE museum_id=$1 AND source_url=$2',
     ['nmmba', approvedUrl]);
   assert.equal(result.rows[0].visible, false, '來源變更時舊人工補正不得繼續公開');
@@ -306,9 +326,9 @@ async function main() {
     { sno: '04012832', link: 'https://www.npm.gov.tw/Articles.aspx?sno=04012833',
       title: '未有結束日的展示', time: '2021-12-24 ~ ', location: '北部院區' },
   ]);
-  execFileSync(process.execPath,
+  assert.throws(() => execFileSync(process.execPath,
     ['--experimental-strip-types', 'src/ingest.ts', '--source', 'npm-north', '--snapshot', northChangedLink],
-    { cwd: project, env: seaEnv, encoding: 'utf8' });
+    { cwd: project, env: seaEnv, encoding: 'utf8' }), /Command failed/);
   result = await testDb.query("SELECT visible FROM exhibitions WHERE museum_id='npm-north' AND source_key='04012832'");
   assert.equal(result.rows[0].visible, false, '館方連結改變時舊補正展覽必須隱藏');
   const adminPort = 31000 + Math.floor(Math.random() * 2000);
