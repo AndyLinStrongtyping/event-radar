@@ -36,6 +36,10 @@ const museums = [
   { id: 'npm-south', name: '國立故宮博物院南部院區', city: '嘉義縣', homepageUrl: 'https://south.npm.gov.tw/', sourceStatus: 'official_page' },
   { id: 'npm-north', name: '國立故宮博物院北部院區', city: '臺北市', homepageUrl: 'https://www.npm.gov.tw/', sourceStatus: 'open_data' },
   { id: 'nmmba', name: '國立海洋生物博物館', city: '屏東縣', homepageUrl: 'https://www.nmmba.gov.tw/', sourceStatus: 'open_data' },
+  { id: 'ntm', name: '國立臺灣博物館', city: '臺北市', homepageUrl: 'https://www.ntm.gov.tw/', sourceStatus: 'planned' },
+  { id: 'nmth', name: '國立臺灣歷史博物館', city: '臺南市', homepageUrl: 'https://www.nmth.gov.tw/', sourceStatus: 'planned' },
+  { id: 'nstm', name: '國立科學工藝博物館', city: '高雄市', homepageUrl: 'https://www.nstm.gov.tw/', sourceStatus: 'planned' },
+  { id: 'ntsec', name: '國立臺灣科學教育館', city: '臺北市', homepageUrl: 'https://www.ntsec.gov.tw/', sourceStatus: 'planned' },
 ];
 
 createServer(async (request, response) => {
@@ -53,8 +57,10 @@ createServer(async (request, response) => {
       return;
     }
     if (url.pathname === '/museums') {
+      const { museumTickets } = await import('./src/ticketing.ts');
       response.end(JSON.stringify({ items: museums.map((museum) => ({ ...museum,
         lastSuccessAt: null, lastAttemptStatus: null, lastAttemptAt: null, dataStatus: 'snapshot',
+        generalAdmission: museumTickets[museum.id] ?? null,
       })) }));
       return;
     }
@@ -70,6 +76,7 @@ createServer(async (request, response) => {
       return;
     }
     if (url.pathname === '/exhibitions') {
+      const { ticketingForExhibition } = await import('./src/ticketing.ts');
       const data = JSON.parse(await readFile(join(root, 'demo.json'), 'utf8'));
       const q = url.searchParams;
       const today = new Intl.DateTimeFormat('en-CA', {
@@ -100,6 +107,7 @@ createServer(async (request, response) => {
           || status === 'ended' && item.endDate < asOf)
         && (admission === 'all' || free(item)))
         .map((item) => ({ ...item,
+          ticketing: ticketingForExhibition(item),
           exhibitionStatus: item.endDate < asOf ? 'ended' : item.startDate > asOf ? 'upcoming' : 'ongoing',
           admissionStatus: free(item) ? 'free' : 'unknown',
         }));

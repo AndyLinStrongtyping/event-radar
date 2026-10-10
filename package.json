@@ -13,7 +13,7 @@
     "review": "node --experimental-strip-types src/review.ts",
     "review:approve": "node --experimental-strip-types src/approve-review.ts",
     "admin": "node --experimental-strip-types src/admin-server.ts",
-    "migrate": "node --experimental-strip-types src/migrate.ts",
+    "migrate": "node --env-file-if-exists=.env --experimental-strip-types src/migrate.ts",
     "check:chimei": "node --experimental-strip-types src/check-chimei.ts",
     "test": "node --experimental-strip-types --test test/*.test.ts",
     "test:integration": "node --env-file-if-exists=.env test/ingest.integration.cjs",

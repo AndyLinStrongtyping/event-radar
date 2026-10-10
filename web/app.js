@@ -7,6 +7,7 @@ const citySelect = form.elements.city;
 const museumSelect = form.elements.museum;
 const visitPanel = document.querySelector('#visit-status');
 const freshnessPanel = document.querySelector('#source-freshness');
+const ticketList = document.querySelector('#ticket-list');
 let availableMuseums = [];
 let searchGeneration = 0;
 let visitGeneration = 0;
@@ -54,8 +55,10 @@ function card(item, index) {
   const sourceLabel = item.isSample ? '模擬資料' : item.sourceStatus === 'curated' ? '人工核對'
     : item.sourceStatus === 'official_page' ? '館方頁同步' : '公開資料';
   const statusLabel = { ongoing: '展出中', upcoming: '即將開始', ended: '已結束' }[item.exhibitionStatus] || '展期待核對';
-  const admissionLabel = item.admissionStatus === 'free' ? '免費（以館方公告為準）'
-    : item.priceNote ? escapeHtml(item.priceNote) : '尚未提供，請查館方';
+  const special = item.ticketing?.exhibition;
+  const general = item.ticketing?.generalAdmission;
+  const admissionLabel = special ? escapeHtml(special.price) : item.admissionStatus === 'free'
+    ? '免費（以館方公告為準）' : item.priceNote ? escapeHtml(item.priceNote) : '尚未核對，請查展覽官方頁';
   const seen = item.lastSeenAt ? new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(item.lastSeenAt)) : null;
   const museum = availableMuseums.find((entry) => entry.id === item.museumId);
   const freshness = museum && museum.dataStatus !== 'recent' ? sourceMessage(museum) : null;
@@ -66,9 +69,24 @@ function card(item, index) {
     <p class="card-state">${statusLabel}${item.admissionStatus === 'free' ? ' · 免費' : ''}</p>
     <p class="card-museum">${escapeHtml(item.museumName)} · ${escapeHtml(item.city)}</p>${freshness ? `<p class="card-freshness">${escapeHtml(freshness)}</p>` : ''}
     <h3>${title}</h3><p class="card-summary">${summary}</p>
-    <div class="card-meta"><div><strong>展期</strong><span>${escapeHtml(item.startDate)} — ${escapeHtml(item.endDate)}</span></div><div><strong>展區</strong><span>${venue}</span></div><div><strong>入場</strong><span>${admissionLabel}</span></div>${seen ? `<div><strong>核對</strong><span>${escapeHtml(seen)}</span></div>` : ''}</div>
+    <div class="card-meta"><div><strong>展期</strong><span>${escapeHtml(item.startDate)} — ${escapeHtml(item.endDate)}</span></div><div><strong>展區</strong><span>${venue}</span></div><div><strong>${special ? '特展票價' : '本展票價'}</strong><span>${admissionLabel}</span></div>${general ? `<div><strong>一般入館</strong><span>${escapeHtml(general.price)}（${escapeHtml(general.label)}；不代表本展票價）</span></div>` : ''}${seen ? `<div><strong>資料更新</strong><span>${escapeHtml(seen)}</span></div>` : ''}</div>
+    ${(special || general) ? `<p class="card-ticket-check">票務資訊最後人工核對：${escapeHtml((special || general).checkedOn)}；票種與是否另購特展票，請以館方為準。</p>` : ''}
+    <div class="card-ticket-links">${special ? `<a href="${escapeHtml(special.infoUrl)}" target="_blank" rel="noopener noreferrer">特展票價 ↗</a><a href="${escapeHtml(special.purchaseUrl)}" target="_blank" rel="noopener noreferrer">特展購票 ↗</a>` : ''}${general ? `<a href="${escapeHtml(general.infoUrl)}" target="_blank" rel="noopener noreferrer">一般票價 ↗</a>${general.purchaseUrl ? `<a href="${escapeHtml(general.purchaseUrl)}" target="_blank" rel="noopener noreferrer">一般入館購票 ↗</a>` : '<span>一般票請查館方現場購票方式</span>'}` : ''}</div>
     <a class="card-link" href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer" aria-label="前往 ${title} 的官方頁面">查看官方資訊 <span aria-hidden="true">↗</span></a>
   </article>`;
+}
+
+function renderTicketIndex(museums) {
+  const entries = museums.filter((museum) => museum.generalAdmission);
+  ticketList.innerHTML = entries.map((museum) => {
+    const ticket = museum.generalAdmission;
+    return `<article class="ticket-item"><span>${escapeHtml(museum.city)} · ${escapeHtml(ticket.label)}</span>
+      <h3>${escapeHtml(museum.name)}</h3><p class="ticket-price">${escapeHtml(ticket.price)}</p>
+      <p>${escapeHtml(ticket.note)}</p><div class="ticket-actions">
+      <a href="${escapeHtml(ticket.infoUrl)}" target="_blank" rel="noopener noreferrer">官方票價 ↗</a>
+      ${ticket.purchaseUrl ? `<a href="${escapeHtml(ticket.purchaseUrl)}" target="_blank" rel="noopener noreferrer">購票入口 ↗</a>` : '<span>請依館方說明購票</span>'}</div>
+      <small>最後人工核對：${escapeHtml(ticket.checkedOn)}</small></article>`;
+  }).join('') || '<p>暫無已核對的館所票務資訊。</p>';
 }
 
 function updateMuseumOptions() {
@@ -85,6 +103,7 @@ async function loadMuseums() {
   const response = await fetch('/museums');
   if (!response.ok) throw new Error('館所清單無法載入');
   const { items } = await response.json();
+  renderTicketIndex(items);
   availableMuseums = items.filter((museum) => museum.sourceStatus !== 'planned');
   const requestedMuseum = new URLSearchParams(location.search).get('museum');
   const requested = availableMuseums.find((museum) => museum.id === requestedMuseum);

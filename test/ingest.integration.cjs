@@ -49,6 +49,9 @@ function assertExhibition(value) {
   assert.equal(typeof value.isSample, 'boolean');
   assert.ok(['ongoing', 'upcoming', 'ended'].includes(value.exhibitionStatus));
   assert.ok(['free', 'unknown'].includes(value.admissionStatus));
+  assert.ok(value.ticketing && typeof value.ticketing === 'object');
+  assert.ok(value.ticketing.exhibition === null || typeof value.ticketing.exhibition === 'object');
+  assert.ok(value.ticketing.generalAdmission === null || typeof value.ticketing.generalAdmission === 'object');
   assert.match(value.sourceUrl, /^https:\/\//);
   assert.ok(!Number.isNaN(Date.parse(value.lastSeenAt)));
 }
@@ -85,6 +88,7 @@ async function checkPublicApiContract() {
       assert.ok(museum.lastAttemptAt === null || !Number.isNaN(Date.parse(museum.lastAttemptAt)));
       assert.ok(museum.lastAttemptStatus === null || ['succeeded', 'failed'].includes(museum.lastAttemptStatus));
       assert.ok(['manual', 'planned', 'never', 'untracked', 'failed', 'stale', 'recent'].includes(museum.dataStatus));
+      assert.ok(museum.generalAdmission === null || typeof museum.generalAdmission === 'object');
     }
     assert.equal(museums.items.find((museum) => museum.id === 'chimei').dataStatus, 'manual');
     assert.equal(museums.items.find((museum) => museum.id === 'nmns').dataStatus, 'failed');
@@ -162,6 +166,7 @@ async function main() {
   await testDb.query(await readFile(join(project, 'db/004_review_corrections.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/005_sync_attempts.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/006_nstm.sql'), 'utf8'));
+  await testDb.query(await readFile(join(project, 'db/007_ticket_catalog.sql'), 'utf8'));
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const [original] = JSON.parse(await readFile(join(project, 'test/fixtures/chimei.json'), 'utf8'));
 

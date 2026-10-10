@@ -4,6 +4,7 @@ import process from 'node:process';
 import pg from 'pg';
 import { visitStatus, validVisitDate } from './visit-status.ts';
 import { sourceFreshness } from './source-freshness.ts';
+import { museumTickets, ticketingForExhibition } from './ticketing.ts';
 
 if (!process.env.DATABASE_URL) throw new Error('請先設定 DATABASE_URL');
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -31,9 +32,11 @@ function numeric(value: string | null, fallback: number, max: number, name: stri
 }
 
 const freePriceNotes = ['免費', '免費入場', '免門票'] as const;
-type ExhibitionRow = { startDate: string; endDate: string; priceNote: string | null } & Record<string, unknown>;
+type ExhibitionRow = { startDate: string; endDate: string; priceNote: string | null;
+  museumId: string; sourceUrl: string; isSample: boolean } & Record<string, unknown>;
 function withSearchStatus(row: ExhibitionRow, asOf: string) {
   return { ...row,
+    ticketing: ticketingForExhibition(row),
     exhibitionStatus: row.endDate < asOf ? 'ended' : row.startDate > asOf ? 'upcoming' : 'ongoing',
     admissionStatus: row.priceNote && freePriceNotes.includes(row.priceNote as typeof freePriceNotes[number])
       ? 'free' : 'unknown',
@@ -104,6 +107,7 @@ const server = createServer(async (request, response) => {
       json(response, 200, { items: result.rows.map((museum) => ({
         ...museum,
         dataStatus: sourceFreshness(museum.sourceStatus, museum.lastSuccessAt, museum.lastAttemptStatus, now),
+        generalAdmission: museumTickets[museum.id] ?? null,
       })) });
       return;
     }
