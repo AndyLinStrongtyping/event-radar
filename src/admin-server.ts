@@ -240,6 +240,13 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(port, '127.0.0.1', () => {
-  process.stdout.write(`Event Radar admin listening on ${origin}\n`);
-});
+try {
+  await pool.query('SELECT 1');
+  server.listen(port, '127.0.0.1', () => {
+    process.stdout.write(`Event Radar admin listening on ${origin}\n`);
+  });
+} catch {
+  process.stderr.write('Event Radar 管理服務無法連接資料庫，HTTP 服務未啟動\n');
+  await pool.end();
+  process.exitCode = 1;
+}

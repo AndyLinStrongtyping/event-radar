@@ -2,7 +2,7 @@
 
 關鍵字 `q` 是不區分大小寫的字面子字串搜尋；`%`、`_`、`#` 不作查詢語法。`GET /museums` 的 `lastSuccessAt` 是最後成功匯入時間（包含手動檔案／快照）；`lastOfficialSuccessAt` 是最後成功取得並匯入官方來源的時間。`dataStatus` 依後者與最近同步嘗試判斷，手動匯入不能刷新官方新鮮度。
 
-Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "error": { "code": "...", "message": "..." } }`。
+Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "error": { "code": "...", "message": "..." } }`。[OpenAPI 3.0 規格](openapi.yaml)描述公開唯讀端點，可供文件工具匯入；`npm test` 會檢查語法、路由及引用。
 
 | Method | Path | 說明 |
 | --- | --- | --- |
@@ -19,7 +19,7 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 
 每個館所另有 `coverageStatus`：`baseline_created`（第一次建立比較基準）、`checked`（未達疑似縮水門檻）、`deferred_partial`（清單疑似不完整，需核對館方）或 `null`（尚無官方完整度判定）。它獨立於 `dataStatus`；「最近取得來源」不表示展覽清單完整。公開網站在 `deferred_partial` 時顯示警示。
 
-400：參數錯誤；404：找不到資源；500：伺服器錯誤。v0.1 不開放公開寫入 API，匯入由 CLI 執行。
+400：參數錯誤；404：找不到資源；500：伺服器錯誤。`/health` 在啟動後資料庫暫時不可查時回 503／`NOT_READY`；啟動當下若無法連線則不監聽。v0.1 不開放公開寫入 API，匯入由 CLI 執行。
 
 `GET /exhibitions/:id` 同樣預設隱藏模擬資料；開發時可加 `?includeSample=true` 查看。
 

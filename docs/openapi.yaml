@@ -1,0 +1,278 @@
+openapi: 3.0.3
+info:
+  title: Event Radar 公開查詢 API
+  version: 0.1.0
+  description: |
+    本機版臺灣博物館特展查詢 API。資料可能滯後，展期與票價以館方公告為準。
+    公開 API 僅提供讀取；人工審核頁及匯入 CLI 不屬於本 API。
+servers:
+  - url: http://127.0.0.1:3000
+paths:
+  /health:
+    get:
+      summary: 檢查服務與資料庫就緒狀態
+      operationId: getHealth
+      responses:
+        '200':
+          description: 資料庫可查詢
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status, database]
+                properties:
+                  status: { type: string, enum: [ok] }
+                  database: { type: string, enum: [ok] }
+        '503': { $ref: '#/components/responses/NotReady' }
+  /museums:
+    get:
+      summary: 列出博物館、來源狀態與一般入館票資訊
+      operationId: listMuseums
+      responses:
+        '200':
+          description: 博物館列表
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Museum' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /visit-status:
+    get:
+      summary: 查指定日期的開館狀態或官方核對入口
+      operationId: getVisitStatus
+      parameters:
+        - name: museum
+          in: query
+          required: true
+          schema: { type: string }
+        - name: date
+          in: query
+          required: true
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: 無法可靠確認時，status 為 unknown
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/VisitStatus' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /exhibitions:
+    get:
+      summary: 搜尋特展
+      operationId: listExhibitions
+      description: |
+        預設只顯示尚未結束且非模擬的可見展覽。q 為不區分大小寫的字面子字串；
+        from/to 與展期交集；admission=free 只匹配來源明確標示免費的資料。
+      parameters:
+        - { name: city, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: museum, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: q, in: query, schema: { type: string, maxLength: 100 } }
+        - { name: from, in: query, schema: { type: string, format: date } }
+        - { name: to, in: query, schema: { type: string, format: date } }
+        - { name: asOf, in: query, schema: { type: string, format: date } }
+        - name: status
+          in: query
+          schema: { type: string, enum: [active, ongoing, upcoming, ended, all], default: active }
+        - name: admission
+          in: query
+          schema: { type: string, enum: [all, free], default: all }
+        - name: limit
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - name: offset
+          in: query
+          schema: { type: integer, minimum: 0, maximum: 100000, default: 0 }
+        - name: includeSample
+          in: query
+          description: 僅供開發驗證模擬展覽
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: 搜尋結果
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, total, limit, offset]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/Exhibition' }
+                  total: { type: integer, minimum: 0 }
+                  limit: { type: integer }
+                  offset: { type: integer }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /exhibitions/{id}:
+    get:
+      summary: 特展詳情
+      operationId: getExhibition
+      parameters:
+        - { $ref: '#/components/parameters/ExhibitionId' }
+        - name: asOf
+          in: query
+          schema: { type: string, format: date }
+        - name: includeSample
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: 特展
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Exhibition' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /exhibitions/{id}/changes:
+    get:
+      summary: 最近 100 筆欄位異動
+      operationId: listExhibitionChanges
+      parameters:
+        - { $ref: '#/components/parameters/ExhibitionId' }
+        - name: includeSample
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: 異動列表
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ExhibitionChange' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
+components:
+  parameters:
+    ExhibitionId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+  responses:
+    BadRequest:
+      description: 請求參數無效
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotFound:
+      description: 找不到可見的特展
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    NotReady:
+      description: 資料庫暫不可查詢
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    InternalError:
+      description: 非預期伺服器錯誤
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message]
+          properties:
+            code: { type: string }
+            message: { type: string }
+    PriceGuide:
+      type: object
+      required: [label, price, infoUrl, purchaseUrl, checkedOn, note]
+      properties:
+        label: { type: string }
+        price: { type: string }
+        infoUrl: { type: string, format: uri }
+        purchaseUrl: { type: string, format: uri, nullable: true }
+        checkedOn: { type: string, format: date }
+        note: { type: string }
+    Museum:
+      type: object
+      required: [id, name, city, homepageUrl, sourceStatus, lastSuccessAt, lastOfficialSuccessAt, lastAttemptStatus, lastAttemptAt, coverageStatus, dataStatus, generalAdmission]
+      properties:
+        id: { type: string }
+        name: { type: string }
+        city: { type: string }
+        homepageUrl: { type: string, format: uri }
+        sourceStatus: { type: string, enum: [curated, open_data, official_page, planned] }
+        lastSuccessAt: { type: string, format: date-time, nullable: true }
+        lastOfficialSuccessAt: { type: string, format: date-time, nullable: true }
+        lastAttemptStatus: { type: string, enum: [succeeded, failed], nullable: true }
+        lastAttemptAt: { type: string, format: date-time, nullable: true }
+        coverageStatus: { type: string, enum: [baseline_created, checked, deferred_partial], nullable: true }
+        dataStatus: { type: string, enum: [manual, planned, never, untracked, failed, stale, recent] }
+        generalAdmission:
+          description: 未核對一般入館票時為 null
+          type: object
+          nullable: true
+          allOf:
+            - { $ref: '#/components/schemas/PriceGuide' }
+    Exhibition:
+      type: object
+      required: [id, title, museumId, museumName, city, sourceStatus, venue, startDate, endDate, priceNote, sourceUrl, summary, lastSeenAt, isSample, exhibitionStatus, admissionStatus, ticketing]
+      properties:
+        id: { type: string, format: uuid }
+        title: { type: string }
+        museumId: { type: string }
+        museumName: { type: string }
+        city: { type: string }
+        sourceStatus: { type: string, enum: [curated, open_data, official_page, planned] }
+        venue: { type: string, nullable: true }
+        startDate: { type: string, format: date }
+        endDate: { type: string, format: date }
+        priceNote: { type: string, nullable: true }
+        sourceUrl: { type: string, format: uri }
+        summary: { type: string, nullable: true }
+        lastSeenAt: { type: string, format: date-time }
+        isSample: { type: boolean }
+        exhibitionStatus: { type: string, enum: [ongoing, upcoming, ended] }
+        admissionStatus: { type: string, enum: [free, unknown] }
+        ticketing:
+          type: object
+          required: [exhibition, generalAdmission]
+          properties:
+            exhibition:
+              type: object
+              nullable: true
+              allOf:
+                - { $ref: '#/components/schemas/PriceGuide' }
+            generalAdmission:
+              type: object
+              nullable: true
+              allOf:
+                - { $ref: '#/components/schemas/PriceGuide' }
+    ExhibitionChange:
+      type: object
+      required: [field, oldValue, newValue, detectedAt]
+      properties:
+        field: { type: string, enum: [title, venue, startDate, endDate, priceNote, sourceUrl, summary] }
+        oldValue: { type: string, nullable: true }
+        newValue: { type: string, nullable: true }
+        detectedAt: { type: string, format: date-time }
+    VisitStatus:
+      type: object
+      required: [museumId, date, status, message, sourceUrl]
+      properties:
+        museumId: { type: string }
+        date: { type: string, format: date }
+        status: { type: string, enum: [open, closed, unknown] }
+        message: { type: string }
+        sourceUrl: { type: string, format: uri }
+        newsUrl: { type: string, format: uri }
+        checkedAt: { type: string, format: date-time }

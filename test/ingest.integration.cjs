@@ -190,18 +190,22 @@ async function main() {
   await maintenance.query(`CREATE DATABASE "${testDbName}"`);
   created = true;
   testDb = new pg.Pool({ connectionString: testUrl.href });
-  await testDb.query(await readFile(join(project, 'db/001_init.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/002_sources_and_changes.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/003_source_review.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/004_review_corrections.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/005_sync_attempts.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/006_nstm.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/007_ticket_catalog.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/008_official_sync_freshness.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/009_source_missing_candidates.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/010_missing_candidate_reviews.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/011_source_jobs.sql'), 'utf8'));
-  await testDb.query(await readFile(join(project, 'db/012_source_coverage.sql'), 'utf8'));
+  const migrate = (...args) => execFileSync(process.execPath,
+    ['--experimental-strip-types', 'src/migrate.ts', ...args], {
+      cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href }, encoding: 'utf8',
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+  assert.match(migrate(), /新套用 12 份/, '空白資料庫應由單一命令建立');
+  assert.match(migrate(), /新套用 0 份/, '重跑不得重建表或重複寫入');
+  let ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
+  assert.equal(ledger.rows[0].count, 12);
+  // 模擬舊版手動執行 001–012 的資料庫；只有明確指定時才建立帳本。
+  await testDb.query('DROP TABLE schema_migrations');
+  assert.throws(() => migrate(), /舊版資料庫且沒有 migration 帳本/);
+  assert.match(migrate('--baseline-existing'), /新套用 0 份/);
+  ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
+  assert.equal(ledger.rows[0].count, 12);
+  assert.match(migrate(), /新套用 0 份/);
   const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
   async function checkCoverage(keys, rawKeys = []) {
     const run = await testDb.query(`INSERT INTO ingestion_runs(museum_id,provider,status)

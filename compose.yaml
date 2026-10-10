@@ -9,7 +9,6 @@ services:
       - "127.0.0.1:${EVENT_RADAR_DB_PORT:-5432}:5432"
     volumes:
       - event_radar_data:/var/lib/postgresql/data
-      - ./db:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U event_radar -d event_radar"]
       interval: 5s

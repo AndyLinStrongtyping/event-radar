@@ -84,7 +84,7 @@ npm run admin
 npm start
 ```
 
-已有 PostgreSQL 時，先執行 `db/001_init.sql`，再執行 `npm run migrate`。試查詢：`http://127.0.0.1:3000/exhibitions?city=嘉義縣`。也可匯入 `postman/EventRadar.postman_collection.json` 操作 API。奇美範例資料根據 [館方展覽頁](https://www.chimeimuseum.org/special-exhibition/68a68f0a422a6/68a68fa1d1a3b)記錄；展期與票價以館方最新公告為準。
+**全新空白 PostgreSQL 資料庫**只需執行 `npm run migrate`，會依序套用 `db/001_init.sql` 至最新 SQL，並在 `schema_migrations` 記錄版本與檔案雜湊；重跑只執行尚未套用的版本。`001` 內的館所列是系統必需的參考資料，不會灌入模擬展覽。**原先已手動套用 001–012 的舊資料庫**，先備份並確認結構後執行一次 `npm run migrate -- --baseline-existing`，再用一般 `npm run migrate`；基線指令會檢查必要表、欄位與索引，不會重建或清空現有展覽。若結構不完整會停止，不可假裝已套用全部版本。試查詢：`http://127.0.0.1:3000/exhibitions?city=嘉義縣`。API 有[人類可讀契約](docs/api.md)、[OpenAPI 規格](docs/openapi.yaml)及 `postman/EventRadar.postman_collection.json`。奇美範例資料根據 [館方展覽頁](https://www.chimeimuseum.org/special-exhibition/68a68f0a422a6/68a68fa1d1a3b)記錄；展期與票價以館方最新公告為準。
 
 ## 已完成與未完成
 

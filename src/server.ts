@@ -98,8 +98,12 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (url.pathname === '/health') {
-      await pool.query('SELECT 1');
-      json(response, 200, { status: 'ok', database: 'ok' });
+      try {
+        await pool.query('SELECT 1');
+        json(response, 200, { status: 'ok', database: 'ok' });
+      } catch {
+        json(response, 503, { error: { code: 'NOT_READY', message: '資料庫尚未就緒' } });
+      }
       return;
     }
     if (url.pathname === '/museums') {
@@ -219,6 +223,13 @@ const server = createServer(async (request, response) => {
   }
 });
 
-server.listen(Number(process.env.PORT ?? 3000), '127.0.0.1', () => {
-  process.stdout.write(`Event Radar listening on http://127.0.0.1:${process.env.PORT ?? 3000}\n`);
-});
+try {
+  await pool.query('SELECT 1');
+  server.listen(Number(process.env.PORT ?? 3000), '127.0.0.1', () => {
+    process.stdout.write(`Event Radar listening on http://127.0.0.1:${process.env.PORT ?? 3000}\n`);
+  });
+} catch {
+  process.stderr.write('Event Radar 無法連接資料庫，HTTP 服務未啟動\n');
+  await pool.end();
+  process.exitCode = 1;
+}
