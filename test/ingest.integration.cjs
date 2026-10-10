@@ -3,6 +3,7 @@ const { execFileSync, spawn } = require('node:child_process');
 const { readFile, writeFile, mkdtemp, unlink, rmdir } = require('node:fs/promises');
 const { tmpdir } = require('node:os');
 const { join, resolve } = require('node:path');
+const { pathToFileURL } = require('node:url');
 const pg = require('pg');
 
 if (!process.env.DATABASE_URL) throw new Error('整合測試需要 DATABASE_URL');
@@ -106,6 +107,8 @@ async function checkPublicApiContract() {
       assert.ok(museum.lastAttemptAt === null || !Number.isNaN(Date.parse(museum.lastAttemptAt)));
       assert.ok(museum.lastAttemptStatus === null || ['succeeded', 'failed'].includes(museum.lastAttemptStatus));
       assert.ok(['manual', 'planned', 'never', 'untracked', 'failed', 'stale', 'recent'].includes(museum.dataStatus));
+      assert.ok(museum.coverageStatus === null
+        || ['baseline_created', 'checked', 'deferred_partial'].includes(museum.coverageStatus));
       assert.ok(museum.generalAdmission === null || typeof museum.generalAdmission === 'object');
     }
     assert.equal(museums.items.find((museum) => museum.id === 'chimei').dataStatus, 'manual');
@@ -113,6 +116,9 @@ async function checkPublicApiContract() {
     assert.equal(museums.items.find((museum) => museum.id === 'npm-south').dataStatus, 'stale');
     assert.equal(museums.items.find((museum) => museum.id === 'nmmba').dataStatus, 'stale',
       '手動匯入舊快照不得讓官方來源狀態變成近期同步');
+    assert.equal(museums.items.find((museum) => museum.id === 'nmmba').coverageStatus, 'deferred_partial',
+      '公開完整度警示與新鮮度需各自保留，不能互相掩蓋');
+    assert.equal(museums.items.find((museum) => museum.id === 'nstm').coverageStatus, 'deferred_partial');
 
     const list = await get('/exhibitions?from=2026-01-01&to=2027-12-31&museum=chimei&limit=2');
     assert.equal(typeof list.total, 'number');
@@ -234,19 +240,55 @@ async function main() {
       rowCount: 2, baselineRowCount: 5 },
     '原始紀錄仍完整但解析後可公開展覽驟減，也必須暫緩缺席判定');
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
+  const nstmData = Array.from({ length: 6 }, (_, index) => ({
+    Category: '特展', ExhibitionName: `整合測試科工館展覽${index + 1}`,
+    ExhibitionStartDate: '20260101', ExhibitionEndDate: '20991231', Floor: '2F',
+  }));
+  const nstmCards = nstmData.map((entry, index) => `<div class="exhi_data_list">
+    <span><i>展覽日期：</i>115-01-01 ~ 188-12-31</span>
+    <a href="/Exhibition.aspx?KeyID=00000000-0000-0000-0000-${String(index + 1).padStart(12, '0')}"
+      title="${entry.ExhibitionName}">詳情</a></div>`);
+  const nstmJson = await fixture('nstm-official.json', nstmData);
+  const nstmFullHtml = join(directory, 'nstm-full.html');
+  const nstmPartialHtml = join(directory, 'nstm-partial.html');
+  const nstmUnmatchedHtml = join(directory, 'nstm-unmatched.html');
+  files.push(nstmFullHtml, nstmPartialHtml, nstmUnmatchedHtml);
+  await writeFile(nstmFullHtml, nstmCards.join(''), 'utf8');
+  await writeFile(nstmPartialHtml, nstmCards.slice(0, 2).join(''), 'utf8');
+  await writeFile(nstmUnmatchedHtml, nstmCards[0].replace(nstmData[0].ExhibitionName, '未配對的展覽'), 'utf8');
+  function ingestMockNstm(htmlPath) {
+    return JSON.parse(execFileSync(process.execPath,
+      ['--import', pathToFileURL(join(project, 'test/fixtures/mock-nstm-fetch.mjs')).href,
+        '--experimental-strip-types', 'src/ingest.ts', '--source', 'nstm', '--official'],
+      { cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href,
+        TEST_NSTM_JSON: nstmJson, TEST_NSTM_HTML: htmlPath }, encoding: 'utf8' }));
+  }
+  assert.equal(ingestMockNstm(nstmFullHtml).coverageStatus, 'baseline_created');
+  let nstmVisibility = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nstm' AND visible");
+  assert.equal(nstmVisibility.rows[0].count, 6);
+  assert.equal(ingestMockNstm(nstmPartialHtml).coverageStatus, 'deferred_partial');
+  nstmVisibility = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nstm' AND visible");
+  assert.equal(nstmVisibility.rows[0].count, 6,
+    '官方 HTML 只解析兩筆時，不得先把其餘四筆既有展覽隱藏');
+  const nstmReview = await testDb.query("SELECT count(*)::int AS count FROM source_records WHERE museum_id='nstm' AND status='review'");
+  assert.equal(nstmReview.rows[0].count, 4, '疑似部分清單仍須保留原始待審資料');
+  assert.throws(() => ingestMockNstm(nstmUnmatchedHtml), /Command failed/);
+  nstmVisibility = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nstm' AND visible");
+  assert.equal(nstmVisibility.rows[0].count, 6,
+    '官方清單完全無法交叉核對時，失敗批次不可把所有既有展覽隱藏');
   const [original] = JSON.parse(await readFile(join(project, 'test/fixtures/chimei.json'), 'utf8'));
 
   const originalFile = await fixture('original.json', [original]);
   ingest(originalFile);
   ingest(originalFile);
-  let result = await testDb.query('SELECT count(*)::int AS count FROM exhibitions');
+  let result = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='chimei'");
   assert.equal(result.rows[0].count, 1, '同來源重跑不可重複新增');
 
   const invalidFile = await fixture('invalid.json', [original, { ...original, endDate: 'bad-date' }]);
   assert.throws(() => ingest(invalidFile), /Command failed/);
   result = await testDb.query('SELECT status FROM ingestion_runs ORDER BY started_at DESC LIMIT 1');
   assert.equal(result.rows[0].status, 'failed', '任何錯誤資料都要標記整批失敗');
-  result = await testDb.query('SELECT count(*)::int AS count FROM exhibitions');
+  result = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='chimei'");
   assert.equal(result.rows[0].count, 1, '失敗批次不可留下部分寫入');
 
   const successBeforeEmpty = await testDb.query("SELECT last_success_at FROM museums WHERE id='chimei'");
@@ -264,9 +306,9 @@ async function main() {
   }]);
   const linked = JSON.parse(ingest(duplicateFile, 'culture'));
   assert.equal(linked.linked, 1, '第二來源應連到既有展覽');
-  result = await testDb.query('SELECT count(*)::int AS count FROM exhibitions');
+  result = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='chimei'");
   assert.equal(result.rows[0].count, 1);
-  result = await testDb.query('SELECT count(*)::int AS count FROM exhibition_sources');
+  result = await testDb.query("SELECT count(*)::int AS count FROM exhibition_sources WHERE museum_id='chimei'");
   assert.equal(result.rows[0].count, 2);
 
   const changedFile = await fixture('changed.json', [{ ...original, endDate: '2027-01-11' }]);
@@ -604,6 +646,10 @@ async function main() {
   assert.equal(health.find((item) => item.museumId === 'nmns').health, 'failed',
     '最近同步失敗須優先於先前本機匯入成功');
   await checkPublicApiContract();
+  assert.equal(ingestMockNstm(nstmFullHtml).coverageStatus, 'checked',
+    '官方完整清單恢復後應重新通過完整度檢查');
+  nstmVisibility = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nstm' AND visible");
+  assert.equal(nstmVisibility.rows[0].count, 6);
   const { enqueueSourceJob, claimSourceJob, finishSourceJob, replayDeadJob } =
     await import('../src/source-jobs.ts');
   const queuedSea = await enqueueSourceJob(testDb, 'nmmba', '2026-10-10');

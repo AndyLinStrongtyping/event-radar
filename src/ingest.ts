@@ -120,7 +120,8 @@ async function hideCorrectedExhibition(client: pg.PoolClient, museum: string,
 }
 
 async function applyCorrections(client: pg.PoolClient, museum: string, provider: string,
-  rows: ExhibitionDraft[], records: SourceRecord[]): Promise<void> {
+  rows: ExhibitionDraft[], records: SourceRecord[]): Promise<Array<{ record: SourceRecord; previousUrl: string | null }>> {
+  const staleCorrections: Array<{ record: SourceRecord; previousUrl: string | null }> = [];
   for (const record of records) {
     const decision = await client.query<{ source_hash: string; start_date: string;
       end_date: string; evidence_url: string; source_url: string | null }>(`SELECT source_hash,source_url,
@@ -135,7 +136,7 @@ async function applyCorrections(client: pg.PoolClient, museum: string, provider:
     if (latest.source_hash !== sourceHash(record.raw)) {
       record.status = 'review';
       record.reason = '來源內容已變更，原人工補正須重新核對';
-      await hideCorrectedExhibition(client, museum, provider, record, latest.source_url);
+      staleCorrections.push({ record, previousUrl: latest.source_url });
       continue;
     }
     try {
@@ -146,9 +147,10 @@ async function applyCorrections(client: pg.PoolClient, museum: string, provider:
     } catch (error) {
       record.status = 'review';
       record.reason = `人工補正無法套用：${error instanceof Error ? error.message : String(error)}`;
-      await hideCorrectedExhibition(client, museum, provider, record, latest.source_url);
+      staleCorrections.push({ record, previousUrl: latest.source_url });
     }
   }
+  return staleCorrections;
 }
 
 async function quarantineInvalidPrimaryRecords(client: pg.PoolClient, museum: string,
@@ -219,14 +221,29 @@ async function main(): Promise<void> {
     await client.query('BEGIN');
     inTransaction = true;
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [museum]);
-    await applyCorrections(client, museum, provider, rows, records);
-    await quarantineInvalidPrimaryRecords(client, museum, provider, records);
+    const staleCorrections = await applyCorrections(client, museum, provider, rows, records);
     const counts = { fetched: records.length || rows.length, inserted: 0, updated: 0,
       unchanged: 0, linked: 0, skipped: records.filter((record) => record.status === 'ignored').length,
       review: records.filter((record) => record.status === 'review').length, missing: 0,
       coverageStatus: 'not_applicable' as CoverageStatus | 'not_applicable',
       sourceIdentities: null as number | null, coverageBaseline: null as number | null,
       sourceRows: null as number | null, coverageBaselineRows: null as number | null };
+    if (official && rows.length > 0) {
+      const coverage = await assessOfficialSourceCoverage(client, museum, provider, runId!, rows, records);
+      counts.coverageStatus = coverage.status;
+      counts.sourceIdentities = coverage.identityCount;
+      counts.coverageBaseline = coverage.baselineCount;
+      counts.sourceRows = coverage.rowCount;
+      counts.coverageBaselineRows = coverage.baselineRowCount;
+    }
+    // A partial official list is not evidence that previously published items became invalid.
+    // Keep their raw review records, but defer visibility changes until a complete run.
+    if (!official || (rows.length > 0 && counts.coverageStatus !== 'deferred_partial')) {
+      await quarantineInvalidPrimaryRecords(client, museum, provider, records);
+      for (const { record, previousUrl } of staleCorrections) {
+        await hideCorrectedExhibition(client, museum, provider, record, previousUrl);
+      }
+    }
     for (const record of records) {
       await client.query(`INSERT INTO source_records
         (museum_id,provider,source_key,source_url,raw_record,status,reason)
@@ -292,13 +309,7 @@ async function main(): Promise<void> {
       [museum, provider, row.sourceKey, exhibitionId]);
     }
     if (official) {
-      const coverage = await assessOfficialSourceCoverage(client, museum, provider, runId!, rows, records);
-      counts.coverageStatus = coverage.status;
-      counts.sourceIdentities = coverage.identityCount;
-      counts.coverageBaseline = coverage.baselineCount;
-      counts.sourceRows = coverage.rowCount;
-      counts.coverageBaselineRows = coverage.baselineRowCount;
-      if (coverage.status === 'checked') {
+      if (counts.coverageStatus === 'checked') {
         counts.missing = await trackMissingCandidates(client, museum, provider, runId!, rows, records);
       }
     }

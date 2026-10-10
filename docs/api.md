@@ -17,6 +17,8 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 
 `GET /museums` 的每個館所另含 `generalAdmission`，供票價／購票索引使用。票價與售票網址由 `src/ticketing.ts` 人工查證維護，不是每日同步資料；`checkedOn` 是人工核對日，不是即時報價。購票入口是館方網站或由館方明確連結的售票平台；未查到線上購票入口時為 `null`。既有免費篩選只依展覽來源的 `priceNote`，不以館所優惠、免票身分或一般入館票推斷特展免費。
 
+每個館所另有 `coverageStatus`：`baseline_created`（第一次建立比較基準）、`checked`（未達疑似縮水門檻）、`deferred_partial`（清單疑似不完整，需核對館方）或 `null`（尚無官方完整度判定）。它獨立於 `dataStatus`；「最近取得來源」不表示展覽清單完整。公開網站在 `deferred_partial` 時顯示警示。
+
 400：參數錯誤；404：找不到資源；500：伺服器錯誤。v0.1 不開放公開寫入 API，匯入由 CLI 執行。
 
 `GET /exhibitions/:id` 同樣預設隱藏模擬資料；開發時可加 `?includeSample=true` 查看。
