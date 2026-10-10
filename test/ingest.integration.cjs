@@ -78,6 +78,23 @@ async function checkPublicApiContract() {
     assert.equal(ready, true, '公開 API 應可啟動並連接測試資料庫');
     assert.deepEqual(await get('/health'), { status: 'ok', database: 'ok' });
 
+    const homepage = await fetch(base + '/');
+    assert.equal(homepage.status, 200);
+    assert.match(homepage.headers.get('content-type') ?? '', /^text\/html/);
+    const html = await homepage.text();
+    assert.match(html, /id="root"/);
+    const bundlePath = html.match(/src="(\/react-assets\/[^\"]+\.js)"/)?.[1];
+    const stylesheetPath = html.match(/href="(\/react-assets\/[^\"]+\.css)"/)?.[1];
+    assert.ok(bundlePath, '首頁應載入 React bundle');
+    assert.ok(stylesheetPath, '首頁應載入 React 樣式');
+    for (const [path, type] of [[bundlePath, 'javascript'], [stylesheetPath, 'css']]) {
+      const asset = await fetch(base + path);
+      assert.equal(asset.status, 200, `${path} 應可載入`);
+      assert.match(asset.headers.get('content-type') ?? '', new RegExp(type));
+    }
+    const guide = await fetch(base + '/guides/chimei.html');
+    assert.equal(guide.status, 200, '既有館所介紹應繼續可用');
+
     const museums = await get('/museums');
     assert.ok(Array.isArray(museums.items) && museums.items.length > 0);
     for (const museum of museums.items) {

@@ -5,7 +5,7 @@ const { join } = require('node:path');
 const root = join(__dirname, 'web');
 const port = Number(process.env.PORT || 4180);
 const files = {
-  '/': ['index.html', 'text/html; charset=utf-8'],
+  '/': ['react-build/index.html', 'text/html; charset=utf-8'],
   '/guides/chimei.html': ['guides/chimei.html', 'text/html; charset=utf-8'],
   '/guides/nmns.html': ['guides/nmns.html', 'text/html; charset=utf-8'],
   '/guides/ntm.html': ['guides/ntm.html', 'text/html; charset=utf-8'],
@@ -19,6 +19,7 @@ const files = {
   '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
   '/transport.js': ['transport.js', 'text/javascript; charset=utf-8'],
   '/assets/hero-ruins.png': ['assets/hero-ruins.png', 'image/png'],
+  '/assets/egypt-writing-user.jpg': ['assets/egypt-writing-user.jpg', 'image/jpeg'],
   '/assets/nstm-switchboard.jpg': ['assets/nstm-switchboard.jpg', 'image/jpeg'],
   '/assets/nmns-mummy-commons.jpg': ['assets/nmns-mummy-commons.jpg', 'image/jpeg'],
   '/assets/nmns-dinosaur-user.jpg': ['assets/nmns-dinosaur-user.jpg', 'image/jpeg'],
@@ -45,6 +46,11 @@ const museums = [
 createServer(async (request, response) => {
   try {
     const url = new URL(request.url || '/', 'http://localhost');
+    if (/^\/react-assets\/[a-zA-Z0-9_-]+\.(js|css)$/.test(url.pathname)) {
+      response.writeHead(200, { 'content-type': url.pathname.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=31536000, immutable' });
+      response.end(await readFile(join(root, 'react-build', url.pathname.slice(1))));
+      return;
+    }
     if (files[url.pathname]) {
       const [name, type] = files[url.pathname];
       response.writeHead(200, { 'content-type': type });
@@ -115,7 +121,17 @@ createServer(async (request, response) => {
         : status === 'ongoing' ? a.endDate.localeCompare(b.endDate)
         : status === 'all' ? b.startDate.localeCompare(a.startDate)
         : a.startDate.localeCompare(b.startDate));
-      response.end(JSON.stringify({ items: items.slice(0, 20), total: items.length, limit: 20, offset: 0 }));
+      const limitText = q.get('limit') || '20';
+      const offsetText = q.get('offset') || '0';
+      if (!/^\d+$/.test(limitText) || !/^\d+$/.test(offsetText)
+        || Number(limitText) < 1 || Number(limitText) > 100 || Number(offsetText) > 100000) {
+        response.statusCode = 400;
+        response.end(JSON.stringify({ error: { code: 'BAD_REQUEST', message: '分頁參數無效' } }));
+        return;
+      }
+      const limit = Number(limitText);
+      const offset = Number(offsetText);
+      response.end(JSON.stringify({ items: items.slice(offset, offset + limit), total: items.length, limit, offset }));
       return;
     }
     response.statusCode = 404;

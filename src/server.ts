@@ -51,7 +51,7 @@ const fields = `e.id,e.title,e.museum_id AS "museumId",m.name AS "museumName",m.
   e.is_sample AS "isSample"`;
 
 const staticFiles = new Map<string, [string, string]>([
-  ['/', ['../web/index.html', 'text/html; charset=utf-8']],
+  ['/', ['../web/react-build/index.html', 'text/html; charset=utf-8']],
   ['/guides/chimei.html', ['../web/guides/chimei.html', 'text/html; charset=utf-8']],
   ['/guides/nmns.html', ['../web/guides/nmns.html', 'text/html; charset=utf-8']],
   ['/guides/ntm.html', ['../web/guides/ntm.html', 'text/html; charset=utf-8']],
@@ -65,6 +65,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/app.js', ['../web/app.js', 'text/javascript; charset=utf-8']],
   ['/transport.js', ['../web/transport.js', 'text/javascript; charset=utf-8']],
   ['/assets/hero-ruins.png', ['../web/assets/hero-ruins.png', 'image/png']],
+  ['/assets/egypt-writing-user.jpg', ['../web/assets/egypt-writing-user.jpg', 'image/jpeg']],
   ['/assets/nstm-switchboard.jpg', ['../web/assets/nstm-switchboard.jpg', 'image/jpeg']],
   ['/assets/nmns-mummy-commons.jpg', ['../web/assets/nmns-mummy-commons.jpg', 'image/jpeg']],
   ['/assets/nmns-dinosaur-user.jpg', ['../web/assets/nmns-dinosaur-user.jpg', 'image/jpeg']],
@@ -84,6 +85,12 @@ const server = createServer(async (request, response) => {
       return;
     }
     const url = new URL(request.url ?? '/', 'http://localhost');
+    if (/^\/react-assets\/[a-zA-Z0-9_-]+\.(js|css)$/.test(url.pathname)) {
+      const mime = url.pathname.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
+      response.writeHead(200, { 'content-type': mime, 'cache-control': 'public, max-age=31536000, immutable' });
+      response.end(await readFile(new URL(`../web/react-build${url.pathname}`, import.meta.url)));
+      return;
+    }
     const asset = staticFiles.get(url.pathname);
     if (asset) {
       response.writeHead(200, { 'content-type': asset[1] });

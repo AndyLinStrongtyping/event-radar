@@ -4,7 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build:web": "vite build --config frontend/vite.config.mjs",
+    "prestart": "npm run build:web",
     "start": "node --env-file-if-exists=.env --experimental-strip-types src/server.ts",
+    "prepreview": "npm run build:web",
     "preview": "node --env-file-if-exists=.env preview.cjs",
     "ingest": "node --env-file-if-exists=.env --experimental-strip-types src/ingest.ts",
     "sync": "node --env-file-if-exists=.env --experimental-strip-types src/sync-source.ts",
@@ -16,10 +19,25 @@
     "migrate": "node --env-file-if-exists=.env --experimental-strip-types src/migrate.ts",
     "check:chimei": "node --experimental-strip-types src/check-chimei.ts",
     "test": "node --experimental-strip-types --test test/*.test.ts",
+    "pretest:integration": "npm run build:web",
     "test:integration": "node --env-file-if-exists=.env test/ingest.integration.cjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p frontend/tsconfig.json"
   },
-  "engines": { "node": ">=22.10" },
-  "dependencies": { "pg": "^8.16.3" },
-  "devDependencies": { "@types/pg": "^8.15.5", "typescript": "^5.9.3", "@types/node": "^24.0.0" }
+  "engines": {
+    "node": ">=22.10"
+  },
+  "dependencies": {
+    "pg": "^8.16.3",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^5.9.3",
+    "vite": "^8.3.4"
+  }
 }

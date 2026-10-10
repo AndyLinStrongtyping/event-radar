@@ -4,7 +4,11 @@
 
 目前做到哪裡、哪些尚未接入：請先看 [統一進度](STATUS.md)。
 
-![Event Radar 首頁作品畫面](docs/screenshots/event-radar-showcase.png)
+首頁已改為 React 互動介面，採古文明、化石與考古檔案視覺；載入展覽時顯示短暫的文物發掘動畫，並遵守「減少動態效果」系統設定。此為本機改版，尚未公開部署。[本階段實作紀錄](docs/stage-2026-10-10-react.md)記載驗證結果。
+
+![Event Radar React 考古主視覺](docs/screenshots/event-radar-react-hero.jpg)
+
+[早期首頁畫面](docs/screenshots/event-radar-showcase.png)保留作設計歷程。
 
 [架構圖：目前實作與目標方向](docs/architecture.md)將已完成的本機資料流程與使用者提供的長期構想分開標示；概念圖中的 Queue、通知、DLQ 與監控尚未實作。
 
@@ -20,7 +24,7 @@
 - 科博館的[官方 OpenAPI](https://www.nmns.edu.tw/ch/about/info-central/opendata/index.html)個人金鑰已核發並在本機驗證。`NMNS_API_KEY` 優先供展覽與未來一週開放時間使用；無金鑰時展覽匯入仍可使用原 `NMNS_OPEN_DATA_URL`，開放時間只顯示官網核對入口。金鑰只存在 Git 忽略的本機 `.env`，不提交到 Git。
 - 故宮南院的[當期展覽](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3112)與[展覽預告](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3111)是第三個真實來源。匯入有起訖日期的特別展覽與限期輪替展，保留官方詳情連結；無結束日的常設展與年度期程不列入搜尋。這是官方網頁同步，不是館方提供的公開 API。
 - 故宮北院[公開展覽 JSON](https://odapi.npm.gov.tw/data/open/api/v1/exhibition/current.json)與海生館[公開特展 JSON](https://www.nmmba.gov.tw/OpenData.aspx?SN=BF6D6EB9CB6876BB)已接入本機。逐筆保留原始值，分流有效、待審與略過資料；故宮按院區與展期保守篩選，海生館缺起訖日不推測為常設展。用 `npm run review -- --source nmmba` 或 `--source npm-north` 查看待審原因。
-- 首頁的「博物館介紹」另有[奇美](web/guides/chimei.html)、[科博館（含植物園）](web/guides/nmns.html)、[臺博館](web/guides/ntm.html)、[臺史博](web/guides/nmth.html)、[故宮南院](web/guides/npm-south.html)、[科工館](web/guides/nstm.html)、[科教館](web/guides/ntsec.html)、[故宮北院](web/guides/npm-north.html)與[海生館](web/guides/nmmba.html)九頁人工編寫介紹。各頁附常設展路線、2026-10-10 人工核對的平常開館時間與官方查證連結；[開館時間來源](docs/opening-hours.md)列出範圍。多頁附照片及[圖片依據](docs/sources.md#常設展照片來源與使用)。這些時間不是逐日同步資料；國定假日、節慶及臨時變動須以館方公告為準。臺博館、臺史博與科教館的近期特展尚未接入本站資料庫。未來 React 視覺改版方向見[設計筆記](docs/react-visual-direction.md)。
+- 首頁的「博物館介紹」另有[奇美](web/guides/chimei.html)、[科博館（含植物園）](web/guides/nmns.html)、[臺博館](web/guides/ntm.html)、[臺史博](web/guides/nmth.html)、[故宮南院](web/guides/npm-south.html)、[科工館](web/guides/nstm.html)、[科教館](web/guides/ntsec.html)、[故宮北院](web/guides/npm-north.html)與[海生館](web/guides/nmmba.html)九頁人工編寫介紹。各頁附常設展路線、2026-10-10 人工核對的平常開館時間與官方查證連結；[開館時間來源](docs/opening-hours.md)列出範圍。多頁附照片及[圖片依據](docs/sources.md#常設展照片來源與使用)。這些時間不是逐日同步資料；國定假日、節慶及臨時變動須以館方公告為準。臺博館、臺史博與科教館的近期特展尚未接入本站資料庫。React 首頁與既有九頁靜態介紹並存。
 - 九頁導覽都有交通規劃：可選出發縣市並選填更精確的地址或車站，分別開啟 Google Maps 大眾運輸與開車路線，旁邊保留館方交通連結。只選縣市時以該縣市政府作示意起點；本站不計算即時車程、票價或「最佳」交通方式，也不儲存輸入地點。
 - 奇美公開特展頁已有**本機可執行的每週連結變更檢查**（`npm run check:chimei`）。該檢查與文化部補充匯入互相獨立；前者比對官網初始 HTML 明確列出的連結，後者只納入能通過官網逐筆核對的文化部資料，兩者都不保證完整奇美展覽清單。線上排程尚未啟用。
 
@@ -34,7 +38,8 @@ docs/                 需求、API、來源盤點
 src/normalize.ts      特展資料驗證、正規化與 hash
 src/ingest.ts         JSON／官方來源匯入與整批回滾
 src/server.ts         查詢 API 與網站服務
-web/                  搜尋介面與考古主視覺
+frontend/             React + Vite 互動首頁原始碼
+web/                  靜態館所介紹、圖片與建置輸出（react-build/ 不提交）
 test/                 測試與官方資訊範例
 ```
 
@@ -42,7 +47,7 @@ test/                 測試與官方資訊範例
 
 需要 Node.js 22.10+、PostgreSQL 17 或 Docker。本機已用 Node.js 24 與 Docker Desktop 的 PostgreSQL 17 驗證資料匯入和 API。此電腦的 Docker 執行檔位於使用者目錄，若終端機找不到 `docker`，可呼叫 `C:\Users\user\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe`。
 
-若要先看介面，執行 `npm run preview`，開啟 `http://127.0.0.1:4180/`。這個預覽不需資料庫，頁面會標示資料是官方頁快照，並可主動顯示模擬資料；**它不是即時同步**。主視覺採「考古探索未知文明」方向，使用專案內的原創影像資產。
+若要先看介面，先執行 `npm ci`，再執行 `npm run preview`，開啟 `http://127.0.0.1:4180/`。`preview` 與 `start` 都會先建置 React 首頁。這個預覽不需資料庫，頁面會標示資料是官方頁快照，並可主動顯示模擬資料；**它不是即時同步**。主視覺採「考古探索未知文明」方向，使用使用者提供的展品照片與原有已標註來源的素材。
 
 ```powershell
 Copy-Item .env.example .env
