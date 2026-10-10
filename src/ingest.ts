@@ -12,6 +12,7 @@ import { classifyNstmFeed, nstmDataUrl, nstmListUrl } from './sources/nstm.ts';
 import { classifyMocChimei, mocExhibitionsUrl, verifiedMocChimeiRows } from './sources/moc-chimei.ts';
 import { correctedDraft, sourceHash } from './corrections.ts';
 import { trackMissingCandidates } from './source-missing.ts';
+import { assessOfficialSourceCoverage, type CoverageStatus } from './source-coverage.ts';
 
 function arg(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -210,7 +211,8 @@ async function main(): Promise<void> {
     const museumExists = await client.query('SELECT 1 FROM museums WHERE id=$1', [museum]);
     if (!museumExists.rowCount) throw new Error(`未知館別：${museum}`);
     const run = await client.query<{ id: string }>(
-      `INSERT INTO ingestion_runs (museum_id,status) VALUES ($1,'running') RETURNING id`, [museum]);
+      `INSERT INTO ingestion_runs (museum_id,provider,status) VALUES ($1,$2,'running') RETURNING id`,
+      [museum, provider]);
     runId = run.rows[0].id;
     const { rows, records } = await sourceRows(museum, file, snapshot, official, provider);
     if (rows.length === 0 && records.length === 0) throw new Error('來源回傳 0 筆資料，已停止匯入');
@@ -221,7 +223,10 @@ async function main(): Promise<void> {
     await quarantineInvalidPrimaryRecords(client, museum, provider, records);
     const counts = { fetched: records.length || rows.length, inserted: 0, updated: 0,
       unchanged: 0, linked: 0, skipped: records.filter((record) => record.status === 'ignored').length,
-      review: records.filter((record) => record.status === 'review').length, missing: 0 };
+      review: records.filter((record) => record.status === 'review').length, missing: 0,
+      coverageStatus: 'not_applicable' as CoverageStatus | 'not_applicable',
+      sourceIdentities: null as number | null, coverageBaseline: null as number | null,
+      sourceRows: null as number | null, coverageBaselineRows: null as number | null };
     for (const record of records) {
       await client.query(`INSERT INTO source_records
         (museum_id,provider,source_key,source_url,raw_record,status,reason)
@@ -287,13 +292,24 @@ async function main(): Promise<void> {
       [museum, provider, row.sourceKey, exhibitionId]);
     }
     if (official) {
-      counts.missing = await trackMissingCandidates(client, museum, provider, runId!, rows, records);
+      const coverage = await assessOfficialSourceCoverage(client, museum, provider, runId!, rows, records);
+      counts.coverageStatus = coverage.status;
+      counts.sourceIdentities = coverage.identityCount;
+      counts.coverageBaseline = coverage.baselineCount;
+      counts.sourceRows = coverage.rowCount;
+      counts.coverageBaselineRows = coverage.baselineRowCount;
+      if (coverage.status === 'checked') {
+        counts.missing = await trackMissingCandidates(client, museum, provider, runId!, rows, records);
+      }
     }
     await client.query(`UPDATE ingestion_runs SET status='succeeded',finished_at=now(),
       fetched_count=$2,inserted_count=$3,updated_count=$4,unchanged_count=$5,linked_count=$6,
-      skipped_count=$7,review_count=$8,missing_count=$9 WHERE id=$1`,
+      skipped_count=$7,review_count=$8,missing_count=$9,coverage_status=$10,
+      source_identity_count=$11,coverage_baseline_count=$12,source_row_count=$13,
+      coverage_baseline_row_count=$14 WHERE id=$1`,
     [runId, counts.fetched, counts.inserted, counts.updated, counts.unchanged, counts.linked,
-      counts.skipped, counts.review, counts.missing]);
+      counts.skipped, counts.review, counts.missing, counts.coverageStatus,
+      counts.sourceIdentities, counts.coverageBaseline, counts.sourceRows, counts.coverageBaselineRows]);
     if (rows.length > 0 && (official || rows.some((row) => !row.isSample))) {
       await client.query('UPDATE museums SET last_success_at=now() WHERE id=$1', [museum]);
     }
@@ -302,6 +318,9 @@ async function main(): Promise<void> {
     }
     await client.query('COMMIT');
     inTransaction = false;
+    if (counts.coverageStatus === 'deferred_partial') {
+      process.stderr.write(`官方清單疑似縮水：${museum}/${provider}，缺席判定已暫緩；請核對來源。\n`);
+    }
     process.stdout.write(`${JSON.stringify(counts)}\n`);
   } catch (error) {
     if (inTransaction) await client.query('ROLLBACK');

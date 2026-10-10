@@ -6,6 +6,7 @@ export type HealthInput = {
   lastAttemptStatus: string | null;
   pendingReview: number;
   missingNeedsReview: number;
+  latestCoverageStatus?: string | null;
 };
 
 export type HealthState = 'failed' | 'stale' | 'never' | 'untracked' | 'needs_review' | 'healthy';
@@ -17,5 +18,6 @@ export function sourceHealth(input: HealthInput, now: Date = new Date()): Health
   if (freshness === 'stale') return 'stale';
   if (freshness === 'never') return 'never';
   if (freshness !== 'recent') return 'untracked';
-  return input.pendingReview > 0 || input.missingNeedsReview > 0 ? 'needs_review' : 'healthy';
+  return input.pendingReview > 0 || input.missingNeedsReview > 0
+    || input.latestCoverageStatus === 'deferred_partial' ? 'needs_review' : 'healthy';
 }

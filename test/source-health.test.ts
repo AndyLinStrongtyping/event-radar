@@ -14,6 +14,7 @@ test('來源失敗與過期優先於人工待審；重試後成功不算失敗',
     missingNeedsReview: 1 }, now), 'stale');
   assert.equal(sourceHealth({ ...base, pendingReview: 1 }, now), 'needs_review');
   assert.equal(sourceHealth({ ...base, missingNeedsReview: 1 }, now), 'needs_review');
+  assert.equal(sourceHealth({ ...base, latestCoverageStatus: 'deferred_partial' }, now), 'needs_review');
   assert.equal(sourceHealth(base, now), 'healthy');
 });
 

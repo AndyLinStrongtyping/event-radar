@@ -140,14 +140,16 @@ const server = createServer(async (request, response) => {
       const labels: Record<string, string> = {
         failed: '最近同步失敗', stale: '超過 7 天未成功取得官方來源',
         never: '尚無官方同步成功紀錄', untracked: '同步狀態待確認',
-        needs_review: '有待審資料', healthy: '最近同步正常',
+        needs_review: '有資料需要核對', healthy: '最近同步正常',
       };
       const cards = items.map((item) => {
         const rate = item.failureRate7d === null ? '無工作紀錄'
           : `${item.failedRuns7d}/${item.runs7d}（${Math.round(item.failureRate7d * 100)}%）`;
         const official = item.lastOfficialSuccessAt
           ? new Date(item.lastOfficialSuccessAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '無紀錄';
-        return `<li><h2>${escape(item.name)}</h2><p>狀態：${escape(labels[item.health])}。最近官方成功：${escape(official)}</p><p>最近 7 天工作失敗：${escape(rate)}；有重試的工作 ${escape(item.retriedRuns7d)} 次。</p><p>待審來源紀錄 ${escape(item.pendingReview)} 筆；新缺席待核對 ${escape(item.missingNeedsReview)} 筆。</p></li>`;
+        const coverage = item.latestCoverageStatus === 'deferred_partial'
+          ? '最近官方清單疑似縮水，缺席判定已暫緩；請核對館方來源。' : '';
+        return `<li><h2>${escape(item.name)}</h2><p>狀態：${escape(labels[item.health])}。最近官方成功：${escape(official)}</p><p>最近 7 天工作失敗：${escape(rate)}；有重試的工作 ${escape(item.retriedRuns7d)} 次。</p><p>待審來源紀錄 ${escape(item.pendingReview)} 筆；新缺席待核對 ${escape(item.missingNeedsReview)} 筆。</p>${coverage ? `<p>${escape(coverage)}</p>` : ''}</li>`;
       }).join('');
       page(response, 200, `<p><a href="/">← 待審首頁</a></p><h1>來源健康觀測</h1><p>只讀本機報告。每個 sync_id 算一次工作，失敗率取最後一次嘗試；沒有嘗試紀錄不代表成功。7 天是同步健康提醒門檻，不是展覽有效期限。</p><ul>${cards}</ul><p><a href="/missing">查看缺席候選</a></p>`);
       return;

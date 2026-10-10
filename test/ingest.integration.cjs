@@ -195,6 +195,44 @@ async function main() {
   await testDb.query(await readFile(join(project, 'db/009_source_missing_candidates.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/010_missing_candidate_reviews.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/011_source_jobs.sql'), 'utf8'));
+  await testDb.query(await readFile(join(project, 'db/012_source_coverage.sql'), 'utf8'));
+  const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
+  async function checkCoverage(keys, rawKeys = []) {
+    const run = await testDb.query(`INSERT INTO ingestion_runs(museum_id,provider,status)
+      VALUES ('ntm','ntm','running') RETURNING id`);
+    const client = await testDb.connect();
+    try {
+      await client.query('BEGIN');
+      const coverage = await assessOfficialSourceCoverage(client, 'ntm', 'ntm', run.rows[0].id,
+        keys.map((sourceKey) => ({ sourceKey })),
+        rawKeys.map((sourceKey) => ({ sourceKey })));
+      await client.query('COMMIT');
+      return coverage;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally { client.release(); }
+  }
+  const allKeys = ['a', 'b', 'c', 'd', 'e', 'f'];
+  assert.deepEqual(await checkCoverage(allKeys),
+    { status: 'baseline_created', identityCount: 6, baselineCount: null,
+      rowCount: 6, baselineRowCount: null });
+  assert.deepEqual(await checkCoverage(['a', 'b']),
+    { status: 'deferred_partial', identityCount: 2, baselineCount: 6,
+      rowCount: 2, baselineRowCount: 6 });
+  let coverageBaseline = await testDb.query(`SELECT identity_count FROM official_source_baselines
+    WHERE museum_id='ntm' AND provider='ntm'`);
+  assert.equal(coverageBaseline.rows[0].identity_count, 6, '疑似部分回應不得降低可信比較基準');
+  assert.deepEqual(await checkCoverage(allKeys),
+    { status: 'checked', identityCount: 6, baselineCount: 6,
+      rowCount: 6, baselineRowCount: 6 });
+  assert.deepEqual(await checkCoverage(allKeys.slice(0, 5)),
+    { status: 'checked', identityCount: 5, baselineCount: 6,
+      rowCount: 5, baselineRowCount: 6 });
+  assert.deepEqual(await checkCoverage(['a', 'b'], allKeys.slice(0, 5)),
+    { status: 'deferred_partial', identityCount: 5, baselineCount: 5,
+      rowCount: 2, baselineRowCount: 5 },
+    '原始紀錄仍完整但解析後可公開展覽驟減，也必須暫緩缺席判定');
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const [original] = JSON.parse(await readFile(join(project, 'test/fixtures/chimei.json'), 'utf8'));
 
@@ -558,6 +596,11 @@ async function main() {
   assert.equal(seaHealth.retriedRuns7d, 1);
   assert.equal(seaHealth.failureRate7d, 0);
   assert.equal(seaHealth.missingNeedsReview, 1, '新缺席未核對應進健康報告');
+  await testDb.query(`INSERT INTO ingestion_runs(museum_id,provider,status,coverage_status,
+    source_identity_count,coverage_baseline_count,source_row_count,coverage_baseline_row_count)
+    VALUES ('nmmba','nmmba','succeeded','deferred_partial',2,6,2,6)`);
+  assert.equal((await loadSourceHealth(testDb)).find((item) => item.museumId === 'nmmba')
+    .latestCoverageStatus, 'deferred_partial', '最近官方清單縮水須出現在健康報告');
   assert.equal(health.find((item) => item.museumId === 'nmns').health, 'failed',
     '最近同步失敗須優先於先前本機匯入成功');
   await checkPublicApiContract();

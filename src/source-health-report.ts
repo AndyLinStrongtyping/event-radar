@@ -8,6 +8,7 @@ type HealthRow = {
   lastAttemptDurationMs: number | null; lastError: string | null;
   runs7d: number; failedRuns7d: number; retriedRuns7d: number;
   pendingReview: number; missingNeedsReview: number;
+  latestCoverageStatus: string | null; latestCoverageAt: Date | null;
 };
 
 export type SourceHealthReport = HealthRow & {
@@ -35,7 +36,9 @@ export async function loadSourceHealth(pool: pg.Pool, now: Date = new Date()): P
     COALESCE(stats.failures,0)::int AS "failedRuns7d",
     COALESCE(stats.retries,0)::int AS "retriedRuns7d",
     COALESCE(review.pending,0)::int AS "pendingReview",
-    COALESCE(missing.pending,0)::int AS "missingNeedsReview"
+    COALESCE(missing.pending,0)::int AS "missingNeedsReview",
+    coverage.coverage_status AS "latestCoverageStatus",
+    coverage.started_at AS "latestCoverageAt"
   FROM museums m
   LEFT JOIN LATERAL (SELECT status,created_at,duration_ms,error_message
     FROM sync_attempts WHERE museum_id=m.id ORDER BY created_at DESC,id DESC LIMIT 1) latest ON true
@@ -44,6 +47,9 @@ export async function loadSourceHealth(pool: pg.Pool, now: Date = new Date()): P
     WHERE museum_id=m.id AND status='review') review ON true
   LEFT JOIN LATERAL (SELECT count(*) AS pending FROM source_missing_candidates
     WHERE museum_id=m.id AND status='pending' AND reviewed_missed_runs<missed_runs) missing ON true
+  LEFT JOIN LATERAL (SELECT coverage_status,started_at FROM ingestion_runs
+    WHERE museum_id=m.id AND status='succeeded' AND coverage_status<>'not_applicable'
+    ORDER BY started_at DESC,id DESC LIMIT 1) coverage ON true
   WHERE m.id IN ('nmns','npm-south','npm-north','nmmba','nstm') ORDER BY m.id`);
   return result.rows.map((row) => ({
     ...row,
