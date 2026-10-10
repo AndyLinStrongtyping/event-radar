@@ -1,6 +1,6 @@
 # Event Radar｜目前進度
 
-功能狀態最後核對：2026-10-10（臺灣時間）。**網站仍是本機 MVP，尚未公開部署或啟用線上每日同步。**[目前與目標架構](docs/architecture.md)分開標示已實作和構想；[第四階段紀錄](docs/stage-2026-10-05-phase4.md)記錄科博館 API 與休館提醒的實測；[來源狀態階段紀錄](docs/stage-2026-10-10-freshness.md)記錄最新網站提示與驗證；[票務來源與維護](docs/ticketing.md)記錄票價查證範圍。
+功能狀態最後核對：2026-10-10（臺灣時間）。**網站仍是本機 MVP，尚未公開部署或啟用線上每日同步。**[技術處理與決策紀錄](docs/technical-decisions.md)逐項說明做法、取捨及證據；[目前與目標架構](docs/architecture.md)分開標示已實作和構想；[第四階段紀錄](docs/stage-2026-10-05-phase4.md)記錄科博館 API 與休館提醒的實測；[來源狀態階段紀錄](docs/stage-2026-10-10-freshness.md)記錄最新網站提示與驗證；[票務來源與維護](docs/ticketing.md)記錄票價查證範圍。
 
 | 能力 | 實際狀態 |
 | --- | --- |
