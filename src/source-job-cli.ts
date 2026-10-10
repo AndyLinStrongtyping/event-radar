@@ -5,6 +5,7 @@ import pg from 'pg';
 import { isTransientSyncFailure } from './retry-policy.ts';
 import { claimSourceJob, enqueueSourceJob, finishSourceJob,
   queuedSources, replayDeadJob, taiwanDate, type SourceJob } from './source-jobs.ts';
+import { runScheduledSourceJob } from './source-job-schedule.ts';
 
 function arg(name: string): string | undefined {
   const at = process.argv.indexOf(name);
@@ -51,6 +52,18 @@ try {
     for (const item of sources) items.push({ source: item,
       ...await enqueueSourceJob(pool, item, runDate) });
     process.stdout.write(`${JSON.stringify({ runDate, items }, null, 2)}\n`);
+  } else if (command === 'daily') {
+    const source = arg('--source');
+    if (!source || !queuedSources.includes(source as typeof queuedSources[number])) {
+      throw new Error('請指定 --source <館別>；每日排程需指定單一來源');
+    }
+    const runDate = arg('--date') ?? taiwanDate();
+    const result = await runScheduledSourceJob(pool, source, runDate, async (job) => {
+      process.stdout.write(`執行 ${job.museum_id} 工作 ${job.id}，第 ${job.attempts} 次。\n`);
+      return runImport(job);
+    });
+    process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
+    if (result.status === 'dead') process.exitCode = 1;
   } else if (command === 'work') {
     const loop = process.argv.includes('--loop');
     do {
@@ -80,7 +93,7 @@ try {
     const newId = await replayDeadJob(pool, id);
     process.stdout.write(`${JSON.stringify({ replayOf: id, id: newId,
       note: '已建立新工作；原死信與嘗試紀錄保留。請手動執行 jobs:work。' })}\n`);
-  } else throw new Error('請指定 enqueue、work、status 或 replay');
+  } else throw new Error('請指定 enqueue、daily、work、status 或 replay');
 } finally {
   await pool.end();
 }

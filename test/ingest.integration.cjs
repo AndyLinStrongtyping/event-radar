@@ -730,6 +730,41 @@ async function main() {
   assert.deepEqual(result.rows[0], { status: 'dead', attempts: 3 },
     '連續暫時失敗最多三次，不能無限重抓官方來源');
   assert.equal(await claimSourceJob(testDb), null);
+  const { runScheduledSourceJob } = await import('../src/source-job-schedule.ts');
+  const unrelated = await enqueueSourceJob(testDb, 'nmmba', '2026-10-11');
+  const scheduled = await enqueueSourceJob(testDb, 'nstm', '2026-10-11');
+  let scheduledCalls = 0;
+  const scheduledResult = await runScheduledSourceJob(testDb, 'nstm', '2026-10-11', async () => {
+    scheduledCalls++;
+    return { succeeded: scheduledCalls === 2, retryable: true,
+      durationMs: 20, error: scheduledCalls === 1 ? 'timeout' : '' };
+  }, { sleep: async () => {
+    // Advance only the test job through its retry delay without waiting 30 seconds.
+    await testDb.query("UPDATE source_jobs SET available_at=now()-interval '1 second' WHERE id=$1", [scheduled.id]);
+  } });
+  assert.equal(scheduledResult.id, scheduled.id);
+  assert.equal(scheduledResult.status, 'succeeded');
+  assert.equal(scheduledResult.attempts, 2);
+  assert.equal(scheduledCalls, 2, '排程工作應等待暫時錯誤退避後的下一次嘗試');
+  result = await testDb.query('SELECT status,attempts FROM source_jobs WHERE id=$1', [unrelated.id]);
+  assert.deepEqual(result.rows[0], { status: 'pending', attempts: 0 },
+    '單館排程不可領取其他來源的到期工作');
+  const repeated = await runScheduledSourceJob(testDb, 'nstm', '2026-10-11', async () => {
+    throw new Error('成功的同日工作不應重抓');
+  });
+  assert.equal(repeated.created, false);
+  assert.equal(repeated.status, 'succeeded');
+  const deadScheduled = await runScheduledSourceJob(testDb, 'npm-north', '2026-10-11', async () =>
+    ({ succeeded: false, retryable: false, durationMs: 10, error: '資料格式改變' }));
+  assert.equal(deadScheduled.status, 'dead', '永久性錯誤應讓每日排程回報最終失敗');
+  assert.equal(deadScheduled.attempts, 1);
+  const thrownScheduled = await runScheduledSourceJob(testDb, 'nmns', '2026-10-11', async () => {
+    throw new Error('worker unexpected error');
+  });
+  assert.equal(thrownScheduled.status, 'dead', 'worker 意外例外應記為死信，不能留在 running');
+  assert.equal(thrownScheduled.lastError, 'worker unexpected error');
+  assert.equal((await testDb.query('SELECT status FROM source_jobs WHERE id=$1', [unrelated.id])).rows[0].status,
+    'pending');
   process.stdout.write('匯入回滾、去重、欄位異動及公開 API 回應契約：通過\n');
 }
 

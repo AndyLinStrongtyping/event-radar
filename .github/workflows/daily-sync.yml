@@ -32,8 +32,8 @@ jobs:
           node-version: '24'
       - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: 匯入科博館官方特展
-        run: npm run sync -- --source nmns
+      - name: 排程匯入科博館官方特展
+        run: npm run jobs:daily -- --source nmns
   sync-npm-south:
     name: 同步故宮南院
     if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
@@ -50,8 +50,8 @@ jobs:
           node-version: '24'
       - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: 匯入故宮南院官方展覽
-        run: npm run sync -- --source npm-south
+      - name: 排程匯入故宮南院官方展覽
+        run: npm run jobs:daily -- --source npm-south
 
   sync-npm-north:
     name: 同步故宮北院
@@ -69,8 +69,8 @@ jobs:
           node-version: '24'
       - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: 匯入故宮北院官方展覽
-        run: npm run sync -- --source npm-north
+      - name: 排程匯入故宮北院官方展覽
+        run: npm run jobs:daily -- --source npm-north
 
   sync-nmmba:
     name: 同步海生館
@@ -88,8 +88,8 @@ jobs:
           node-version: '24'
       - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: 匯入海生館官方特展
-        run: npm run sync -- --source nmmba
+      - name: 排程匯入海生館官方特展
+        run: npm run jobs:daily -- --source nmmba
 
   sync-nstm:
     name: 同步科工館
@@ -107,5 +107,5 @@ jobs:
           node-version: '24'
       - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
-      - name: 匯入科工館官方展覽
-        run: npm run sync -- --source nstm
+      - name: 排程匯入科工館官方展覽
+        run: npm run jobs:daily -- --source nstm

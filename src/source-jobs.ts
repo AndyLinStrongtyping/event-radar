@@ -37,14 +37,18 @@ export async function enqueueSourceJob(pool: pg.Pool, source: string, runDate: s
 }
 
 /** Expired leases are recorded as failed attempts before another worker can claim them. */
-export async function claimSourceJob(pool: pg.Pool, token: string = randomUUID()): Promise<SourceJob | null> {
+export async function claimSourceJob(pool: pg.Pool, token: string = randomUUID(), targetId?: string): Promise<SourceJob | null> {
+  if (targetId && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(targetId)) {
+    throw new Error('工作 ID 無效');
+  }
   const client = await pool.connect();
   try {
     await client.query('BEGIN');
     const expired = await client.query<{ id: string; museum_id: string; attempts: number; started_at: Date }>(`
       SELECT id,museum_id,attempts,started_at FROM source_jobs
       WHERE status='running' AND lease_until<=now()
-      ORDER BY lease_until,id FOR UPDATE SKIP LOCKED LIMIT 20`);
+        AND ($1::uuid IS NULL OR id=$1)
+      ORDER BY lease_until,id FOR UPDATE SKIP LOCKED LIMIT 20`, [targetId ?? null]);
     for (const job of expired.rows) {
       const dead = job.attempts >= 3;
       const delay = dead ? 0 : retryDelaysMs[job.attempts - 1];
@@ -62,7 +66,8 @@ export async function claimSourceJob(pool: pg.Pool, token: string = randomUUID()
     }
     const next = await client.query<{ id: string }>(`SELECT id FROM source_jobs
       WHERE status='pending' AND available_at<=now() AND attempts<max_attempts
-      ORDER BY available_at,created_at,id FOR UPDATE SKIP LOCKED LIMIT 1`);
+        AND ($1::uuid IS NULL OR id=$1)
+      ORDER BY available_at,created_at,id FOR UPDATE SKIP LOCKED LIMIT 1`, [targetId ?? null]);
     if (!next.rows[0]) { await client.query('COMMIT'); return null; }
     const claimed = await client.query<SourceJob>(`UPDATE source_jobs SET status='running',
       attempts=attempts+1,worker_token=$2,started_at=now(),
