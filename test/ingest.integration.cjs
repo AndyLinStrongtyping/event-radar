@@ -193,6 +193,7 @@ async function main() {
   await testDb.query(await readFile(join(project, 'db/007_ticket_catalog.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/008_official_sync_freshness.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/009_source_missing_candidates.sql'), 'utf8'));
+  await testDb.query(await readFile(join(project, 'db/010_missing_candidate_reviews.sql'), 'utf8'));
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const [original] = JSON.parse(await readFile(join(project, 'test/fixtures/chimei.json'), 'utf8'));
 
@@ -446,6 +447,43 @@ async function main() {
     response = await fetch(`${adminBase}/missing`, { headers: { cookie } });
     assert.equal(response.status, 200);
     assert.match(await response.text(), /另一個海洋特展/);
+    const missingDetail = `${adminBase}/missing/record?museum=nmmba&provider=nmmba&key=${encodeURIComponent(secondUrl)}`;
+    response = await fetch(missingDetail, { headers: { cookie } });
+    assert.equal(response.status, 200);
+    const detailHtml = await response.text();
+    assert.match(detailHtml, /記錄本次核對/);
+    const csrf = detailHtml.match(/name="csrf" value="([a-f0-9]{64})"/)?.[1];
+    assert.ok(csrf, '審核表單須有 CSRF token');
+    const reviewBody = new URLSearchParams({ csrf, museum: 'nmmba', provider: 'nmmba',
+      key: secondUrl, decision: 'keep_visible', evidenceUrl: secondUrl,
+      reviewer: '整合測試', note: '核對館方頁後保留，尚未確認取消。' });
+    response = await fetch(`${adminBase}/missing/review`, { method: 'POST',
+      headers: { origin: adminBase, cookie, 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ ...Object.fromEntries(reviewBody), csrf: 'wrong' }) });
+    assert.equal(response.status, 403, '缺席核對須驗證 CSRF');
+    response = await fetch(`${adminBase}/missing/review`, { method: 'POST',
+      headers: { origin: adminBase, cookie, 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ ...Object.fromEntries(reviewBody), evidenceUrl: 'https://example.org/false' }) });
+    assert.equal(response.status, 400, '證據不得指向無關網域');
+    response = await fetch(`${adminBase}/missing/review`, { method: 'POST',
+      headers: { origin: adminBase, cookie, 'content-type': 'application/x-www-form-urlencoded' },
+      body: reviewBody });
+    assert.equal(response.status, 200, '核對須可透過本機管理頁留下紀錄');
+    response = await fetch(`${adminBase}/missing/review`, { method: 'POST',
+      headers: { origin: adminBase, cookie, 'content-type': 'application/x-www-form-urlencoded' },
+      body: reviewBody });
+    assert.equal(response.status, 400, '相同缺席次數不能重複核對');
+    response = await fetch(missingDetail, { headers: { cookie } });
+    assert.match(await response.text(), /本次缺席已核對/);
+    result = await testDb.query(`SELECT reviewed_missed_runs FROM source_missing_candidates
+      WHERE museum_id='nmmba' AND provider='nmmba' AND source_key=$1`, [secondUrl]);
+    assert.equal(result.rows[0].reviewed_missed_runs, 2);
+    result = await testDb.query(`SELECT count(*)::int AS count FROM source_missing_reviews
+      WHERE museum_id='nmmba' AND source_key=$1`, [secondUrl]);
+    assert.equal(result.rows[0].count, 1, '錯誤與重送不得增加審查紀錄');
+    assert.equal(await observeOfficialList([firstUrl]), 1);
+    response = await fetch(missingDetail, { headers: { cookie } });
+    assert.match(await response.text(), /記錄本次核對/, '新一次缺席須重新待審');
     response = await fetch(`${adminBase}/approve`, { method: 'POST',
       headers: { origin: adminBase, cookie, 'content-type': 'application/x-www-form-urlencoded' },
       body: 'csrf=wrong' });
@@ -470,8 +508,13 @@ async function main() {
   assert.equal(await observeOfficialList([firstUrl, secondUrl]), 0);
   result = await testDb.query(`SELECT status,missed_runs FROM source_missing_candidates
     WHERE museum_id='nmmba' AND provider='nmmba' AND source_key=$1`, [secondUrl]);
-  assert.deepEqual(result.rows[0], { status: 'resolved', missed_runs: 2 },
+  assert.deepEqual(result.rows[0], { status: 'resolved', missed_runs: 3 },
     '來源重新出現後，缺席候選應自動結案');
+  assert.equal(await observeOfficialList([firstUrl]), 1);
+  result = await testDb.query(`SELECT status,missed_runs,reviewed_missed_runs FROM source_missing_candidates
+    WHERE museum_id='nmmba' AND provider='nmmba' AND source_key=$1`, [secondUrl]);
+  assert.deepEqual(result.rows[0], { status: 'pending', missed_runs: 1, reviewed_missed_runs: 0 },
+    '重新出現後再次缺席，必須開啟新的核對週期');
   for (const [key, title, start, end] of [
     ['ended', '測試已結束', '2026-01-01', '2026-02-01'],
     ['ongoing', '測試展出中', '2026-09-01', '2026-11-01'],

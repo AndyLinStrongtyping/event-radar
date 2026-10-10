@@ -16,12 +16,14 @@ try {
     const missing = await pool.query(`SELECT c.museum_id AS "museumId",c.provider,
       c.source_key AS "sourceKey",e.title,e.source_url AS "sourceUrl",
       c.missed_runs AS "missedRuns",c.first_missing_at AS "firstMissingAt",
-      c.last_missing_at AS "lastMissingAt",c.last_run_id AS "lastRunId"
+      c.last_missing_at AS "lastMissingAt",c.last_run_id AS "lastRunId",
+      c.reviewed_missed_runs AS "reviewedMissedRuns",c.reviewed_at AS "reviewedAt",
+      (c.reviewed_missed_runs < c.missed_runs) AS "needsReview"
       FROM source_missing_candidates c JOIN exhibitions e ON e.id=c.exhibition_id
       WHERE c.status='pending' AND ($1::text IS NULL OR c.museum_id=$1)
       ORDER BY c.last_missing_at DESC,c.museum_id,c.source_key LIMIT 200`, [source]);
     process.stdout.write(`${JSON.stringify({ items: missing.rows,
-      note: '官方來源成功匯入後仍未出現在本次清單的候選；不代表展覽已取消或結束，未自動下架。請點館方原頁核對。最多顯示 200 筆。' }, null, 2)}\n`);
+      note: '官方來源成功匯入後仍未出現在本次清單的候選；不代表展覽已取消或結束，未自動下架。needsReview 表示目前缺席次數尚未核對；請到本機管理頁核對。最多顯示 200 筆。' }, null, 2)}\n`);
   } else {
   const result = await pool.query(`SELECT s.museum_id AS "museumId",s.provider,
     s.source_key AS "sourceKey",s.source_url AS "sourceUrl",s.status,s.reason,

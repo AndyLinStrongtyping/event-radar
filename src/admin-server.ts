@@ -3,6 +3,7 @@ import { createServer, type IncomingMessage, type ServerResponse } from 'node:ht
 import process from 'node:process';
 import pg from 'pg';
 import { approveReview } from './review-service.ts';
+import { reviewMissingCandidate } from './missing-review-service.ts';
 
 if (!process.env.DATABASE_URL) throw new Error('請先設定 DATABASE_URL');
 const password = process.env.EVENT_RADAR_ADMIN_PASSWORD ?? '';
@@ -120,8 +121,22 @@ const server = createServer(async (request, response) => {
       page(response, 200, `<h1>補正已記錄</h1><p>紀錄 ID：${escape(correctionId)}。下次匯入相同原始資料時才會套用。</p><a href="/">返回清單</a>`);
       return;
     }
+    if (request.method === 'POST' && url.pathname === '/missing/review') {
+      const values = await form(request);
+      if (field(values, 'csrf') !== user.csrf) { fail(response, 403, '表單驗證失敗'); return; }
+      const id = await reviewMissingCandidate(pool, {
+        museum: field(values, 'museum'), provider: field(values, 'provider'),
+        key: field(values, 'key'),
+        decision: field(values, 'decision') as 'keep_visible' | 'follow_up',
+        evidenceUrl: field(values, 'evidenceUrl'), reviewer: field(values, 'reviewer'),
+        note: field(values, 'note'),
+      });
+      page(response, 200, `<h1>缺席核對已記錄</h1><p>審查 ID：${escape(id)}。這次核對不改展覽可見狀態；下一次成功官方匯入若仍缺席，會再次列為待核對。</p><a href="/missing">返回缺席清單</a>`);
+      return;
+    }
     if (request.method === 'GET' && url.pathname === '/missing') {
       const result = await pool.query(`SELECT c.museum_id,c.provider,c.source_key,c.missed_runs,
+        c.reviewed_missed_runs,
         c.last_missing_at,e.title,e.source_url FROM source_missing_candidates c
         JOIN exhibitions e ON e.id=c.exhibition_id WHERE c.status='pending'
         ORDER BY c.last_missing_at DESC,c.museum_id,c.source_key LIMIT 100`);
@@ -133,9 +148,39 @@ const server = createServer(async (request, response) => {
             source = `<a href="${escape(official.href)}" target="_blank" rel="noopener noreferrer">開啟館方原頁 ↗</a>`;
           }
         } catch { /* 保留不可開啟標記。 */ }
-        return `<li>${escape(item.title)} · ${escape(item.museum_id)} · 連續缺席 ${escape(item.missed_runs)} 次 · ${source}</li>`;
+        const needsReview = item.reviewed_missed_runs < item.missed_runs;
+        const detail = `/missing/record?museum=${encodeURIComponent(item.museum_id)}&provider=${encodeURIComponent(item.provider)}&key=${encodeURIComponent(item.source_key)}`;
+        return `<li><a href="${detail}">${escape(item.title)}</a> · ${escape(item.museum_id)} · 連續缺席 ${escape(item.missed_runs)} 次 · ${needsReview ? '待核對' : '本次已核對'} · ${source}</li>`;
       }).join('');
       page(response, 200, `<p><a href="/">← 待審來源紀錄</a></p><h1>來源清單缺席候選</h1><p>這只表示成功匯入後未在該次來源資料看見；可能是分頁、來源漏資料或下架。展覽不會因此自動隱藏，請向館方核對。</p><ul>${links || '<li>目前沒有缺席候選</li>'}</ul>`);
+      return;
+    }
+    if (request.method === 'GET' && url.pathname === '/missing/record') {
+      const museum = url.searchParams.get('museum') ?? '';
+      const provider = url.searchParams.get('provider') ?? '';
+      const key = url.searchParams.get('key') ?? '';
+      if (!/^[a-z0-9-]{1,50}$/.test(museum) || !/^[a-z0-9-]{1,50}$/.test(provider)
+        || !key || key.length > 1000) { fail(response, 400, '來源參數無效'); return; }
+      const result = await pool.query(`SELECT c.missed_runs,c.reviewed_missed_runs,c.first_missing_at,
+        c.last_missing_at,e.title,e.source_url,e.start_date,e.end_date
+        FROM source_missing_candidates c JOIN exhibitions e ON e.id=c.exhibition_id
+        WHERE c.museum_id=$1 AND c.provider=$2 AND c.source_key=$3 AND c.status='pending'`,
+      [museum, provider, key]);
+      if (!result.rows.length) { fail(response, 404, '找不到待審的缺席候選'); return; }
+      const item = result.rows[0];
+      const history = await pool.query(`SELECT decision,evidence_url,reviewer,note,created_at,observed_missed_runs
+        FROM source_missing_reviews WHERE museum_id=$1 AND provider=$2 AND source_key=$3
+        ORDER BY created_at DESC LIMIT 10`, [museum, provider, key]);
+      const entries = history.rows.map((row) => `<li>${escape(row.created_at)} · 第 ${escape(row.observed_missed_runs)} 次缺席 · ${row.decision === 'keep_visible' ? '核對後保留' : '需後續追查'} · ${escape(row.reviewer)} · ${escape(row.note)} · <a href="${escape(row.evidence_url)}" target="_blank" rel="noopener noreferrer">證據 ↗</a></li>`).join('');
+      let source = '原始來源網址不可開啟';
+      try {
+        const official = new URL(item.source_url);
+        if (official.protocol === 'https:') source = `<a href="${escape(official.href)}" target="_blank" rel="noopener noreferrer">開啟館方原頁 ↗</a>`;
+      } catch { /* 保留不可開啟標記。 */ }
+      const formHtml = item.reviewed_missed_runs < item.missed_runs
+        ? `<form method="post" action="/missing/review"><input type="hidden" name="csrf" value="${user.csrf}"><input type="hidden" name="museum" value="${escape(museum)}"><input type="hidden" name="provider" value="${escape(provider)}"><input type="hidden" name="key" value="${escape(key)}"><label>核對結果<select name="decision" required><option value="keep_visible">核對後保留展覽</option><option value="follow_up">需後續追查</option></select></label><label>同一官方來源網域的證據網址<input name="evidenceUrl" type="url" required maxlength="1000" value="${escape(item.source_url)}"></label><label>審查人<input name="reviewer" required maxlength="100"></label><label>核對說明<textarea name="note" required maxlength="500"></textarea></label><button>記錄本次核對</button></form>`
+        : '<p>本次缺席已核對；若下次官方匯入仍缺席，會再次開放核對。</p>';
+      page(response, 200, `<p><a href="/missing">← 缺席清單</a></p><h1>${escape(item.title)}</h1><p>${escape(museum)} · ${escape(provider)} · 連續缺席 ${escape(item.missed_runs)} 次</p><p>展期：${escape(item.start_date)} 至 ${escape(item.end_date)}。${source}</p><p>請確認館方來源是否完整，以及展覽是否仍在展出。此操作只留下審查紀錄，不會自動下架。</p>${formHtml}<h2>最近核對紀錄</h2><ul>${entries || '<li>尚無核對紀錄</li>'}</ul>`);
       return;
     }
     if (request.method === 'GET' && url.pathname === '/record') {
@@ -166,7 +211,7 @@ const server = createServer(async (request, response) => {
     fail(response, 404, '找不到頁面');
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error);
-    if (/缺漏|過長|無效|找不到可補正|展期|官方|尚不支援|缺少|早於/.test(message)) {
+    if (/缺漏|過長|無效|找不到可補正|找不到待審|已核對|展期|官方|尚不支援|缺少|早於|證據/.test(message)) {
       fail(response, 400, message);
     } else {
       process.stderr.write(`${message}\n`);

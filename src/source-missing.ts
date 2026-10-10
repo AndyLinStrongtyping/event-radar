@@ -35,7 +35,11 @@ export async function trackMissingCandidates(client: pg.PoolClient, museum: stri
         first_missing_at=CASE WHEN source_missing_candidates.status='pending'
           THEN source_missing_candidates.first_missing_at ELSE now() END,
         missed_runs=CASE WHEN source_missing_candidates.status='pending'
-          THEN source_missing_candidates.missed_runs+1 ELSE 1 END`,
+          THEN source_missing_candidates.missed_runs+1 ELSE 1 END,
+        reviewed_missed_runs=CASE WHEN source_missing_candidates.status='pending'
+          THEN source_missing_candidates.reviewed_missed_runs ELSE 0 END,
+        reviewed_at=CASE WHEN source_missing_candidates.status='pending'
+          THEN source_missing_candidates.reviewed_at ELSE NULL END`,
     [museum, provider, item.source_key, item.exhibition_id, runId]);
   }
   return missing.rows.length;
