@@ -122,6 +122,8 @@ function App() {
   const [items, setItems] = useState<Exhibition[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [demoLoading, setDemoLoading] = useState(false);
+  const demoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
   const [searchError, setSearchError] = useState('');
   const [loadMoreError, setLoadMoreError] = useState('');
@@ -133,6 +135,8 @@ function App() {
   const [visitError, setVisitError] = useState(false);
   const [preview, setPreview] = useState(false);
   const [ticketCity, setTicketCity] = useState('');
+
+  useEffect(() => () => { if (demoTimer.current) clearTimeout(demoTimer.current); }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -197,6 +201,12 @@ function App() {
     }
   }
 
+  function replayDig() {
+    if (demoTimer.current) clearTimeout(demoTimer.current);
+    setDemoLoading(true);
+    demoTimer.current = setTimeout(() => { setDemoLoading(false); demoTimer.current = null; }, 6000);
+  }
+
   useEffect(() => {
     if (!filters.museum) { setVisit(null); setVisitError(false); return; }
     const controller = new AbortController();
@@ -231,11 +241,11 @@ function App() {
         <p className="search-note">狀態依展期與查詢基準日計算；「免費」只收錄明確標示免費的資料。未提供票價不推斷為免費。</p>
         <div className="status-panels"><aside className={`status-panel${selectedMuseum && selectedMuseum.dataStatus !== 'recent' ? ' caution' : ''}`} aria-live="polite"><span>資料來源狀態</span><strong>{selectedMuseum ? selectedMuseum.name : '各館資料更新方式不同'}</strong><p>{selectedMuseum ? sourceMessage(selectedMuseum) : '選擇一間博物館，查看最後成功匯入與同步狀態。參觀前請開啟展覽的官方連結核對。'}</p>{officialUrl(selectedMuseum?.homepageUrl) && <a href={selectedMuseum!.homepageUrl} target="_blank" rel="noopener noreferrer">查看館方網站 ↗</a>}</aside><aside className={`status-panel visit ${visit?.status || ''}`} aria-live="polite"><span>出發前確認</span><strong>{visitLoading ? '正在核對開館資訊' : visitError ? '開館資訊暫時無法核對' : !selectedMuseum ? '平常開放時間已整理' : visit?.status === 'closed' ? '休館提醒' : visit?.status === 'open' ? '館方行事曆顯示開館' : '請向館方確認'}</strong><p>{visitLoading ? '正在讀取館方資料…' : visitError ? '請查看館方最新公告後再出發。' : visit?.message || '各館的平常開館時間放在博物館介紹；國定假日、節慶與臨時異動請以館方公告為準。'}</p>{selectedMuseum && <div className="status-links"><a href={`/guides/${encodeURIComponent(selectedMuseum.id)}.html`}>查看平常開館時間 ↗</a>{officialUrl(visit?.sourceUrl) && <a href={visit!.sourceUrl} target="_blank" rel="noopener noreferrer">館方開放資訊 ↗</a>}{officialUrl(visit?.newsUrl) && <a href={visit!.newsUrl || ''} target="_blank" rel="noopener noreferrer">館方最新消息 ↗</a>}</div>}</aside></div>
         <div className="results-heading" id="results">
-          <div><span>UNEARTHED RECORDS</span><h3>{loading ? '正在發掘檔案…' : searchError || museumError || `找到 ${total} 場特展`}</h3></div>
-          <p>每筆展覽皆附館方或資料來源連結</p>
+          <div><span>UNEARTHED RECORDS</span><h3>{loading || demoLoading ? '正在發掘檔案…' : searchError || museumError || `找到 ${total} 場特展`}</h3></div>
+          <div className="results-tools"><p>每筆展覽皆附館方或資料來源連結</p><button type="button" onClick={replayDig} disabled={demoLoading} aria-label="觀看文物發掘動畫">{demoLoading ? '發掘中…' : '觀看發掘動畫 ↻'}</button></div>
         </div>
-        <div className="results-region" aria-busy={loading}>
-          {loading ? <ExcavationLoader/> : searchError || museumError ? <div className="empty-state"><strong>線索暫時中斷</strong><p>{searchError || museumError}</p><button type="button" onClick={() => setRefreshKey((value) => value + 1)}>再試一次</button></div> : items.length ? <>
+        <div className="results-region" aria-busy={loading || demoLoading}>
+          {loading || demoLoading ? <ExcavationLoader/> : searchError || museumError ? <div className="empty-state"><strong>線索暫時中斷</strong><p>{searchError || museumError}</p><button type="button" onClick={() => setRefreshKey((value) => value + 1)}>再試一次</button></div> : items.length ? <>
             <div className="exhibit-grid">{items.map((item, index) => <ExhibitionCard key={item.id} item={item} number={index + 1} museum={availableMuseums.find((entry) => entry.id === item.museumId)} expanded={expandedId === item.id} onToggle={() => setExpandedId((id) => id === item.id ? null : item.id)}/>)}</div>
             <div className="more-results"><span>目前顯示 {items.length} / {total} 筆展覽</span>{items.length < total && <button type="button" onClick={loadMore} disabled={loadingMore}>{loadingMore ? '正在繼續發掘…' : '載入更多展覽 ↓'}</button>}{loadMoreError && <p role="alert">{loadMoreError}，請再試一次。</p>}</div>
           </> : <div className="empty-state"><div className="empty-symbol" aria-hidden="true">⌕</div><strong>這片地層暫無線索</strong><p>試試其他城市、展覽狀態或入場條件。</p><button type="button" onClick={() => setFilters({ q: '', city: '', museum: '', status: 'active', admission: 'all', asOf: '', includeSample: false })}>清除篩選</button></div>}

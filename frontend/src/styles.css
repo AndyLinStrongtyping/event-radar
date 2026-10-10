@@ -23,3 +23,9 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
 .more-results button:disabled{opacity:.6;cursor:wait}
 .more-results p{width:100%;text-align:center;color:#f6c9a5;margin:0}
 @media(min-width:761px){.hero h1{font-size:clamp(3.15rem,5vw,5.7rem)}}
+.results-tools{display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:flex-end}
+.results-tools button{border:1px solid #bda779;background:transparent;color:#ead2a2;padding:9px 13px;font-size:.72rem;font-weight:700;white-space:nowrap}
+.results-tools button:hover{background:#d4ae76;color:#1d3026}
+.results-tools button:disabled{opacity:.65;cursor:wait}
+@media(max-width:540px){.results-tools{justify-content:flex-start}.results-tools button{padding:8px 10px;font-size:.68rem}}
+@media print{.results-tools{display:none!important}}
