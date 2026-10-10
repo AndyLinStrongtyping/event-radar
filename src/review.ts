@@ -4,6 +4,7 @@ import pg from 'pg';
 const sourceIndex = process.argv.indexOf('--source');
 const source = sourceIndex >= 0 ? process.argv[sourceIndex + 1] : null;
 const includeApproved = process.argv.includes('--all');
+const includeMissing = process.argv.includes('--missing');
 if (sourceIndex >= 0 && (!source || !/^[a-z0-9-]{1,50}$/.test(source))) {
   throw new Error('--source 需要有效館別 ID');
 }
@@ -11,6 +12,17 @@ if (!process.env.DATABASE_URL) throw new Error('請先設定 DATABASE_URL');
 
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 try {
+  if (includeMissing) {
+    const missing = await pool.query(`SELECT c.museum_id AS "museumId",c.provider,
+      c.source_key AS "sourceKey",e.title,e.source_url AS "sourceUrl",
+      c.missed_runs AS "missedRuns",c.first_missing_at AS "firstMissingAt",
+      c.last_missing_at AS "lastMissingAt",c.last_run_id AS "lastRunId"
+      FROM source_missing_candidates c JOIN exhibitions e ON e.id=c.exhibition_id
+      WHERE c.status='pending' AND ($1::text IS NULL OR c.museum_id=$1)
+      ORDER BY c.last_missing_at DESC,c.museum_id,c.source_key LIMIT 200`, [source]);
+    process.stdout.write(`${JSON.stringify({ items: missing.rows,
+      note: '官方來源成功匯入後仍未出現在本次清單的候選；不代表展覽已取消或結束，未自動下架。請點館方原頁核對。最多顯示 200 筆。' }, null, 2)}\n`);
+  } else {
   const result = await pool.query(`SELECT s.museum_id AS "museumId",s.provider,
     s.source_key AS "sourceKey",s.source_url AS "sourceUrl",s.status,s.reason,
     COALESCE(s.raw_record->>'特展名稱',s.raw_record->>'title') AS title,
@@ -26,6 +38,7 @@ try {
     ORDER BY s.last_seen_at DESC,s.museum_id,s.source_key LIMIT 200`, [source, includeApproved]);
   process.stdout.write(`${JSON.stringify({ items: result.rows,
     note: '僅本機待審清單；須回館方頁核對後，才可建立帶證據的修正。最多顯示 200 筆。' }, null, 2)}\n`);
+  }
 } finally {
   await pool.end();
 }

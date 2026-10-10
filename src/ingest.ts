@@ -11,6 +11,7 @@ import { classifyNpmNorthFeed, npmNorthDataUrl } from './sources/npm-north.ts';
 import { classifyNstmFeed, nstmDataUrl, nstmListUrl } from './sources/nstm.ts';
 import { classifyMocChimei, mocExhibitionsUrl, verifiedMocChimeiRows } from './sources/moc-chimei.ts';
 import { correctedDraft, sourceHash } from './corrections.ts';
+import { trackMissingCandidates } from './source-missing.ts';
 
 function arg(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -220,7 +221,7 @@ async function main(): Promise<void> {
     await quarantineInvalidPrimaryRecords(client, museum, provider, records);
     const counts = { fetched: records.length || rows.length, inserted: 0, updated: 0,
       unchanged: 0, linked: 0, skipped: records.filter((record) => record.status === 'ignored').length,
-      review: records.filter((record) => record.status === 'review').length };
+      review: records.filter((record) => record.status === 'review').length, missing: 0 };
     for (const record of records) {
       await client.query(`INSERT INTO source_records
         (museum_id,provider,source_key,source_url,raw_record,status,reason)
@@ -285,11 +286,14 @@ async function main(): Promise<void> {
         ON CONFLICT (museum_id,provider,source_key) DO UPDATE SET last_seen_at=now()`,
       [museum, provider, row.sourceKey, exhibitionId]);
     }
+    if (official) {
+      counts.missing = await trackMissingCandidates(client, museum, provider, runId!, rows, records);
+    }
     await client.query(`UPDATE ingestion_runs SET status='succeeded',finished_at=now(),
       fetched_count=$2,inserted_count=$3,updated_count=$4,unchanged_count=$5,linked_count=$6,
-      skipped_count=$7,review_count=$8 WHERE id=$1`,
+      skipped_count=$7,review_count=$8,missing_count=$9 WHERE id=$1`,
     [runId, counts.fetched, counts.inserted, counts.updated, counts.unchanged, counts.linked,
-      counts.skipped, counts.review]);
+      counts.skipped, counts.review, counts.missing]);
     if (rows.length > 0 && (official || rows.some((row) => !row.isSample))) {
       await client.query('UPDATE museums SET last_success_at=now() WHERE id=$1', [museum]);
     }

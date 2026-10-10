@@ -192,6 +192,7 @@ async function main() {
   await testDb.query(await readFile(join(project, 'db/006_nstm.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/007_ticket_catalog.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/008_official_sync_freshness.sql'), 'utf8'));
+  await testDb.query(await readFile(join(project, 'db/009_source_missing_candidates.sql'), 'utf8'));
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const [original] = JSON.parse(await readFile(join(project, 'test/fixtures/chimei.json'), 'utf8'));
 
@@ -386,6 +387,36 @@ async function main() {
     [invalidFormerlyValid.Source]);
   assert.deepEqual(result.rows[0], { visible: true, primary_provider: 'alternate' },
     '待審來源已非主來源時，不應隱藏其他有效來源接手的展覽');
+  const { trackMissingCandidates } = await import('../src/source-missing.ts');
+  const firstUrl = invalidFormerlyValid.Source;
+  const secondUrl = 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=second-good';
+  async function observeOfficialList(urls) {
+    const run = await testDb.query(`INSERT INTO ingestion_runs(museum_id,status)
+      VALUES ('nmmba','running') RETURNING id`);
+    const client = await testDb.connect();
+    try {
+      await client.query('BEGIN');
+      const count = await trackMissingCandidates(client, 'nmmba', 'nmmba', run.rows[0].id,
+        urls.map((sourceUrl) => ({ sourceKey: sourceUrl, sourceUrl })), []);
+      await client.query('COMMIT');
+      return count;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    } finally { client.release(); }
+  }
+  assert.equal(await observeOfficialList([firstUrl]), 1);
+  assert.equal(await observeOfficialList([firstUrl]), 1);
+  result = await testDb.query(`SELECT status,missed_runs FROM source_missing_candidates
+    WHERE museum_id='nmmba' AND provider='nmmba' AND source_key=$1`, [secondUrl]);
+  assert.deepEqual(result.rows[0], { status: 'pending', missed_runs: 2 });
+  result = await testDb.query('SELECT visible FROM exhibitions WHERE museum_id=$1 AND source_key=$2',
+    ['nmmba', secondUrl]);
+  assert.equal(result.rows[0].visible, true, '缺席候選不等於已下架；須人工核對');
+  execFileSync(process.execPath, seaArgs, { cwd: project, env: seaEnv, encoding: 'utf8' });
+  result = await testDb.query(`SELECT missed_runs FROM source_missing_candidates
+    WHERE museum_id='nmmba' AND provider='nmmba' AND source_key=$1`, [secondUrl]);
+  assert.equal(result.rows[0].missed_runs, 2, '手動快照不應增加官方來源缺席次數');
   const adminPort = 31000 + Math.floor(Math.random() * 2000);
   const adminBase = `http://127.0.0.1:${adminPort}`;
   const admin = spawn(process.execPath, ['--experimental-strip-types', 'src/admin-server.ts'], {
@@ -412,6 +443,9 @@ async function main() {
     response = await fetch(adminBase, { headers: { cookie } });
     assert.equal(response.status, 200);
     assert.match(await response.text(), /待審來源紀錄/);
+    response = await fetch(`${adminBase}/missing`, { headers: { cookie } });
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /另一個海洋特展/);
     response = await fetch(`${adminBase}/approve`, { method: 'POST',
       headers: { origin: adminBase, cookie, 'content-type': 'application/x-www-form-urlencoded' },
       body: 'csrf=wrong' });
@@ -433,6 +467,11 @@ async function main() {
       await exited;
     }
   }
+  assert.equal(await observeOfficialList([firstUrl, secondUrl]), 0);
+  result = await testDb.query(`SELECT status,missed_runs FROM source_missing_candidates
+    WHERE museum_id='nmmba' AND provider='nmmba' AND source_key=$1`, [secondUrl]);
+  assert.deepEqual(result.rows[0], { status: 'resolved', missed_runs: 2 },
+    '來源重新出現後，缺席候選應自動結案');
   for (const [key, title, start, end] of [
     ['ended', '測試已結束', '2026-01-01', '2026-02-01'],
     ['ongoing', '測試展出中', '2026-09-01', '2026-11-01'],

@@ -120,6 +120,24 @@ const server = createServer(async (request, response) => {
       page(response, 200, `<h1>補正已記錄</h1><p>紀錄 ID：${escape(correctionId)}。下次匯入相同原始資料時才會套用。</p><a href="/">返回清單</a>`);
       return;
     }
+    if (request.method === 'GET' && url.pathname === '/missing') {
+      const result = await pool.query(`SELECT c.museum_id,c.provider,c.source_key,c.missed_runs,
+        c.last_missing_at,e.title,e.source_url FROM source_missing_candidates c
+        JOIN exhibitions e ON e.id=c.exhibition_id WHERE c.status='pending'
+        ORDER BY c.last_missing_at DESC,c.museum_id,c.source_key LIMIT 100`);
+      const links = result.rows.map((item) => {
+        let source = '來源網址無法開啟';
+        try {
+          const official = new URL(item.source_url);
+          if (official.protocol === 'https:') {
+            source = `<a href="${escape(official.href)}" target="_blank" rel="noopener noreferrer">開啟館方原頁 ↗</a>`;
+          }
+        } catch { /* 保留不可開啟標記。 */ }
+        return `<li>${escape(item.title)} · ${escape(item.museum_id)} · 連續缺席 ${escape(item.missed_runs)} 次 · ${source}</li>`;
+      }).join('');
+      page(response, 200, `<p><a href="/">← 待審來源紀錄</a></p><h1>來源清單缺席候選</h1><p>這只表示成功匯入後未在該次來源資料看見；可能是分頁、來源漏資料或下架。展覽不會因此自動隱藏，請向館方核對。</p><ul>${links || '<li>目前沒有缺席候選</li>'}</ul>`);
+      return;
+    }
     if (request.method === 'GET' && url.pathname === '/record') {
       const museum = url.searchParams.get('museum') ?? '';
       const key = url.searchParams.get('key') ?? '';
@@ -142,7 +160,7 @@ const server = createServer(async (request, response) => {
           AND museum_id IN ('nmmba','npm-north')
         ORDER BY last_seen_at DESC,museum_id,source_key LIMIT 100`);
       const links = result.rows.map((row) => `<li><a href="/record?museum=${encodeURIComponent(row.museum_id)}&key=${encodeURIComponent(row.source_key)}">${escape(row.title || row.source_key)}</a> · ${escape(row.museum_id)} · ${escape(row.reason)}</li>`).join('');
-      page(response, 200, `<h1>待審來源紀錄</h1><p>顯示最近 100 筆，共 ${result.rows.length} 筆。此頁只在本機啟用。</p><ul>${links || '<li>目前沒有待審紀錄</li>'}</ul><form method="post" action="/logout"><input type="hidden" name="csrf" value="${user.csrf}"><button>登出</button></form>`);
+      page(response, 200, `<h1>待審來源紀錄</h1><p>顯示最近 100 筆，共 ${result.rows.length} 筆。此頁只在本機啟用。</p><p><a href="/missing">查看來源清單缺席候選</a></p><ul>${links || '<li>目前沒有待審紀錄</li>'}</ul><form method="post" action="/logout"><input type="hidden" name="csrf" value="${user.csrf}"><button>登出</button></form>`);
       return;
     }
     fail(response, 404, '找不到頁面');

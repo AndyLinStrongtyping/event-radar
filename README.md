@@ -69,6 +69,8 @@ npm run ingest -- --source nmmba --official
 npm run ingest -- --source nstm --official
 npm run ingest -- --source chimei --provider culture --official
 npm run review -- --source nmmba
+# 查看成功官方匯入後未再出現在來源清單的展覽（僅供人工核對）
+npm run review -- --missing
 npm run sync:status
 # 僅限本機管理頁，需另外設定至少 16 字元的 EVENT_RADAR_ADMIN_PASSWORD
 npm run admin
