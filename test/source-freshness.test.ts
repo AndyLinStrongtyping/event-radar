@@ -12,12 +12,12 @@ test('人工核對與規劃中來源不宣稱同步成功', () => {
 test('最近失敗優先於之前成功；未有同步嘗試不視為新鮮', () => {
   assert.equal(sourceFreshness('open_data', '2026-10-10T03:00:00Z', 'failed', now), 'failed');
   assert.equal(sourceFreshness('open_data', '2026-10-10T03:00:00Z', null, now), 'untracked');
-  assert.equal(sourceFreshness('open_data', '2026-10-07T03:00:00Z', null, now), 'stale');
+  assert.equal(sourceFreshness('open_data', '2026-10-02T03:00:00Z', null, now), 'stale');
   assert.equal(sourceFreshness('open_data', null, null, now), 'never');
 });
 
-test('成功匯入超過 48 小時顯示過期', () => {
-  assert.equal(sourceFreshness('open_data', '2026-10-08T04:00:00Z', 'succeeded', now), 'recent');
-  assert.equal(sourceFreshness('open_data', '2026-10-08T03:59:59Z', 'succeeded', now), 'stale');
+test('成功匯入超過 7 天才顯示可能過期', () => {
+  assert.equal(sourceFreshness('open_data', '2026-10-03T04:00:00Z', 'succeeded', now), 'recent');
+  assert.equal(sourceFreshness('open_data', '2026-10-03T03:59:59Z', 'succeeded', now), 'stale');
   assert.equal(sourceFreshness('open_data', '2026-10-11T04:00:00Z', 'succeeded', now), 'untracked');
 });

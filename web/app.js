@@ -24,8 +24,8 @@ function sourceMessage(museum) {
   const last = formatTaipei(museum.lastSuccessAt);
   switch (museum.dataStatus) {
     case 'manual': return last ? `人工核對資料；最後匯入：${last}。後續展期變動請查館方。` : '人工核對資料；尚無成功匯入紀錄。請查館方最新公告。';
-    case 'recent': return `最近 48 小時內曾成功匯入（${last}）；來源本身未必每日更新。`;
-    case 'stale': return `超過 48 小時沒有成功匯入；上次成功：${last}。資料可能過期。`;
+    case 'recent': return `最近 7 天內曾成功匯入（${last}）；館方內容未必每日變動。`;
+    case 'stale': return `超過 7 天沒有成功匯入；上次成功：${last}。資料可能過期，請查館方原頁。`;
     case 'failed': return `最近一次同步失敗；${last ? `上次成功：${last}。` : '尚無成功匯入紀錄。'}資料可能過期。`;
     case 'untracked': return `已有匯入資料（${last}），但沒有成功的同步嘗試紀錄；無法確認更新頻率。`;
     case 'never': return '尚無成功匯入紀錄；請查館方最新公告。';
@@ -146,7 +146,7 @@ async function updateVisitStatus() {
   const generation = ++visitGeneration;
   const museum = museumSelect.value;
   if (!museum) {
-    visitPanel.innerHTML = '<strong>出發前核對開館資訊</strong><p>選擇博物館與參觀日期後，可查看休館提醒及館方公告入口。</p>';
+    visitPanel.innerHTML = '<strong>出發前核對開館資訊</strong><p>各館平常開放時間整理在「博物館介紹」。節日、節慶及臨時異動請到館方網站確認。</p>';
     return;
   }
   const date = form.elements.asOf.value || new Intl.DateTimeFormat('en-CA', {
@@ -163,7 +163,7 @@ async function updateVisitStatus() {
     const news = info.newsUrl ? new URL(info.newsUrl) : null;
     visitPanel.className = `visit-status visit-${info.status}`;
     visitPanel.innerHTML = `<strong>${info.status === 'closed' ? '休館提醒' : info.status === 'open' ? '館方行事曆顯示開館' : '請向館方確認'}</strong>
-      <p>${escapeHtml(info.message)}</p><div class="visit-links"><a href="${escapeHtml(source.href)}" target="_blank" rel="noopener noreferrer">查看館方開放資訊 ↗</a>${news?.protocol === 'https:' ? `<a href="${escapeHtml(news.href)}" target="_blank" rel="noopener noreferrer">查看奇美館方訊息 ↗</a>` : ''}</div>
+      <p>${escapeHtml(info.message)}</p><div class="visit-links"><a href="/guides/${encodeURIComponent(museum)}.html">查看平常開館時間 ↗</a><a href="${escapeHtml(source.href)}" target="_blank" rel="noopener noreferrer">查看館方開放資訊 ↗</a>${news?.protocol === 'https:' ? `<a href="${escapeHtml(news.href)}" target="_blank" rel="noopener noreferrer">查看奇美館方訊息 ↗</a>` : ''}</div>
       ${info.checkedAt ? `<small>API 核對時間：${escapeHtml(new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(info.checkedAt)))}</small>` : ''}`;
   } catch {
     if (generation === visitGeneration) visitPanel.innerHTML = '<strong>開館資訊暫時無法核對</strong><p>請查看館方最新公告後再出發。</p>';

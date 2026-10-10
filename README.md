@@ -10,7 +10,7 @@
 
 目標是從臺灣各博物館的官方資訊取得特展資料，整理展期、展館、城市與簡介，供人依地點與日期查詢，並回到官方公告核對。第一版聚焦**特展與期間限定展**，不收市集、音樂會或一般演出。
 
-目前是 **本機 MVP**：資料庫、查詢 API、五館公開資料或官方頁匯入、文化部奇美補充來源、九館常設展導覽、來源隔離、本機審核頁、有限重試及嘗試紀錄、同館去重、欄位異動紀錄與測試已完成本機驗證。搜尋可按展覽狀態與明確免費資訊篩選；現有來源多數沒有可靠的**個別展覽票價**，所以免費結果可能為空。首頁另有九館一般入館票價與購票入口的人工核對索引，奇美法老展有單獨的特展票價；兩種票務資訊分開顯示。[票務來源與維護](docs/ticketing.md)列出人工核對證據，[最新階段紀錄](docs/stage-2026-10-05-phase5.md)列出先前實測與索引判斷。每日同步排程與 CI 已寫成 GitHub Actions 設定檔，但線上每日同步與公開網站尚未啟用，因此不列為已上線系統。
+目前是 **本機 MVP**：資料庫、查詢 API、五館公開資料或官方頁匯入、文化部奇美補充來源、九館博物館介紹、來源隔離、本機審核頁、有限重試及嘗試紀錄、同館去重、欄位異動紀錄與測試已完成本機驗證。搜尋可按展覽狀態與明確免費資訊篩選；現有來源多數沒有可靠的**個別展覽票價**，所以免費結果可能為空。首頁另有九館一般入館票價與購票入口的人工核對索引，奇美法老展有單獨的特展票價；兩種票務資訊分開顯示。[票務來源與維護](docs/ticketing.md)列出人工核對證據，[最新階段紀錄](docs/stage-2026-10-05-phase5.md)列出先前實測與索引判斷。每日同步排程與 CI 已寫成 GitHub Actions 設定檔，但線上每日同步與公開網站尚未啟用，因此不列為已上線系統。
 
 ## 範圍
 
@@ -20,7 +20,7 @@
 - 科博館的[官方 OpenAPI](https://www.nmns.edu.tw/ch/about/info-central/opendata/index.html)個人金鑰已核發並在本機驗證。`NMNS_API_KEY` 優先供展覽與未來一週開放時間使用；無金鑰時展覽匯入仍可使用原 `NMNS_OPEN_DATA_URL`，開放時間只顯示官網核對入口。金鑰只存在 Git 忽略的本機 `.env`，不提交到 Git。
 - 故宮南院的[當期展覽](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3112)與[展覽預告](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3111)是第三個真實來源。匯入有起訖日期的特別展覽與限期輪替展，保留官方詳情連結；無結束日的常設展與年度期程不列入搜尋。這是官方網頁同步，不是館方提供的公開 API。
 - 故宮北院[公開展覽 JSON](https://odapi.npm.gov.tw/data/open/api/v1/exhibition/current.json)與海生館[公開特展 JSON](https://www.nmmba.gov.tw/OpenData.aspx?SN=BF6D6EB9CB6876BB)已接入本機。逐筆保留原始值，分流有效、待審與略過資料；故宮按院區與展期保守篩選，海生館缺起訖日不推測為常設展。用 `npm run review -- --source nmmba` 或 `--source npm-north` 查看待審原因。
-- 首頁的「常設展導覽」另有[奇美](web/guides/chimei.html)、[科博館（含植物園）](web/guides/nmns.html)、[臺博館](web/guides/ntm.html)、[臺史博](web/guides/nmth.html)、[故宮南院](web/guides/npm-south.html)、[科工館](web/guides/nstm.html)、[科教館](web/guides/ntsec.html)、[故宮北院](web/guides/npm-north.html)與[海生館](web/guides/nmmba.html)九頁人工編寫介紹。多頁附照片及[圖片依據](docs/sources.md#常設展照片來源與使用)。它們不是 API 同步資料，展件與開放狀態須以館方最新公告為準。臺博館、臺史博與科教館的近期特展尚未接入本站資料庫。未來 React 視覺改版方向見[設計筆記](docs/react-visual-direction.md)。
+- 首頁的「博物館介紹」另有[奇美](web/guides/chimei.html)、[科博館（含植物園）](web/guides/nmns.html)、[臺博館](web/guides/ntm.html)、[臺史博](web/guides/nmth.html)、[故宮南院](web/guides/npm-south.html)、[科工館](web/guides/nstm.html)、[科教館](web/guides/ntsec.html)、[故宮北院](web/guides/npm-north.html)與[海生館](web/guides/nmmba.html)九頁人工編寫介紹。各頁附常設展路線、2026-10-10 人工核對的平常開館時間與官方查證連結；[開館時間來源](docs/opening-hours.md)列出範圍。多頁附照片及[圖片依據](docs/sources.md#常設展照片來源與使用)。這些時間不是逐日同步資料；國定假日、節慶及臨時變動須以館方公告為準。臺博館、臺史博與科教館的近期特展尚未接入本站資料庫。未來 React 視覺改版方向見[設計筆記](docs/react-visual-direction.md)。
 - 九頁導覽都有交通規劃：可選出發縣市並選填更精確的地址或車站，分別開啟 Google Maps 大眾運輸與開車路線，旁邊保留館方交通連結。只選縣市時以該縣市政府作示意起點；本站不計算即時車程、票價或「最佳」交通方式，也不儲存輸入地點。
 - 奇美公開特展頁已有**本機可執行的每週連結變更檢查**（`npm run check:chimei`）。該檢查與文化部補充匯入互相獨立；前者比對官網初始 HTML 明確列出的連結，後者只納入能通過官網逐筆核對的文化部資料，兩者都不保證完整奇美展覽清單。線上排程尚未啟用。
 

@@ -47,13 +47,10 @@ export async function visitStatus(museumId: string, date: string,
   now = new Date()): Promise<VisitStatus> {
   if (!links[museumId] || !validVisitDate(date)) throw new Error('館所或日期無效');
   const base: VisitStatus = { museumId, date, status: 'unknown',
-    message: '目前沒有可驗證的逐日開放資料；出發前請查看館方資訊。', sourceUrl: links[museumId] };
+    message: '平常開放時間已整理在博物館介紹；國定假日、節慶或臨時異動請以館方當日公告為準。', sourceUrl: links[museumId] };
   if (museumId === 'chimei') {
-    const weekday = new Date(`${date}T00:00:00Z`).getUTCDay();
-    return { ...base, status: weekday === 3 ? 'closed' : 'unknown',
-      message: weekday === 3
-        ? '奇美博物館公布週三休館；其他臨時異動請再看全年行事曆與最新消息。'
-        : '奇美博物館公布開館時間 9:30–17:30，週三及除夕休館；這天是否有臨時異動，請查看全年行事曆與最新消息。',
+    return { ...base,
+      message: '奇美博物館平常週三休館，但有特別開放場次；請查看館方全年行事曆，勿只依星期判斷。',
       newsUrl: 'https://www.chimeimuseum.org/news/5fd2eee2256ee' };
   }
   if (museumId !== 'nmns' || !process.env.NMNS_API_KEY) return base;

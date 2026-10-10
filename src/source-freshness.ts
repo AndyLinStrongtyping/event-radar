@@ -1,5 +1,7 @@
 export type SourceFreshness = 'manual' | 'planned' | 'never' | 'untracked' | 'failed' | 'stale' | 'recent';
 
+const STALE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+
 export function sourceFreshness(
   sourceStatus: string,
   lastSuccessAt: Date | string | null,
@@ -12,6 +14,6 @@ export function sourceFreshness(
   if (!lastSuccessAt) return 'never';
   const elapsed = now.getTime() - new Date(lastSuccessAt).getTime();
   if (!Number.isFinite(elapsed) || elapsed < 0) return 'untracked';
-  if (elapsed > 48 * 60 * 60 * 1000) return 'stale';
+  if (elapsed > STALE_AFTER_MS) return 'stale';
   return lastAttemptStatus === 'succeeded' ? 'recent' : 'untracked';
 }

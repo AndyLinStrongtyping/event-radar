@@ -2,12 +2,13 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { parseNmnsHours, validVisitDate, visitStatus } from '../src/visit-status.ts';
 
-test('休館日期驗證與奇美週三提醒', async () => {
+test('休館日期驗證與奇美週三例外提醒', async () => {
   assert.equal(validVisitDate('2026-02-30'), false);
   assert.equal(validVisitDate('2026-10-07'), true);
-  const closed = await visitStatus('chimei', '2026-10-07');
-  assert.equal(closed.status, 'closed');
-  assert.match(closed.sourceUrl, /chimeimuseum\.org\/visit\/calendar/);
+  const wednesday = await visitStatus('chimei', '2026-10-07');
+  assert.equal(wednesday.status, 'unknown'); // 特別場次可能開放，不能單靠星期判定休館
+  assert.match(wednesday.message, /特別開放場次/);
+  assert.match(wednesday.sourceUrl, /chimeimuseum\.org\/visit\/calendar/);
   const other = await visitStatus('chimei', '2026-10-08');
   assert.equal(other.status, 'unknown'); // 臨時休館未核對，不能宣稱開館
 });

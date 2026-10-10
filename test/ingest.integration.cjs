@@ -352,7 +352,7 @@ async function main() {
     [`contract:${key}`, title, start, end]);
   }
   await testDb.query("UPDATE museums SET last_success_at=now()-interval '1 hour' WHERE id='nmns'");
-  await testDb.query("UPDATE museums SET last_success_at=now()-interval '3 days' WHERE id='npm-south'");
+  await testDb.query("UPDATE museums SET last_success_at=now()-interval '8 days' WHERE id='npm-south'");
   await testDb.query(`INSERT INTO sync_attempts
     (sync_id,museum_id,attempt_no,status,retryable,duration_ms)
     VALUES (gen_random_uuid(),'nmns',1,'failed',true,1200),
