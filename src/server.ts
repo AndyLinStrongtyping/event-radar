@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import process from 'node:process';
 import pg from 'pg';
 import { visitStatus, validVisitDate } from './visit-status.ts';
+import { sourceFreshness } from './source-freshness.ts';
 
 if (!process.env.DATABASE_URL) throw new Error('請先設定 DATABASE_URL');
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
@@ -93,8 +94,17 @@ const server = createServer(async (request, response) => {
     }
     if (url.pathname === '/museums') {
       const result = await pool.query(`SELECT id,name,city,homepage_url AS "homepageUrl",
-        source_status AS "sourceStatus",last_success_at AS "lastSuccessAt" FROM museums ORDER BY name`);
-      json(response, 200, { items: result.rows });
+        source_status AS "sourceStatus",last_success_at AS "lastSuccessAt",
+        latest.status AS "lastAttemptStatus",latest.created_at AS "lastAttemptAt"
+        FROM museums m
+        LEFT JOIN LATERAL (SELECT status,created_at FROM sync_attempts
+          WHERE museum_id=m.id ORDER BY created_at DESC,id DESC LIMIT 1) latest ON true
+        ORDER BY name`);
+      const now = new Date();
+      json(response, 200, { items: result.rows.map((museum) => ({
+        ...museum,
+        dataStatus: sourceFreshness(museum.sourceStatus, museum.lastSuccessAt, museum.lastAttemptStatus, now),
+      })) });
       return;
     }
     if (url.pathname === '/visit-status') {

@@ -6,6 +6,7 @@ const sampleToggle = document.querySelector('#include-sample');
 const citySelect = form.elements.city;
 const museumSelect = form.elements.museum;
 const visitPanel = document.querySelector('#visit-status');
+const freshnessPanel = document.querySelector('#source-freshness');
 let availableMuseums = [];
 let searchGeneration = 0;
 let visitGeneration = 0;
@@ -13,6 +14,38 @@ let visitGeneration = 0;
 const escapeHtml = (value) => String(value ?? '').replace(/[&<>"']/g, (character) => ({
   '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
 })[character]);
+
+const formatTaipei = (value) => value && !Number.isNaN(Date.parse(value))
+  ? new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value))
+  : null;
+
+function sourceMessage(museum) {
+  const last = formatTaipei(museum.lastSuccessAt);
+  switch (museum.dataStatus) {
+    case 'manual': return last ? `人工核對資料；最後匯入：${last}。後續展期變動請查館方。` : '人工核對資料；尚無成功匯入紀錄。請查館方最新公告。';
+    case 'recent': return `最近 48 小時內曾成功匯入（${last}）；來源本身未必每日更新。`;
+    case 'stale': return `超過 48 小時沒有成功匯入；上次成功：${last}。資料可能過期。`;
+    case 'failed': return `最近一次同步失敗；${last ? `上次成功：${last}。` : '尚無成功匯入紀錄。'}資料可能過期。`;
+    case 'untracked': return `已有匯入資料（${last}），但沒有成功的同步嘗試紀錄；無法確認更新頻率。`;
+    case 'never': return '尚無成功匯入紀錄；請查館方最新公告。';
+    case 'snapshot': return '本機展示快照，沒有線上同步；展期請查館方最新公告。';
+    default: return '無法核對此館資料更新狀態；請查館方最新公告。';
+  }
+}
+
+function updateSourceFreshness() {
+  const selected = availableMuseums.find((museum) => museum.id === museumSelect.value);
+  if (!selected) {
+    freshnessPanel.className = 'source-freshness';
+    freshnessPanel.innerHTML = '<strong>資料來源狀態</strong><p>各館資料更新方式不同；選擇博物館可查看最後成功匯入及同步狀態。參觀前請開啟展覽的官方連結核對。</p>';
+    return;
+  }
+  const warning = !['recent'].includes(selected.dataStatus);
+  freshnessPanel.className = `source-freshness${warning ? ' source-warning' : ''}`;
+  const homepage = new URL(selected.homepageUrl);
+  freshnessPanel.innerHTML = `<strong>${escapeHtml(selected.name)}｜資料來源狀態</strong><p>${escapeHtml(sourceMessage(selected))}</p>
+    <a href="${escapeHtml(homepage.href)}" target="_blank" rel="noopener noreferrer">查看館方網站 ↗</a>`;
+}
 
 function card(item, index) {
   const title = escapeHtml(item.title);
@@ -24,12 +57,14 @@ function card(item, index) {
   const admissionLabel = item.admissionStatus === 'free' ? '免費（以館方公告為準）'
     : item.priceNote ? escapeHtml(item.priceNote) : '尚未提供，請查館方';
   const seen = item.lastSeenAt ? new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(item.lastSeenAt)) : null;
+  const museum = availableMuseums.find((entry) => entry.id === item.museumId);
+  const freshness = museum && museum.dataStatus !== 'recent' ? sourceMessage(museum) : null;
   const url = new URL(item.sourceUrl);
   if (url.protocol !== 'https:') return '';
   return `<article class="card" data-url="${escapeHtml(url.href)}">
     <div class="card-top"><span class="card-number">FILE ${String(index + 1).padStart(3, '0')}</span><span class="badge ${item.isSample ? 'sample' : ''}">${sourceLabel}</span></div>
     <p class="card-state">${statusLabel}${item.admissionStatus === 'free' ? ' · 免費' : ''}</p>
-    <p class="card-museum">${escapeHtml(item.museumName)} · ${escapeHtml(item.city)}</p>
+    <p class="card-museum">${escapeHtml(item.museumName)} · ${escapeHtml(item.city)}</p>${freshness ? `<p class="card-freshness">${escapeHtml(freshness)}</p>` : ''}
     <h3>${title}</h3><p class="card-summary">${summary}</p>
     <div class="card-meta"><div><strong>展期</strong><span>${escapeHtml(item.startDate)} — ${escapeHtml(item.endDate)}</span></div><div><strong>展區</strong><span>${venue}</span></div><div><strong>入場</strong><span>${admissionLabel}</span></div>${seen ? `<div><strong>核對</strong><span>${escapeHtml(seen)}</span></div>` : ''}</div>
     <a class="card-link" href="${escapeHtml(url.href)}" target="_blank" rel="noopener noreferrer" aria-label="前往 ${title} 的官方頁面">查看官方資訊 <span aria-hidden="true">↗</span></a>
@@ -58,10 +93,12 @@ async function loadMuseums() {
   }
   updateMuseumOptions();
   if (requested) museumSelect.value = requested.id;
+  updateSourceFreshness();
 }
 
 async function search() {
   updateVisitStatus();
+  updateSourceFreshness();
   const generation = ++searchGeneration;
   count.textContent = '搜尋中…';
   const params = new URLSearchParams();

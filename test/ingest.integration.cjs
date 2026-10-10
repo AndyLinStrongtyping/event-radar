@@ -82,7 +82,13 @@ async function checkPublicApiContract() {
         assert.equal(typeof museum[field], 'string', `museum.${field} 必須是字串`);
       }
       assert.ok(museum.lastSuccessAt === null || !Number.isNaN(Date.parse(museum.lastSuccessAt)));
+      assert.ok(museum.lastAttemptAt === null || !Number.isNaN(Date.parse(museum.lastAttemptAt)));
+      assert.ok(museum.lastAttemptStatus === null || ['succeeded', 'failed'].includes(museum.lastAttemptStatus));
+      assert.ok(['manual', 'planned', 'never', 'untracked', 'failed', 'stale', 'recent'].includes(museum.dataStatus));
     }
+    assert.equal(museums.items.find((museum) => museum.id === 'chimei').dataStatus, 'manual');
+    assert.equal(museums.items.find((museum) => museum.id === 'nmns').dataStatus, 'failed');
+    assert.equal(museums.items.find((museum) => museum.id === 'npm-south').dataStatus, 'stale');
 
     const list = await get('/exhibitions?from=2026-01-01&to=2027-12-31&museum=chimei&limit=2');
     assert.equal(typeof list.total, 'number');
@@ -340,6 +346,12 @@ async function main() {
       VALUES ('chimei',$1,'chimei',$2,$3,$4,'免費','https://www.chimeimuseum.org/',true,repeat('0',64))`,
     [`contract:${key}`, title, start, end]);
   }
+  await testDb.query("UPDATE museums SET last_success_at=now()-interval '1 hour' WHERE id='nmns'");
+  await testDb.query("UPDATE museums SET last_success_at=now()-interval '3 days' WHERE id='npm-south'");
+  await testDb.query(`INSERT INTO sync_attempts
+    (sync_id,museum_id,attempt_no,status,retryable,duration_ms)
+    VALUES (gen_random_uuid(),'nmns',1,'failed',true,1200),
+      (gen_random_uuid(),'npm-south',1,'succeeded',false,1200)`);
   await checkPublicApiContract();
   process.stdout.write('匯入回滾、去重、欄位異動及公開 API 回應契約：通過\n');
 }

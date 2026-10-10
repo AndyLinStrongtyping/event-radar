@@ -31,11 +31,11 @@ const files = {
   '/assets/npm-teacup-commons.jpg': ['assets/npm-teacup-commons.jpg', 'image/jpeg'],
 };
 const museums = [
-  { id: 'chimei', name: '奇美博物館', city: '臺南市' },
-  { id: 'nmns', name: '國立自然科學博物館', city: '臺中市' },
-  { id: 'npm-south', name: '國立故宮博物院南部院區', city: '嘉義縣' },
-  { id: 'npm-north', name: '國立故宮博物院北部院區', city: '臺北市' },
-  { id: 'nmmba', name: '國立海洋生物博物館', city: '屏東縣' },
+  { id: 'chimei', name: '奇美博物館', city: '臺南市', homepageUrl: 'https://www.chimeimuseum.org/', sourceStatus: 'curated' },
+  { id: 'nmns', name: '國立自然科學博物館', city: '臺中市', homepageUrl: 'https://www.nmns.edu.tw/', sourceStatus: 'open_data' },
+  { id: 'npm-south', name: '國立故宮博物院南部院區', city: '嘉義縣', homepageUrl: 'https://south.npm.gov.tw/', sourceStatus: 'official_page' },
+  { id: 'npm-north', name: '國立故宮博物院北部院區', city: '臺北市', homepageUrl: 'https://www.npm.gov.tw/', sourceStatus: 'open_data' },
+  { id: 'nmmba', name: '國立海洋生物博物館', city: '屏東縣', homepageUrl: 'https://www.nmmba.gov.tw/', sourceStatus: 'open_data' },
 ];
 
 createServer(async (request, response) => {
@@ -53,7 +53,9 @@ createServer(async (request, response) => {
       return;
     }
     if (url.pathname === '/museums') {
-      response.end(JSON.stringify({ items: museums }));
+      response.end(JSON.stringify({ items: museums.map((museum) => ({ ...museum,
+        lastSuccessAt: null, lastAttemptStatus: null, lastAttemptAt: null, dataStatus: 'snapshot',
+      })) }));
       return;
     }
     if (url.pathname === '/visit-status') {
