@@ -444,6 +444,11 @@ async function main() {
     response = await fetch(adminBase, { headers: { cookie } });
     assert.equal(response.status, 200);
     assert.match(await response.text(), /待審來源紀錄/);
+    response = await fetch(`${adminBase}/health`);
+    assert.equal(response.status, 401, '未登入不能讀取來源健康報告');
+    response = await fetch(`${adminBase}/health`, { headers: { cookie } });
+    assert.equal(response.status, 200);
+    assert.match(await response.text(), /來源健康觀測/);
     response = await fetch(`${adminBase}/missing`, { headers: { cookie } });
     assert.equal(response.status, 200);
     assert.match(await response.text(), /另一個海洋特展/);
@@ -540,6 +545,20 @@ async function main() {
     VALUES (gen_random_uuid(),'nmns',1,'failed',true,1200),
       (gen_random_uuid(),'npm-south',1,'succeeded',false,1200),
       (gen_random_uuid(),'nmmba',1,'succeeded',false,1200)`);
+  const retryId = require('node:crypto').randomUUID();
+  await testDb.query(`INSERT INTO sync_attempts
+    (sync_id,museum_id,attempt_no,status,retryable,duration_ms)
+    VALUES ($1,'nmmba',1,'failed',true,1200),($1,'nmmba',2,'succeeded',false,900)`, [retryId]);
+  const { loadSourceHealth } = await import('../src/source-health-report.ts');
+  const health = await loadSourceHealth(testDb);
+  const seaHealth = health.find((item) => item.museumId === 'nmmba');
+  assert.equal(seaHealth.runs7d, 2, '同一 sync_id 的失敗與重試只算一次工作');
+  assert.equal(seaHealth.failedRuns7d, 0, '重試後成功的工作不可列成失敗');
+  assert.equal(seaHealth.retriedRuns7d, 1);
+  assert.equal(seaHealth.failureRate7d, 0);
+  assert.equal(seaHealth.missingNeedsReview, 1, '新缺席未核對應進健康報告');
+  assert.equal(health.find((item) => item.museumId === 'nmns').health, 'failed',
+    '最近同步失敗須優先於先前本機匯入成功');
   await checkPublicApiContract();
   process.stdout.write('匯入回滾、去重、欄位異動及公開 API 回應契約：通過\n');
 }

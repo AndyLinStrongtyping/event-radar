@@ -73,6 +73,7 @@ npm run review -- --source nmmba
 npm run review -- --missing
 # 缺席候選可在本機管理頁 /missing 核對並留下證據；不自動下架
 npm run sync:status
+# 登入本機管理頁後，也可開 /health 查看各館健康摘要
 # 僅限本機管理頁，需另外設定至少 16 字元的 EVENT_RADAR_ADMIN_PASSWORD
 npm run admin
 npm start

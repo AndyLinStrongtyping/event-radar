@@ -4,6 +4,7 @@ import process from 'node:process';
 import pg from 'pg';
 import { approveReview } from './review-service.ts';
 import { reviewMissingCandidate } from './missing-review-service.ts';
+import { loadSourceHealth } from './source-health-report.ts';
 
 if (!process.env.DATABASE_URL) throw new Error('請先設定 DATABASE_URL');
 const password = process.env.EVENT_RADAR_ADMIN_PASSWORD ?? '';
@@ -134,6 +135,23 @@ const server = createServer(async (request, response) => {
       page(response, 200, `<h1>缺席核對已記錄</h1><p>審查 ID：${escape(id)}。這次核對不改展覽可見狀態；下一次成功官方匯入若仍缺席，會再次列為待核對。</p><a href="/missing">返回缺席清單</a>`);
       return;
     }
+    if (request.method === 'GET' && url.pathname === '/health') {
+      const items = await loadSourceHealth(pool);
+      const labels: Record<string, string> = {
+        failed: '最近同步失敗', stale: '超過 7 天未成功取得官方來源',
+        never: '尚無官方同步成功紀錄', untracked: '同步狀態待確認',
+        needs_review: '有待審資料', healthy: '最近同步正常',
+      };
+      const cards = items.map((item) => {
+        const rate = item.failureRate7d === null ? '無工作紀錄'
+          : `${item.failedRuns7d}/${item.runs7d}（${Math.round(item.failureRate7d * 100)}%）`;
+        const official = item.lastOfficialSuccessAt
+          ? new Date(item.lastOfficialSuccessAt).toLocaleString('zh-TW', { timeZone: 'Asia/Taipei' }) : '無紀錄';
+        return `<li><h2>${escape(item.name)}</h2><p>狀態：${escape(labels[item.health])}。最近官方成功：${escape(official)}</p><p>最近 7 天工作失敗：${escape(rate)}；有重試的工作 ${escape(item.retriedRuns7d)} 次。</p><p>待審來源紀錄 ${escape(item.pendingReview)} 筆；新缺席待核對 ${escape(item.missingNeedsReview)} 筆。</p></li>`;
+      }).join('');
+      page(response, 200, `<p><a href="/">← 待審首頁</a></p><h1>來源健康觀測</h1><p>只讀本機報告。每個 sync_id 算一次工作，失敗率取最後一次嘗試；沒有嘗試紀錄不代表成功。7 天是同步健康提醒門檻，不是展覽有效期限。</p><ul>${cards}</ul><p><a href="/missing">查看缺席候選</a></p>`);
+      return;
+    }
     if (request.method === 'GET' && url.pathname === '/missing') {
       const result = await pool.query(`SELECT c.museum_id,c.provider,c.source_key,c.missed_runs,
         c.reviewed_missed_runs,
@@ -205,7 +223,7 @@ const server = createServer(async (request, response) => {
           AND museum_id IN ('nmmba','npm-north')
         ORDER BY last_seen_at DESC,museum_id,source_key LIMIT 100`);
       const links = result.rows.map((row) => `<li><a href="/record?museum=${encodeURIComponent(row.museum_id)}&key=${encodeURIComponent(row.source_key)}">${escape(row.title || row.source_key)}</a> · ${escape(row.museum_id)} · ${escape(row.reason)}</li>`).join('');
-      page(response, 200, `<h1>待審來源紀錄</h1><p>顯示最近 100 筆，共 ${result.rows.length} 筆。此頁只在本機啟用。</p><p><a href="/missing">查看來源清單缺席候選</a></p><ul>${links || '<li>目前沒有待審紀錄</li>'}</ul><form method="post" action="/logout"><input type="hidden" name="csrf" value="${user.csrf}"><button>登出</button></form>`);
+      page(response, 200, `<h1>待審來源紀錄</h1><p>顯示最近 100 筆，共 ${result.rows.length} 筆。此頁只在本機啟用。</p><p><a href="/health">查看來源健康觀測</a> · <a href="/missing">查看來源清單缺席候選</a></p><ul>${links || '<li>目前沒有待審紀錄</li>'}</ul><form method="post" action="/logout"><input type="hidden" name="csrf" value="${user.csrf}"><button>登出</button></form>`);
       return;
     }
     fail(response, 404, '找不到頁面');

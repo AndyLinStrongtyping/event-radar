@@ -12,7 +12,7 @@
     "ingest": "node --env-file-if-exists=.env --experimental-strip-types src/ingest.ts",
     "sync": "node --env-file-if-exists=.env --experimental-strip-types src/sync-source.ts",
     "sync:failed": "node --env-file-if-exists=.env --experimental-strip-types src/sync-source.ts --failed-only",
-    "sync:status": "node --experimental-strip-types src/sync-status.ts",
+    "sync:status": "node --env-file-if-exists=.env --experimental-strip-types src/sync-status.ts",
     "review": "node --env-file-if-exists=.env --experimental-strip-types src/review.ts",
     "review:approve": "node --env-file-if-exists=.env --experimental-strip-types src/approve-review.ts",
     "admin": "node --env-file-if-exists=.env --experimental-strip-types src/admin-server.ts",
