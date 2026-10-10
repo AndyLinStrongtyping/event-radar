@@ -23,6 +23,12 @@
 
 條件式請求（ETag、`If-Modified-Since`）只在官方端實際提供標頭且驗證 `304` 行為後實作。奇美官網尚未確認可自動擷取與使用條件，不列入每日資料庫同步。
 
+## 本機 PostgreSQL 來源工作佇列
+
+此功能需先 `npm run migrate`，且**只在手動呼叫時運作**；現有每日 workflow 仍使用直接 `sync` 並由閘門關閉。`npm run jobs:enqueue -- --source all` 以臺灣日期建立五館工作，也可指定單一館別和 `--date YYYY-MM-DD`；同館同日重送只回既有工作。`npm run jobs:work` 執行一筆到期工作；加 `-- --loop` 才會持續每五秒輪詢。可在不同終端機啟動多個 worker，PostgreSQL `SKIP LOCKED` 避免領到同一筆。`npm run jobs:status` 查看最近 100 筆。`dead` 工作先查錯誤和館方來源，再用 `npm run jobs:replay -- --id <UUID>` 建立新工作，原紀錄不刪。
+
+每次工作最長執行官方匯入 90 秒，持有三分鐘租約；單次 `jobs:work` 若工作失敗會回傳非零碼。暫時錯誤最多三次，間隔 30 秒、2 分鐘，非暫時錯誤直接進 `dead`。worker 異常中止時，下次領取會把過期租約記成失敗並安排退避；沒有常駐 worker 時不會自動恢復。這個 Queue 只處理 `FETCH_SOURCE`，資料解析、正規化、去重、異動仍在一次匯入交易內；不含訂閱通知或圖片處理。不要將「有 Queue」誤寫成已經有線上排程或 AWS 工作服務。
+
 ## 奇美每週變更檢查
 
 `npm run check:chimei` 讀取官方 `robots.txt` 與公開特展頁，從初始 HTML 中的館方個別特展連結比對 `data/chimei-known-links.json`；另以間隔請求核對 `data/chimei-known-details.json` 內已知展覽的官方展名與完整展期。可用 `npm run check:chimei -- --file <本機HTML>` 離線驗證連結（離線模式不核對詳情）。`.github/workflows/chimei-check.yml` 設定每週一臺灣時間 09:20；目前受同一 `EVENT_RADAR_SYNC_ENABLED` 閘門保護，未啟用線上排程。新連結、既有連結消失、已知詳情不符、來源錯誤或解析不到連結都會讓檢查失敗；人工核對官方頁與資料庫後，才更新基準清單。

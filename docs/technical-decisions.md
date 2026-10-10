@@ -96,7 +96,7 @@
 
 - **處理**：新資料與主展覽比對 `title`、`venue`、`startDate`、`endDate`、`priceNote`、`sourceUrl`、`summary`，在同一匯入交易中寫 `exhibition_changes` 的舊值、新值與時間；API 可查最近 100 筆。見 [`src/dedupe.ts`](../src/dedupe.ts)、[`src/server.ts`](../src/server.ts)。
 - **決策**：日期、地點等變更比單純覆蓋更值得追蹤，亦提供日後通知的可信事件基礎。
-- **界線**：目前只記錄異動，**沒有訂閱者通知、訊息佇列或任意版本重播**。
+- **界線**：目前只記錄異動，**沒有訂閱者通知、異動事件 Queue 或任意版本重播**；本機來源工作 Queue 不承載這些事件。
 
 ### ER-16｜同館匯入併發控制（已實作／本機驗證）
 
@@ -107,8 +107,8 @@
 ### ER-17｜來源別重試與手動重跑（已實作／本機驗證）
 
 - **處理**：[`src/sync-source.ts`](../src/sync-source.ts)以子程序跑單館匯入，90 秒逾時；只對連線錯誤、429、5xx 等暫時性錯誤重試，最多三次，間隔 30 秒、2 分鐘；每次嘗試寫 `sync_attempts`。`sync:failed` 只重跑最近失敗的來源。見 [`retry-policy.ts`](../src/retry-policy.ts)。
-- **決策**：一館來源故障不拖垮其他館；格式錯誤不是暫時性故障，不應無限制重抓。先以少量來源的程序重試解決真實需求，再用量測決定是否引入 Queue。
-- **界線**：沒有持久化工作佇列、worker pool、DLQ 或自動 replay。
+- **決策**：一館來源故障不拖垮其他館；格式錯誤不是暫時性故障，不應無限制重抓。這條直接同步流程保留給尚未啟用的每日 workflow；後續另加的本機來源 Queue 見 ER-33。
+- **界線**：直接 `sync` 不經過 Queue；本機手動工作表有 `dead` 狀態與人工重播，但沒有線上 worker pool 或自動 replay。
 
 ### ER-18｜每日排程與奇美每週檢查（已設計但未啟用）
 
@@ -160,7 +160,7 @@
 
 - **處理**：Node 內建 test runner 檢查 adapter、日期、去重、變更、重試、來源狀態與票務；隔離 PostgreSQL 整合測試真正啟動 API，檢查回應欄位、型別、錯誤碼、分頁及資料庫匯入。[CI workflow](../.github/workflows/ci.yml)在 push／PR 跑 TypeScript、單元及整合測試。
 - **決策**：CI 是「何時自動跑驗證」的流程，測試框架是「怎麼寫驗證」的工具；目前用 Node 內建 runner，**不需要為了 CI 另外裝 Jest**。外部館方即時資料會變，CI 用固定樣本檢查契約，不把官方當天內容寫死。
-- **證據／界線**：本次文件整理前最近一次單元測試 30/30、型別檢查通過；資料庫整合測試在前一個 React 階段通過，本次只有文件更新，沒有宣稱重新執行它。
+- **證據／界線**：目前本機 `npm test` 33/33、`npm run typecheck` 與隔離 PostgreSQL `npm run test:integration` 通過；外部館方當天資料不固定，CI 不把即時回應內容寫死。這不等於線上每日同步已運作。
 
 ### ER-26｜Docker、設定與資料庫（已實作於本機）
 
@@ -174,11 +174,11 @@
 - **決策**：資料來源與管理操作都跨信任邊界；最小化公開寫入面，避免錯誤資料或 Key 被前端、日誌與第三方取得。
 - **界線**：本機管理頁不是可直接暴露到公網的完整使用者身分系統；公開部署前仍需重新檢查權限、網路與 Secret。
 
-### ER-28｜持久化 Queue／worker／DLQ（尚未實作）
+### ER-28｜持久化 Queue／worker／DLQ（FETCH_SOURCE 本機版已實作）
 
-- **規劃**：若來源工作量與故障模式需要，再比較 PostgreSQL 工作表與 Redis/BullMQ；先定義 job 狀態、冪等鍵、逾時、重試上限、失敗重播及交易完成後的事件。可能拆成 `FETCH_SOURCE → PARSE → NORMALIZE → UPSERT → CHECK_CHANGE`。
-- **決策**：目前只有五館低頻同步，來源別獨立工作與有限重試已涵蓋基本故障隔離；先以失敗、延遲與待審量證明 Queue 的收益，不為架構圖而增加服務。
-- **界線**：現有 `sync_attempts` 是嘗試日誌，**不是**工作佇列；`exhibition_changes` 是 DB 異動紀錄，**不是**已發送的事件通知。見[後續方向](future-roadmap.md)。
+- **處理**：已用 PostgreSQL `source_jobs` 實作限本機、手動入列的 `FETCH_SOURCE` 工作，詳見 ER-33。`sync_attempts` 仍是嘗試日誌；工作狀態存在獨立資料表。
+- **決策**：目前只有五館低頻同步，因此沿用既有 PostgreSQL，不加 Redis/BullMQ 服務。先驗證來源工作可獨立領取、崩潰恢復及死信重播；資料抓取、解析、標準化、變更偵測仍在一次 `ingest --official` 中，未拆成多段事件鏈。
+- **界線**：每日 workflow 尚用原本直接 `sync`，沒有接 Queue，也未線上啟動。`exhibition_changes` 是 DB 異動紀錄，**不是**已發送的事件通知。見[後續方向](future-roadmap.md)。
 
 ### ER-29｜訂閱通知、遠端觀測、AWS 與公開部署（尚未實作）
 
@@ -203,6 +203,12 @@
 - **處理**：[`source-health-report.ts`](../src/source-health-report.ts)以 `sync_id` 取每次工作的最後一筆 `sync_attempts`，再計算最近七天工作數、最終失敗數、有重試的工作數與最終失敗率；並讀取最後官方成功時間、來源待審量與未核對的新缺席候選。[`source-health.ts`](../src/source-health.ts)沿用七天新鮮度判定，依「最近失敗 → 過期 → 無官方成功 → 無工作證據 → 有待審 → 近期正常」的順序給出單一狀態。`npm run sync:status` 回傳 JSON；登入後的本機 `/health` 頁顯示中文摘要。CLI 現在也會讀取 Git 忽略的 `.env`。
 - **決策**：`sync_attempts` 每一次重試都是一列，但使用者關心的是一次來源工作最後是否成功；不能把「先失敗、後成功」算成一次獨立失敗。最近匯入本機快照不等於最近取得官方來源；沒有可靠紀錄時顯示無紀錄。健康狀態只是排查順序，不能證明展覽資料完整或館方今天開門。
 - **界線／證據**：七天是同步健康提醒門檻，不是館方資料更新週期或展覽有效期。本機資料的來源狀態目前多數為「尚無官方成功紀錄」，因沒有可證明的近期官方工作；不為了讓儀表板變綠而補造時間。沒有自動告警、遠端儀表板或線上排程。單元測試驗證狀態優先序；隔離 PostgreSQL 整合測試驗證重試後成功只計一次、待審數與登入限制。見[本階段紀錄](stage-2026-10-10-source-health.md)。
+
+### ER-33｜PostgreSQL 來源工作佇列（已實作／本機整合測試）
+
+- **處理**：[`db/011_source_jobs.sql`](../db/011_source_jobs.sql)保存來源工作、每日冪等鍵、狀態、嘗試次數、可領取時間、三分鐘租約、worker token、錯誤與重播來源。手動 `jobs:enqueue` 可對五館建立 `FETCH_SOURCE` 工作；同館同日重送只回傳既有工作。`jobs:work` 以 `FOR UPDATE SKIP LOCKED` 原子領取，到期租約會記失敗並退避後重領；worker 對單館執行既有 `ingest --official`，每次最多 90 秒。暫時錯誤按 30 秒、2 分鐘退避，最多三次；非暫時錯誤或達上限進 `dead`。完成結果以 token／未過期租約保護，並寫入 `sync_attempts`。`jobs:status` 查狀態，`jobs:replay -- --id` 對死信建立新工作，原工作與歷史不刪。見 [`source-jobs.ts`](../src/source-jobs.ts) 與 [`source-job-cli.ts`](../src/source-job-cli.ts)。
+- **決策**：佇列只包住單一來源官方匯入，不再呼叫內含重試的 `sync-source.ts`，避免雙層重試。每日排程仍維持原路徑與關閉狀態，先以本機手動命令驗證生命週期。`sync_id` 用 job id，健康報告能按一份工作計最終結果。
+- **界線／證據**：這不是 `FETCH → PARSE → CHECK_CHANGE` 多階段 Queue，也沒有通知 worker、遠端調度或自動維運。worker 崩潰後需有下一次 `jobs:work` 才會掃描過期租約；租約過期時舊程序可能仍完成來源寫入，匯入本身依資料庫冪等規則處理，舊 worker 的**工作結果**不會覆蓋新租約。隔離 PostgreSQL 整合測試涵蓋同日去重、並行領取、退避、死信、新工作重播、過期租約與舊 token 拒寫；不宣稱已在真實館方流量下壓測。見[本階段紀錄](stage-2026-10-10-source-queue.md)。
 
 ## 後續更新方式
 

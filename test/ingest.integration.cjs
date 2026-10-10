@@ -194,6 +194,7 @@ async function main() {
   await testDb.query(await readFile(join(project, 'db/008_official_sync_freshness.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/009_source_missing_candidates.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/010_missing_candidate_reviews.sql'), 'utf8'));
+  await testDb.query(await readFile(join(project, 'db/011_source_jobs.sql'), 'utf8'));
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const [original] = JSON.parse(await readFile(join(project, 'test/fixtures/chimei.json'), 'utf8'));
 
@@ -560,6 +561,82 @@ async function main() {
   assert.equal(health.find((item) => item.museumId === 'nmns').health, 'failed',
     '最近同步失敗須優先於先前本機匯入成功');
   await checkPublicApiContract();
+  const { enqueueSourceJob, claimSourceJob, finishSourceJob, replayDeadJob } =
+    await import('../src/source-jobs.ts');
+  const queuedSea = await enqueueSourceJob(testDb, 'nmmba', '2026-10-10');
+  const duplicateSea = await enqueueSourceJob(testDb, 'nmmba', '2026-10-10');
+  assert.equal(queuedSea.created, true);
+  assert.deepEqual(duplicateSea, { id: queuedSea.id, created: false },
+    '同館同日重送只能有一個原始工作');
+  await enqueueSourceJob(testDb, 'npm-south', '2026-10-10');
+  const [claimedA, claimedB] = await Promise.all([
+    claimSourceJob(testDb), claimSourceJob(testDb),
+  ]);
+  assert.ok(claimedA && claimedB && claimedA.id !== claimedB.id,
+    '兩個 worker 必須領取不同工作');
+  const seaJob = [claimedA, claimedB].find((item) => item.museum_id === 'nmmba');
+  const southJob = [claimedA, claimedB].find((item) => item.museum_id === 'npm-south');
+  assert.equal(await finishSourceJob(testDb, seaJob,
+    { succeeded: true, retryable: false, durationMs: 100, error: '' }), true);
+  assert.equal(await finishSourceJob(testDb, southJob,
+    { succeeded: false, retryable: true, durationMs: 100, error: 'timeout' }), true);
+  result = await testDb.query('SELECT status,attempts,available_at>now() AS delayed FROM source_jobs WHERE id=$1',
+    [southJob.id]);
+  assert.deepEqual(result.rows[0], { status: 'pending', attempts: 1, delayed: true },
+    '暫時失敗須退避後再領取，不應立即重試');
+  assert.equal(await claimSourceJob(testDb), null);
+  await testDb.query("UPDATE source_jobs SET available_at=now()-interval '1 second' WHERE id=$1", [southJob.id]);
+  const retryJob = await claimSourceJob(testDb);
+  assert.equal(retryJob.id, southJob.id);
+  assert.equal(retryJob.attempts, 2);
+  assert.equal(await finishSourceJob(testDb, retryJob,
+    { succeeded: false, retryable: false, durationMs: 90, error: '資料格式改變' }), true);
+  result = await testDb.query('SELECT status FROM source_jobs WHERE id=$1', [southJob.id]);
+  assert.equal(result.rows[0].status, 'dead', '非暫時性錯誤須進死信等待人工處理');
+  const replayId = await replayDeadJob(testDb, southJob.id);
+  assert.notEqual(replayId, southJob.id);
+  const replay = await claimSourceJob(testDb);
+  assert.equal(replay.id, replayId);
+  assert.equal(replay.attempts, 1);
+  assert.equal(await finishSourceJob(testDb, replay,
+    { succeeded: true, retryable: false, durationMs: 80, error: '' }), true);
+  result = await testDb.query('SELECT status,replay_of FROM source_jobs WHERE id=$1', [replayId]);
+  assert.deepEqual(result.rows[0], { status: 'succeeded', replay_of: southJob.id },
+    '人工重播建立新工作並保留原死信');
+  await enqueueSourceJob(testDb, 'nmns', '2026-10-10');
+  const crashed = await claimSourceJob(testDb);
+  await testDb.query("UPDATE source_jobs SET lease_until=now()-interval '1 second' WHERE id=$1", [crashed.id]);
+  assert.equal(await claimSourceJob(testDb), null, '租約過期後需退避，不能同時交給另一 worker');
+  result = await testDb.query('SELECT status,attempts FROM source_jobs WHERE id=$1', [crashed.id]);
+  assert.deepEqual(result.rows[0], { status: 'pending', attempts: 1 });
+  await testDb.query("UPDATE source_jobs SET available_at=now()-interval '1 second' WHERE id=$1", [crashed.id]);
+  const recovered = await claimSourceJob(testDb);
+  assert.equal(recovered.id, crashed.id);
+  assert.equal(recovered.attempts, 2);
+  assert.equal(await finishSourceJob(testDb, crashed,
+    { succeeded: true, retryable: false, durationMs: 10, error: '' }), false,
+  '過期 worker 的結果不能覆蓋新租約');
+  assert.equal(await finishSourceJob(testDb, recovered,
+    { succeeded: true, retryable: false, durationMs: 10, error: '' }), true);
+  result = await testDb.query('SELECT attempt_no,status FROM sync_attempts WHERE sync_id=$1 ORDER BY attempt_no',
+    [crashed.id]);
+  assert.deepEqual(result.rows, [{ attempt_no: 1, status: 'failed' },
+    { attempt_no: 2, status: 'succeeded' }], '過期租約與恢復結果都須留下嘗試證據');
+  await enqueueSourceJob(testDb, 'nstm', '2026-10-10');
+  let capped;
+  for (let attempt = 1; attempt <= 3; attempt++) {
+    capped = await claimSourceJob(testDb);
+    assert.equal(capped.attempts, attempt);
+    assert.equal(await finishSourceJob(testDb, capped,
+      { succeeded: false, retryable: true, durationMs: 30, error: 'timeout' }), true);
+    if (attempt < 3) {
+      await testDb.query("UPDATE source_jobs SET available_at=now()-interval '1 second' WHERE id=$1", [capped.id]);
+    }
+  }
+  result = await testDb.query('SELECT status,attempts FROM source_jobs WHERE id=$1', [capped.id]);
+  assert.deepEqual(result.rows[0], { status: 'dead', attempts: 3 },
+    '連續暫時失敗最多三次，不能無限重抓官方來源');
+  assert.equal(await claimSourceJob(testDb), null);
   process.stdout.write('匯入回滾、去重、欄位異動及公開 API 回應契約：通過\n');
 }
 
