@@ -19,8 +19,8 @@ export function extractChimeiExhibitionLinks(html: string): string[] {
   return [...links].sort();
 }
 
-/** Conservatively stop if wildcard or monitor-specific robots rules disallow this page. */
-export function robotsAllowExhibitionPage(robots: string): boolean {
+/** Conservatively stop if wildcard or monitor-specific robots rules disallow this path. */
+export function robotsAllowPath(robots: string, targetPath: string): boolean {
   let applies = false;
   let groupHasRules = false;
   for (const rawLine of robots.split(/\r?\n/)) {
@@ -41,8 +41,24 @@ export function robotsAllowExhibitionPage(robots: string): boolean {
     }
     if (applies && name.trim().toLowerCase() === 'disallow') {
       const path = value.trim();
-      if (path && '/exhibition-event'.startsWith(path)) return false;
+      if (path && targetPath.startsWith(path)) return false;
     }
   }
   return true;
+}
+
+export function robotsAllowExhibitionPage(robots: string): boolean {
+  return robotsAllowPath(robots, '/exhibition-event');
+}
+
+/** A known exhibition's title and full date range must both remain visible on its official detail page. */
+export function chimeiDetailMatches(html: string, title: string, startDate: string, endDate: string): boolean {
+  const text = html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, ' ')
+    .replace(/<style\b[^>]*>[\s\S]*?<\/style>/gi, ' ')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/\s+/g, ' ');
+  const date = (value: string) => value.replaceAll('-', '[./-]');
+  const range = new RegExp(`${date(startDate)}\\s*[^0-9]{1,20}\\s*${date(endDate)}`);
+  return text.includes(title) && range.test(text);
 }
