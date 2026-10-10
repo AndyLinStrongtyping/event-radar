@@ -111,10 +111,10 @@ type Stored = ExhibitionDraft & { id: string; primaryProvider: string; visible: 
 async function hideCorrectedExhibition(client: pg.PoolClient, museum: string,
   provider: string, record: SourceRecord, previousUrl: string | null): Promise<void> {
   await client.query(`UPDATE exhibitions SET visible=false,updated_at=now()
-    WHERE museum_id=$1 AND (source_url=$2 OR source_url=$5 OR id IN (
+    WHERE museum_id=$1 AND primary_provider=$2 AND (source_url=$4 OR id IN (
       SELECT exhibition_id FROM exhibition_sources
-      WHERE museum_id=$1 AND provider=$3 AND source_key=$4))`,
-  [museum, record.sourceUrl, provider, record.sourceKey, previousUrl]);
+      WHERE museum_id=$1 AND provider=$2 AND source_key=$3))`,
+  [museum, provider, record.sourceKey, previousUrl]);
 }
 
 async function applyCorrections(client: pg.PoolClient, museum: string, provider: string,
@@ -146,6 +146,23 @@ async function applyCorrections(client: pg.PoolClient, museum: string, provider:
       record.reason = `人工補正無法套用：${error instanceof Error ? error.message : String(error)}`;
       await hideCorrectedExhibition(client, museum, provider, record, latest.source_url);
     }
+  }
+}
+
+async function quarantineInvalidPrimaryRecords(client: pg.PoolClient, museum: string,
+  provider: string, records: SourceRecord[]): Promise<void> {
+  for (const record of records) {
+    if (record.status !== 'review') continue;
+    const previous = await client.query<{ source_url: string | null }>(`SELECT source_url
+      FROM source_records WHERE museum_id=$1 AND provider=$2 AND source_key=$3`,
+    [museum, provider, record.sourceKey]);
+    const previousUrl = previous.rows[0]?.source_url ?? null;
+    await client.query(`UPDATE exhibitions SET visible=false,updated_at=now()
+      WHERE museum_id=$1 AND primary_provider=$2 AND visible=true AND (
+        id IN (SELECT exhibition_id FROM exhibition_sources
+          WHERE museum_id=$1 AND provider=$2 AND source_key=$3)
+        OR ($4::text IS NOT NULL AND source_url=$4))`,
+    [museum, provider, record.sourceKey, previousUrl]);
   }
 }
 
@@ -200,6 +217,7 @@ async function main(): Promise<void> {
     inTransaction = true;
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [museum]);
     await applyCorrections(client, museum, provider, rows, records);
+    await quarantineInvalidPrimaryRecords(client, museum, provider, records);
     const counts = { fetched: records.length || rows.length, inserted: 0, updated: 0,
       unchanged: 0, linked: 0, skipped: records.filter((record) => record.status === 'ignored').length,
       review: records.filter((record) => record.status === 'review').length };
@@ -237,7 +255,7 @@ async function main(): Promise<void> {
         counts.inserted++;
       } else {
         exhibitionId = previous.id;
-        const isPrimary = previous.primaryProvider === provider || provider === museum;
+        const isPrimary = previous.primaryProvider === provider || provider === museum || !previous.visible;
         if (!isPrimary) {
           counts.linked++;
         } else {
@@ -274,6 +292,9 @@ async function main(): Promise<void> {
       counts.skipped, counts.review]);
     if (rows.length > 0 && (official || rows.some((row) => !row.isSample))) {
       await client.query('UPDATE museums SET last_success_at=now() WHERE id=$1', [museum]);
+    }
+    if (official && rows.length > 0) {
+      await client.query('UPDATE museums SET last_official_success_at=now() WHERE id=$1', [museum]);
     }
     await client.query('COMMIT');
     inTransaction = false;

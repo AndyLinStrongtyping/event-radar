@@ -65,7 +65,8 @@ createServer(async (request, response) => {
     if (url.pathname === '/museums') {
       const { museumTickets } = await import('./src/ticketing.ts');
       response.end(JSON.stringify({ items: museums.map((museum) => ({ ...museum,
-        lastSuccessAt: null, lastAttemptStatus: null, lastAttemptAt: null, dataStatus: 'snapshot',
+        lastSuccessAt: null, lastOfficialSuccessAt: null, lastAttemptStatus: null,
+        lastAttemptAt: null, dataStatus: 'snapshot',
         generalAdmission: museumTickets[museum.id] ?? null,
       })) }));
       return;

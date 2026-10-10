@@ -1,5 +1,7 @@
 # v0.1 API 契約
 
+關鍵字 `q` 是不區分大小寫的字面子字串搜尋；`%`、`_`、`#` 不作查詢語法。`GET /museums` 的 `lastSuccessAt` 是最後成功匯入時間（包含手動檔案／快照）；`lastOfficialSuccessAt` 是最後成功取得並匯入官方來源的時間。`dataStatus` 依後者與最近同步嘗試判斷，手動匯入不能刷新官方新鮮度。
+
 Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "error": { "code": "...", "message": "..." } }`。
 
 | Method | Path | 說明 |

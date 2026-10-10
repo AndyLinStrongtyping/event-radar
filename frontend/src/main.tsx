@@ -5,7 +5,8 @@ import './styles.css';
 type Ticket = { label: string; price: string; note: string; infoUrl: string; purchaseUrl?: string | null; checkedOn: string };
 type Museum = {
   id: string; name: string; city: string; homepageUrl: string; sourceStatus: string;
-  dataStatus: string; lastSuccessAt: string | null; generalAdmission: Ticket | null;
+  dataStatus: string; lastSuccessAt: string | null; lastOfficialSuccessAt: string | null;
+  generalAdmission: Ticket | null;
 };
 type Exhibition = {
   id: string; title: string; museumId: string; museumName: string; city: string;
@@ -46,15 +47,16 @@ function formatTaipei(value: string | null | undefined) {
   return new Intl.DateTimeFormat('zh-TW', { timeZone: 'Asia/Taipei', dateStyle: 'medium', timeStyle: 'short' }).format(new Date(value));
 }
 function sourceMessage(museum: Museum) {
-  const last = formatTaipei(museum.lastSuccessAt);
+  const imported = formatTaipei(museum.lastSuccessAt);
+  const official = formatTaipei(museum.lastOfficialSuccessAt);
   switch (museum.dataStatus) {
-    case 'manual': return last ? `人工核對；最後匯入：${last}。展期變動請查館方。` : '人工核對資料；請查館方最新公告。';
-    case 'recent': return `最近 7 天內曾成功匯入（${last}）；館方內容未必每日變動。`;
-    case 'stale': return `超過 7 天沒有成功匯入；上次成功：${last}。請查館方原頁。`;
-    case 'failed': return `最近一次同步失敗；${last ? `上次成功：${last}。` : '尚無成功匯入紀錄。'}請查館方原頁。`;
-    case 'untracked': return `已有匯入資料（${last}），但沒有成功的同步嘗試紀錄；無法確認更新頻率。`;
+    case 'manual': return imported ? `人工核對；最後匯入：${imported}。展期變動請查館方。` : '人工核對資料；請查館方最新公告。';
+    case 'recent': return `最近 7 天內曾成功取得官方來源（${official}）；館方內容未必每日變動。`;
+    case 'stale': return `超過 7 天沒有成功取得官方來源；上次成功：${official}。請查館方原頁。`;
+    case 'failed': return `最近一次同步失敗；${official ? `上次取得官方來源：${official}。` : '尚無成功取得官方來源紀錄。'}請查館方原頁。`;
+    case 'untracked': return imported ? `已有匯入資料（${imported}），但沒有可核對的官方同步紀錄；請查館方原頁。` : '官方同步狀態尚無法核對；請查館方原頁。';
     case 'snapshot': return '本機展示快照，沒有線上同步；展期請查館方公告。';
-    case 'never': return '尚無成功匯入紀錄；請查館方最新公告。';
+    case 'never': return imported ? `已有匯入資料（${imported}），尚無成功取得官方來源紀錄；請查館方公告。` : '尚無成功取得官方來源紀錄；請查館方最新公告。';
     default: return '無法核對資料更新狀態；請查館方最新公告。';
   }
 }
@@ -239,7 +241,7 @@ function App() {
         {preview && <p className="preview-note" role="status">本機展示快照：展覽資料並非即時同步，模擬資料需主動勾選才顯示。</p>}
         <div className="search-panel" role="search" aria-label="搜尋特展"><div className="search-top"><label className="search-keyword"><span>01 / 尋找線索</span><input type="search" value={filters.q} onChange={(event) => updateFilter('q', event.target.value)} placeholder="輸入展名、主題或關鍵字" autoComplete="off"/></label><label><span>02 / 選擇城市</span><select value={filters.city} onChange={(event) => { setFilters((current) => ({ ...current, city: event.target.value, museum: '' })); }}><option value="">全臺灣</option>{cities.map((city) => <option key={city} value={city}>{city}</option>)}</select></label><label><span>03 / 指定館所</span><select value={filters.museum} onChange={(event) => updateFilter('museum', event.target.value)}><option value="">{filters.city ? '該地區所有博物館' : '所有博物館'}</option>{museumOptions.map((museum) => <option key={museum.id} value={museum.id}>{museum.name}</option>)}</select></label></div><div className="search-bottom"><div className="status-tabs" role="group" aria-label="展覽狀態">{statusOptions.map((option) => <button key={option.value} type="button" className={filters.status === option.value ? 'active' : ''} aria-pressed={filters.status === option.value} onClick={() => updateFilter('status', option.value)}>{option.label}</button>)}</div><button type="button" className="refresh-button" onClick={() => setRefreshKey((value) => value + 1)}>重新查詢 ↗</button></div><div className="advanced-filters"><label>入場資訊<select value={filters.admission} onChange={(event) => updateFilter('admission', event.target.value)}><option value="all">不限票價</option><option value="free">明確標示免費</option></select></label><label>查詢基準日<input type="date" value={filters.asOf} onChange={(event) => updateFilter('asOf', event.target.value)} aria-label="以此日期判斷展覽狀態"/></label><label className="sample-check"><input type="checkbox" checked={filters.includeSample} onChange={(event) => updateFilter('includeSample', event.target.checked)}/> 顯示測試資料</label></div></div>
         <p className="search-note">狀態依展期與查詢基準日計算；「免費」只收錄明確標示免費的資料。未提供票價不推斷為免費。</p>
-        <div className="status-panels"><aside className={`status-panel${selectedMuseum && selectedMuseum.dataStatus !== 'recent' ? ' caution' : ''}`} aria-live="polite"><span>資料來源狀態</span><strong>{selectedMuseum ? selectedMuseum.name : '各館資料更新方式不同'}</strong><p>{selectedMuseum ? sourceMessage(selectedMuseum) : '選擇一間博物館，查看最後成功匯入與同步狀態。參觀前請開啟展覽的官方連結核對。'}</p>{officialUrl(selectedMuseum?.homepageUrl) && <a href={selectedMuseum!.homepageUrl} target="_blank" rel="noopener noreferrer">查看館方網站 ↗</a>}</aside><aside className={`status-panel visit ${visit?.status || ''}`} aria-live="polite"><span>出發前確認</span><strong>{visitLoading ? '正在核對開館資訊' : visitError ? '開館資訊暫時無法核對' : !selectedMuseum ? '平常開放時間已整理' : visit?.status === 'closed' ? '休館提醒' : visit?.status === 'open' ? '館方行事曆顯示開館' : '請向館方確認'}</strong><p>{visitLoading ? '正在讀取館方資料…' : visitError ? '請查看館方最新公告後再出發。' : visit?.message || '各館的平常開館時間放在博物館介紹；國定假日、節慶與臨時異動請以館方公告為準。'}</p>{selectedMuseum && <div className="status-links"><a href={`/guides/${encodeURIComponent(selectedMuseum.id)}.html`}>查看平常開館時間 ↗</a>{officialUrl(visit?.sourceUrl) && <a href={visit!.sourceUrl} target="_blank" rel="noopener noreferrer">館方開放資訊 ↗</a>}{officialUrl(visit?.newsUrl) && <a href={visit!.newsUrl || ''} target="_blank" rel="noopener noreferrer">館方最新消息 ↗</a>}</div>}</aside></div>
+        <div className="status-panels"><aside className={`status-panel${selectedMuseum && selectedMuseum.dataStatus !== 'recent' ? ' caution' : ''}`} aria-live="polite"><span>資料來源狀態</span><strong>{selectedMuseum ? selectedMuseum.name : '各館資料更新方式不同'}</strong><p>{selectedMuseum ? sourceMessage(selectedMuseum) : '選擇一間博物館，查看最後成功匯入與官方同步狀態。參觀前請開啟展覽的官方連結核對。'}</p>{officialUrl(selectedMuseum?.homepageUrl) && <a href={selectedMuseum!.homepageUrl} target="_blank" rel="noopener noreferrer">查看館方網站 ↗</a>}</aside><aside className={`status-panel visit ${visit?.status || ''}`} aria-live="polite"><span>出發前確認</span><strong>{visitLoading ? '正在核對開館資訊' : visitError ? '開館資訊暫時無法核對' : !selectedMuseum ? '平常開放時間已整理' : visit?.status === 'closed' ? '休館提醒' : visit?.status === 'open' ? '館方行事曆顯示開館' : '請向館方確認'}</strong><p>{visitLoading ? '正在讀取館方資料…' : visitError ? '請查看館方最新公告後再出發。' : visit?.message || '各館的平常開館時間放在博物館介紹；國定假日、節慶與臨時異動請以館方公告為準。'}</p>{selectedMuseum && <div className="status-links"><a href={`/guides/${encodeURIComponent(selectedMuseum.id)}.html`}>查看平常開館時間 ↗</a>{officialUrl(visit?.sourceUrl) && <a href={visit!.sourceUrl} target="_blank" rel="noopener noreferrer">館方開放資訊 ↗</a>}{officialUrl(visit?.newsUrl) && <a href={visit!.newsUrl || ''} target="_blank" rel="noopener noreferrer">館方最新消息 ↗</a>}</div>}</aside></div>
         <div className="results-heading" id="results">
           <div><span>UNEARTHED RECORDS</span><h3>{loading || demoLoading ? '正在發掘檔案…' : searchError || museumError || `找到 ${total} 場特展`}</h3></div>
           <div className="results-tools"><p>每筆展覽皆附館方或資料來源連結</p><button type="button" onClick={replayDig} disabled={demoLoading} aria-label="觀看文物發掘動畫">{demoLoading ? '發掘中…' : '觀看發掘動畫 ↻'}</button></div>

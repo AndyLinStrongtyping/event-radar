@@ -102,6 +102,7 @@ async function checkPublicApiContract() {
         assert.equal(typeof museum[field], 'string', `museum.${field} 必須是字串`);
       }
       assert.ok(museum.lastSuccessAt === null || !Number.isNaN(Date.parse(museum.lastSuccessAt)));
+      assert.ok(museum.lastOfficialSuccessAt === null || !Number.isNaN(Date.parse(museum.lastOfficialSuccessAt)));
       assert.ok(museum.lastAttemptAt === null || !Number.isNaN(Date.parse(museum.lastAttemptAt)));
       assert.ok(museum.lastAttemptStatus === null || ['succeeded', 'failed'].includes(museum.lastAttemptStatus));
       assert.ok(['manual', 'planned', 'never', 'untracked', 'failed', 'stale', 'recent'].includes(museum.dataStatus));
@@ -110,6 +111,8 @@ async function checkPublicApiContract() {
     assert.equal(museums.items.find((museum) => museum.id === 'chimei').dataStatus, 'manual');
     assert.equal(museums.items.find((museum) => museum.id === 'nmns').dataStatus, 'failed');
     assert.equal(museums.items.find((museum) => museum.id === 'npm-south').dataStatus, 'stale');
+    assert.equal(museums.items.find((museum) => museum.id === 'nmmba').dataStatus, 'stale',
+      '手動匯入舊快照不得讓官方來源狀態變成近期同步');
 
     const list = await get('/exhibitions?from=2026-01-01&to=2027-12-31&museum=chimei&limit=2');
     assert.equal(typeof list.total, 'number');
@@ -136,6 +139,10 @@ async function checkPublicApiContract() {
     const empty = await get('/exhibitions?from=2026-01-01&museum=chimei&q=___no_such_exhibition___');
     assert.deepEqual(empty.items, []);
     assert.equal(empty.total, 0);
+    for (const character of ['%', '_']) {
+      const literal = await get(`/exhibitions?museum=chimei&status=all&q=${encodeURIComponent(character)}`);
+      assert.equal(literal.total, 0, `搜尋 ${character} 應按字面比對，不能當 SQL 萬用字元`);
+    }
     for (const [status, title] of [
       ['ended', '測試已結束'], ['ongoing', '測試展出中'], ['upcoming', '測試即將開始'],
     ]) {
@@ -184,6 +191,7 @@ async function main() {
   await testDb.query(await readFile(join(project, 'db/005_sync_attempts.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/006_nstm.sql'), 'utf8'));
   await testDb.query(await readFile(join(project, 'db/007_ticket_catalog.sql'), 'utf8'));
+  await testDb.query(await readFile(join(project, 'db/008_official_sync_freshness.sql'), 'utf8'));
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const [original] = JSON.parse(await readFile(join(project, 'test/fixtures/chimei.json'), 'utf8'));
 
@@ -331,6 +339,53 @@ async function main() {
     { cwd: project, env: seaEnv, encoding: 'utf8' }), /Command failed/);
   result = await testDb.query("SELECT visible FROM exhibitions WHERE museum_id='npm-north' AND source_key='04012832'");
   assert.equal(result.rows[0].visible, false, '館方連結改變時舊補正展覽必須隱藏');
+  const invalidFormerlyValid = {
+    Source: 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=good',
+    '特展名稱': '海洋特展', '展出地點': '特展廳',
+    'app用開始時間': '1150618', 'app用結束時間': '',
+  };
+  const seaRegressionOnly = await fixture('nmmba-regression-only.json', [invalidFormerlyValid]);
+  assert.throws(() => execFileSync(process.execPath,
+    ['--experimental-strip-types', 'src/ingest.ts', '--source', 'nmmba', '--snapshot', seaRegressionOnly],
+    { cwd: project, env: seaEnv, encoding: 'utf8' }), /Command failed/);
+  result = await testDb.query("SELECT visible FROM exhibitions WHERE museum_id='nmmba' AND source_key=$1",
+    [invalidFormerlyValid.Source]);
+  assert.equal(result.rows[0].visible, false, '原本有效的來源轉待審時，舊展覽須立即下架');
+  execFileSync(process.execPath, seaArgs, { cwd: project, env: seaEnv, encoding: 'utf8' });
+  result = await testDb.query("SELECT visible FROM exhibitions WHERE museum_id='nmmba' AND source_key=$1",
+    [invalidFormerlyValid.Source]);
+  assert.equal(result.rows[0].visible, true, '有效來源恢復後應重新上架');
+  const seaRegressionMixed = await fixture('nmmba-regression-mixed.json', [invalidFormerlyValid,
+    { Source: 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=second-good',
+      '特展名稱': '另一個海洋特展', '展出地點': '特展廳',
+      'app用開始時間': '1150701', 'app用結束時間': '1160401' },
+  ]);
+  const mixedRun = JSON.parse(execFileSync(process.execPath,
+    ['--experimental-strip-types', 'src/ingest.ts', '--source', 'nmmba', '--snapshot', seaRegressionMixed],
+    { cwd: project, env: seaEnv, encoding: 'utf8' }));
+  assert.equal(mixedRun.review, 1);
+  result = await testDb.query("SELECT source_key,visible FROM exhibitions WHERE museum_id='nmmba' AND source_key IN ($1,$2)",
+    [invalidFormerlyValid.Source, 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=second-good']);
+  assert.equal(result.rows.find((row) => row.source_key === invalidFormerlyValid.Source).visible, false,
+    '同批有其他有效展覽時，失效的舊展覽仍須下架');
+  assert.equal(result.rows.find((row) => row.source_key.endsWith('second-good')).visible, true);
+  const alternateFile = await fixture('nmmba-alternate.json', [{ museumId: 'nmmba', title: '海洋特展',
+    venue: '特展廳', startDate: '2026-06-18', endDate: '2027-03-01',
+    sourceUrl: invalidFormerlyValid.Source, isSample: false }]);
+  execFileSync(process.execPath,
+    ['--experimental-strip-types', 'src/ingest.ts', '--source', 'nmmba', '--provider', 'alternate', '--file', alternateFile],
+    { cwd: project, env: seaEnv, encoding: 'utf8' });
+  result = await testDb.query("SELECT visible,primary_provider FROM exhibitions WHERE museum_id='nmmba' AND source_key=$1",
+    [invalidFormerlyValid.Source]);
+  assert.deepEqual(result.rows[0], { visible: true, primary_provider: 'alternate' },
+    '另一個有效來源重新核對後，可接手失效的主來源');
+  assert.throws(() => execFileSync(process.execPath,
+    ['--experimental-strip-types', 'src/ingest.ts', '--source', 'nmmba', '--snapshot', seaRegressionOnly],
+    { cwd: project, env: seaEnv, encoding: 'utf8' }), /Command failed/);
+  result = await testDb.query("SELECT visible,primary_provider FROM exhibitions WHERE museum_id='nmmba' AND source_key=$1",
+    [invalidFormerlyValid.Source]);
+  assert.deepEqual(result.rows[0], { visible: true, primary_provider: 'alternate' },
+    '待審來源已非主來源時，不應隱藏其他有效來源接手的展覽');
   const adminPort = 31000 + Math.floor(Math.random() * 2000);
   const adminBase = `http://127.0.0.1:${adminPort}`;
   const admin = spawn(process.execPath, ['--experimental-strip-types', 'src/admin-server.ts'], {
@@ -389,11 +444,20 @@ async function main() {
     [`contract:${key}`, title, start, end]);
   }
   await testDb.query("UPDATE museums SET last_success_at=now()-interval '1 hour' WHERE id='nmns'");
-  await testDb.query("UPDATE museums SET last_success_at=now()-interval '8 days' WHERE id='npm-south'");
+  await testDb.query("UPDATE museums SET last_success_at=now()-interval '8 days',last_official_success_at=now()-interval '8 days' WHERE id='npm-south'");
+  await testDb.query("UPDATE museums SET last_official_success_at=now()-interval '8 days' WHERE id='nmmba'");
+  const officialBeforeSnapshot = await testDb.query("SELECT last_official_success_at FROM museums WHERE id='nmmba'");
+  execFileSync(process.execPath, seaArgs, { cwd: project, env: seaEnv, encoding: 'utf8' });
+  result = await testDb.query("SELECT last_success_at,last_official_success_at FROM museums WHERE id='nmmba'");
+  assert.equal(result.rows[0].last_official_success_at.getTime(),
+    officialBeforeSnapshot.rows[0].last_official_success_at.getTime(),
+    '手動匯入快照不得刷新官方同步時間');
+  assert.ok(result.rows[0].last_success_at > result.rows[0].last_official_success_at);
   await testDb.query(`INSERT INTO sync_attempts
     (sync_id,museum_id,attempt_no,status,retryable,duration_ms)
     VALUES (gen_random_uuid(),'nmns',1,'failed',true,1200),
-      (gen_random_uuid(),'npm-south',1,'succeeded',false,1200)`);
+      (gen_random_uuid(),'npm-south',1,'succeeded',false,1200),
+      (gen_random_uuid(),'nmmba',1,'succeeded',false,1200)`);
   await checkPublicApiContract();
   process.stdout.write('匯入回滾、去重、欄位異動及公開 API 回應契約：通過\n');
 }

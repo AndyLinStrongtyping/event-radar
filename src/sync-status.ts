@@ -6,6 +6,7 @@ const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 try {
   const result = await pool.query(`SELECT m.id AS "museumId",m.name,
     m.last_success_at AS "lastSuccessAt",
+    m.last_official_success_at AS "lastOfficialSuccessAt",
     latest.status AS "lastAttemptStatus",latest.created_at AS "lastAttemptAt",
     latest.duration_ms AS "lastAttemptDurationMs",latest.error_message AS "lastError",
     COALESCE(stats.attempts,0)::int AS "attempts7d",

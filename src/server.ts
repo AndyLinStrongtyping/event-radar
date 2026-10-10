@@ -105,6 +105,7 @@ const server = createServer(async (request, response) => {
     if (url.pathname === '/museums') {
       const result = await pool.query(`SELECT id,name,city,homepage_url AS "homepageUrl",
         source_status AS "sourceStatus",last_success_at AS "lastSuccessAt",
+        last_official_success_at AS "lastOfficialSuccessAt",
         latest.status AS "lastAttemptStatus",latest.created_at AS "lastAttemptAt"
         FROM museums m
         LEFT JOIN LATERAL (SELECT status,created_at FROM sync_attempts
@@ -113,7 +114,7 @@ const server = createServer(async (request, response) => {
       const now = new Date();
       json(response, 200, { items: result.rows.map((museum) => ({
         ...museum,
-        dataStatus: sourceFreshness(museum.sourceStatus, museum.lastSuccessAt, museum.lastAttemptStatus, now),
+        dataStatus: sourceFreshness(museum.sourceStatus, museum.lastOfficialSuccessAt, museum.lastAttemptStatus, now),
         generalAdmission: museumTickets[museum.id] ?? null,
       })) });
       return;
@@ -148,10 +149,11 @@ const server = createServer(async (request, response) => {
       const museum = q.get('museum')?.trim() || null;
       const keyword = q.get('q')?.trim() || null;
       if ([city, museum, keyword].some((value) => value && value.length > 100)) throw new Error('搜尋文字太長');
+      const literalKeyword = keyword?.replace(/[#%_]/g, '#$&') ?? null;
       const includeSample = q.get('includeSample') === 'true';
       if (q.has('includeSample') && !['true', 'false'].includes(q.get('includeSample')!)) throw new Error('includeSample 參數無效');
       const where = `($1::text IS NULL OR m.city=$1) AND ($2::text IS NULL OR e.museum_id=$2)
-        AND ($3::text IS NULL OR e.title ILIKE '%' || $3 || '%')
+        AND ($3::text IS NULL OR e.title ILIKE '%' || $3 || '%' ESCAPE '#')
         AND ($4::date IS NULL OR e.end_date >= $4)
         AND ($5::date IS NULL OR e.start_date <= $5)
         AND ($6::boolean OR NOT e.is_sample) AND e.visible
@@ -160,7 +162,7 @@ const server = createServer(async (request, response) => {
           OR ($8='upcoming' AND e.start_date > $7::date)
           OR ($8='ended' AND e.end_date < $7::date))
         AND ($9::text='all' OR e.price_note IN ('免費','免費入場','免門票'))`;
-      const params = [city, museum, keyword, from, to, includeSample, asOf, status, admission];
+      const params = [city, museum, literalKeyword, from, to, includeSample, asOf, status, admission];
       const order = status === 'ended' ? 'e.end_date DESC,e.id'
         : status === 'ongoing' ? 'e.end_date,e.id'
         : status === 'all' ? 'e.start_date DESC,e.id' : 'e.start_date,e.id';

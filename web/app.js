@@ -21,14 +21,15 @@ const formatTaipei = (value) => value && !Number.isNaN(Date.parse(value))
   : null;
 
 function sourceMessage(museum) {
-  const last = formatTaipei(museum.lastSuccessAt);
+  const imported = formatTaipei(museum.lastSuccessAt);
+  const official = formatTaipei(museum.lastOfficialSuccessAt);
   switch (museum.dataStatus) {
-    case 'manual': return last ? `人工核對資料；最後匯入：${last}。後續展期變動請查館方。` : '人工核對資料；尚無成功匯入紀錄。請查館方最新公告。';
-    case 'recent': return `最近 7 天內曾成功匯入（${last}）；館方內容未必每日變動。`;
-    case 'stale': return `超過 7 天沒有成功匯入；上次成功：${last}。資料可能過期，請查館方原頁。`;
-    case 'failed': return `最近一次同步失敗；${last ? `上次成功：${last}。` : '尚無成功匯入紀錄。'}資料可能過期。`;
-    case 'untracked': return `已有匯入資料（${last}），但沒有成功的同步嘗試紀錄；無法確認更新頻率。`;
-    case 'never': return '尚無成功匯入紀錄；請查館方最新公告。';
+    case 'manual': return imported ? `人工核對資料；最後匯入：${imported}。後續展期變動請查館方。` : '人工核對資料；尚無成功匯入紀錄。請查館方最新公告。';
+    case 'recent': return `最近 7 天內曾成功取得官方來源（${official}）；館方內容未必每日變動。`;
+    case 'stale': return `超過 7 天沒有成功取得官方來源；上次成功：${official}。資料可能過期，請查館方原頁。`;
+    case 'failed': return `最近一次同步失敗；${official ? `上次取得官方來源：${official}。` : '尚無成功取得官方來源紀錄。'}資料可能過期。`;
+    case 'untracked': return imported ? `已有匯入資料（${imported}），但沒有可核對的官方同步紀錄；請查館方原頁。` : '官方同步狀態尚無法核對；請查館方原頁。';
+    case 'never': return imported ? `已有匯入資料（${imported}），尚無成功取得官方來源紀錄；請查館方公告。` : '尚無成功取得官方來源紀錄；請查館方最新公告。';
     case 'snapshot': return '本機展示快照，沒有線上同步；展期請查館方最新公告。';
     default: return '無法核對此館資料更新狀態；請查館方最新公告。';
   }
