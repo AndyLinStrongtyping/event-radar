@@ -30,10 +30,16 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 
 `GET /exhibitions/:id` 同樣預設隱藏模擬資料；開發時可加 `?includeSample=true` 查看。
 
-`GET /visit-status?museum=nmns&date=2026-10-05` 回傳 `museumId,date,status,message,sourceUrl`，若成功核對科博館 API 另有 `checkedAt`。`status` 為 `open`、`closed` 或 `unknown`；科博館僅在金鑰可用且日期落於 API 未來一週資料內才宣稱開／休館。奇美週三依館方規則回 `closed`，其他日期回 `unknown` 並提供 `newsUrl` 查看臨時公告。其他館目前只有官方網站連結與 `unknown`，不將特展展期推論為開館日。
+`GET /visit-status?museum=nmns&date=2026-10-05` 回傳 `museumId,date,status,message,sourceUrl`，若成功核對科博館 API 另有 `checkedAt`。`status` 為 `open`、`closed` 或 `unknown`；科博館僅在金鑰可用且日期落於 API 未來一週資料內才宣稱開／休館。奇美週三可能特別開放，因此回 `unknown` 並提供 `newsUrl` 查看臨時公告。海生館提供官方服務與票價頁核對季節及特殊開館，逐日狀態仍是 `unknown`。其他館目前也只有官方入口與 `unknown`，不將特展或節目日期推論為開館日。
 
 `sourceStatus` 分為 `curated`（人工核對）、`open_data`（官方公開資料）、`official_page`（館方公開頁同步）與 `planned`（尚未接入）。`GET /exhibitions/:id/changes` 回傳 `{ "items": [{ "field": "endDate", "oldValue": "2026-12-06", "newValue": "2026-12-07", "detectedAt": "..." }] }`；沒有異動時為空陣列，不表示資料未曾被核對。
 
 `GET /museums` 另有 `venueType`（`museum`／`art_museum`）。`Exhibition.art` 對一般博物館是 `null`；已核對的國美館限期展回傳 `artistNames`、`curatorNames`、`exhibitionType`、`venueArea`、`floor` 與 `relatedEvents`。來源未明載人物名稱時是空陣列，不以介紹文章中的泛稱推測。相關活動只提供官方連結與類型，**不代表該場次仍可報名**。`/exhibitions/:id/changes` 查共通展覽欄位；`/exhibitions/:id/art-changes` 查美術欄位，回傳同樣的 `items` 結構，其中 `oldValue`／`newValue` 依欄位為字串、字串陣列、相關活動物件陣列或 `null`。一般博物館展覽的美術異動列表為空；隱藏或模擬展覽沿用詳情端點的 404／`includeSample=true` 規則。
 
 CI 的 `npm run test:integration` 會建立隔離 PostgreSQL 資料庫、匯入測試展覽並啟動真正的 HTTP 服務，驗證以上端點的狀態碼、JSON 欄位與型別、日期／官方連結格式、清單與詳情一致性、空結果、異動紀錄及 400／404 錯誤格式。外部館方 API 的即時內容不作為 CI 的固定預期值；來源解析與無效資料隔離由固定樣本測試驗證，避免館方改資料或網路故障讓 CI 產生誤判。
+
+## Phase 3／4 節目資料
+
+`GET /performances?source=ntt` 回傳節目與 `sessions[]`，每場含 `startsAt`、`hall`、`ticketUrl`、可空的 `priceMin/priceMax` 和 `status`。目前只讀取臺中國家歌劇院官方清單首頁最多五筆詳情；`scheduled` 只表示館方列有場次，不表示尚有餘票。來源上消失的場次標為 `unknown`，不自動判定取消。票價因平日／假日等差異無法安全拆分時維持 `null`，保留原文 `priceNote`。
+
+`GET /marine-programmes?source=nmmba` 回傳官網當日節目表的 `dailySchedule[]` 與 `observedOn`。`localTime` 是臺灣本地時刻；不得把昨日觀察推定為明日必有活動，也不可用節目表推定特殊日開館。兩條 API 均支援 `limit`（1–100）與 `offset`，來源時間由 `sourceCheckedAt` 回傳，詳見 [OpenAPI](openapi.yaml)。本機手動同步指令為 `npm run sync:domain -- --source ntt` 或 `--source nmmba`，未進入線上排程。

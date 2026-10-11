@@ -16,6 +16,11 @@
 
 盤點狀態只說明資料入口存在，**不代表**取得許可、API 可用或已自動擷取。優先順序依產品題材與地域平衡，不以館所價值排名。
 
+### Phase 3／4 節目來源（2026-10-12）
+
+- [臺中國家歌劇院官方節目清單](https://www.npac-ntt.org/program/events?place=1)：本機僅取首頁最多五個節目詳情，解析明確場次與廳。MORE 分頁及完整覆蓋率未驗證；官網頁面不稱為公開 API。售罄、取消與延期目前不靠首頁猜測。
+- [海生館官方當日活動](https://www.nmmba.gov.tw/ActiveShow_D_Cus.aspx?n=33D045D1594ED637&sms=00C15C8CDECA96C3)：僅匯入頁面日期與本次臺灣觀察日一致的每日節目卡，2026-10-12 本機取九筆。這是當日節目，不是未來每天的保證。特殊開館須另查[館方服務與票價頁](https://www.nmmba.gov.tw/cp.aspx?n=A6476B49BA86BBD5&s=B3CCAAE6060F5DB7)與公告。
+
 ### 奇美特展來源查證（2026-10-04）
 
 **2026-10-11 補充**：使用者提供官網內部 `POST /exhibition-event/api` 的 DevTools 回應欄位；本站無 Cookie／CSRF 的 Node POST 回 419；公開頁正常匿名流程由 PowerShell 與 Node.js 取得 200 JSON，三組筆數 1／4／10。日期與標籤篩選已有小樣本核對，仍未驗證資料完整度、伺服器隱含上限與跨日穩定度。它仍是「官網內部使用、未公開文件化的 JSON 端點」，不是館方提供第三方的公開 API，也未接入每日同步。詳見[實測與啟用門檻](stage-2026-10-11-chimei-probe.md)及[候選來源評估](chimei-internal-endpoint.md)。

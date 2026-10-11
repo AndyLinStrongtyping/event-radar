@@ -15,7 +15,7 @@ const links: Record<string, string> = {
   nmns: 'https://www.nmns.edu.tw/ch/visit/hours/',
   'npm-south': 'https://south.npm.gov.tw/',
   'npm-north': 'https://www.npm.gov.tw/',
-  nmmba: 'https://www.nmmba.gov.tw/',
+  nmmba: 'https://www.nmmba.gov.tw/cp.aspx?n=A6476B49BA86BBD5&s=B3CCAAE6060F5DB7',
   nstm: 'https://www.nstm.gov.tw/',
   ntm: 'https://www.ntm.gov.tw/',
   nmth: 'https://www.nmth.gov.tw/',
@@ -54,6 +54,9 @@ export async function visitStatus(museumId: string, date: string,
       message: '奇美博物館平常週三休館，但有特別開放場次；請查看館方全年行事曆，勿只依星期判斷。',
       newsUrl: 'https://www.chimeimuseum.org/news/5fd2eee2256ee' };
   }
+  if (museumId === 'nmmba') return { ...base,
+    message: '海生館開館時間依月份及特殊日期調整；目前無逐日可驗證的特殊開館資料，請以館方服務及票價頁與最新公告為準。',
+    newsUrl: 'https://www.nmmba.gov.tw/' };
   if (museumId !== 'nmns' || !process.env.NMNS_API_KEY) return base;
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric',
     month: '2-digit', day: '2-digit' }).format(now);

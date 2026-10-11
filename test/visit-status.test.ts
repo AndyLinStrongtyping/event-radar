@@ -29,6 +29,13 @@ test('國美館僅提供官方時間入口，不推測特定日開館', async ()
   assert.equal(result.sourceUrl, 'https://www.ntmofa.gov.tw/cp.aspx?n=1420');
 });
 
+test('海生館特殊開館需回官方服務頁核對', async () => {
+  const result = await visitStatus('nmmba', '2026-10-13');
+  assert.equal(result.status, 'unknown');
+  assert.match(result.message, /特殊日期/);
+  assert.match(result.sourceUrl, /nmmba\.gov\.tw\/cp\.aspx/);
+});
+
 test('未設定科博館金鑰時安全退回官方開放時間頁', async () => {
   const previous = process.env.NMNS_API_KEY;
   delete process.env.NMNS_API_KEY;

@@ -143,6 +143,36 @@ const server = createServer(async (request, response) => {
       })) });
       return;
     }
+    if (url.pathname === '/performances' || url.pathname === '/marine-programmes') {
+      const domain = url.pathname === '/performances' ? 'performance' : 'marine';
+      const limit = numeric(url.searchParams.get('limit'), 20, 100, 'limit');
+      const offset = numeric(url.searchParams.get('offset'), 0, 100000, 'offset');
+      const sourceId = url.searchParams.get('source')?.trim() || null;
+      if (sourceId && !/^[a-z0-9-]{1,40}$/.test(sourceId)) throw new Error('篩選參數無效');
+      const conditions = `d.domain=$1 AND ($2::text IS NULL OR d.source_id=$2)`;
+      const [items, count] = await Promise.all([
+        pool.query(`SELECT d.id,d.source_id AS "sourceId",d.source_key AS "sourceKey",
+          d.domain,d.title,d.venue,d.source_url AS "sourceUrl",d.ticket_url AS "ticketUrl",
+          d.price_note AS "priceNote",d.source_checked_at AS "sourceCheckedAt",
+          to_char(d.observed_on,'YYYY-MM-DD') AS "observedOn",
+          CASE WHEN d.domain='performance' THEN
+            COALESCE((SELECT jsonb_agg(jsonb_build_object('startsAt',s.starts_at,
+              'hall',s.hall,'ticketUrl',s.ticket_url,'priceMin',s.price_min,
+              'priceMax',s.price_max,'status',s.status) ORDER BY s.starts_at)
+              FROM event_sessions s WHERE s.event_id=d.id),'[]'::jsonb)
+            ELSE NULL END AS sessions,
+          CASE WHEN d.domain='marine' THEN
+            COALESCE((SELECT jsonb_agg(jsonb_build_object('localTime',to_char(r.local_time,'HH24:MI'),
+              'durationMinutes',r.duration_minutes,'venue',r.venue,'timezone',r.timezone)
+              ORDER BY r.local_time) FROM recurring_schedules r WHERE r.event_id=d.id),'[]'::jsonb)
+            ELSE NULL END AS "dailySchedule"
+          FROM domain_events d WHERE ${conditions}
+          ORDER BY d.source_checked_at DESC,d.id LIMIT $3 OFFSET $4`,[domain,sourceId,limit,offset]),
+        pool.query(`SELECT count(*)::int AS total FROM domain_events d WHERE ${conditions}`,[domain,sourceId]),
+      ]);
+      json(response,200,{items:items.rows,total:count.rows[0].total,limit,offset});
+      return;
+    }
     if (url.pathname === '/visit-status') {
       const museum = url.searchParams.get('museum') ?? '';
       const requestedDate = url.searchParams.get('date') ?? '';

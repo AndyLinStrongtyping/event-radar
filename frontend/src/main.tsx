@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
+import { DomainProgrammes } from './DomainProgrammes';
 
 type Ticket = { label: string; price: string; note: string; infoUrl: string; purchaseUrl?: string | null; checkedOn: string };
 type Museum = {
@@ -262,7 +263,7 @@ function App() {
 
   return <>
     <a className="skip-link" href="#results">跳到展覽結果</a>
-    <header className="site-header"><div className="header-inner"><a className="brand" href="/" aria-label="Event Radar 首頁"><span className="brand-glyph">✧</span><span>EVENT <b>RADAR</b><small>博物館探索檔案</small></span></a><nav aria-label="主要導覽"><a href="#explore-title">探索特展</a><a href="#activities">活動與節目</a><a href="#guides">博物館圖鑑</a><a href="#tickets">票務索引</a></nav><span className="header-edition">FIELD JOURNAL <i>01 / TAIWAN</i></span></div></header>
+    <header className="site-header"><div className="header-inner"><a className="brand" href="/" aria-label="Event Radar 首頁"><span className="brand-glyph">✧</span><span>EVENT <b>RADAR</b><small>博物館探索檔案</small></span></a><nav aria-label="主要導覽"><a href="#explore-title">探索特展</a><a href="#activities">奇美活動</a><a href="#expeditions">演出與深海</a><a href="#guides">博物館圖鑑</a><a href="#tickets">票務索引</a></nav><span className="header-edition">FIELD JOURNAL <i>01 / TAIWAN</i></span></div></header>
     <main>
       <section className="hero" aria-labelledby="hero-title"><div className="hero-grain" aria-hidden="true"/><div className="hero-inner"><div className="hero-copy-block"><p className="eyebrow"><span className="eyebrow-line"/> A LIVING ARCHIVE OF DISCOVERY</p><h1 id="hero-title">翻開地層，<br/>遇見<span>未知的故事。</span></h1><p className="hero-lede">從古埃及的文字、遠古生命的化石，到藏在博物館裡的當期特展。跟著官方資料留下的線索，選一站，開始你的探索。</p><div className="hero-actions"><a className="primary-cta" href="#explore-title">開始發掘展覽 <span aria-hidden="true">↗</span></a><a className="text-cta" href="#guides">先認識博物館 <span aria-hidden="true">→</span></a></div><div className="hero-coordinate">25° N — 22° N <span>／</span> TEN MUSEUMS, MANY STORIES</div></div><div className="hero-art" aria-label="古文明展品的考古檔案視覺"><span className="art-corner art-corner-top"/><img src="/assets/egypt-writing-user.jpg" alt="博物館內的羅塞塔石碑複製品展示，表面刻有古代文字"/><span className="art-corner art-corner-bottom"/><div className="artifact-tag"><span>FIELD NOTE / 001</span><strong>文字留下的線索</strong><small>古文明 · 自攝展品照片</small></div><div className="art-seal" aria-hidden="true"><CompassIcon/></div></div></div><div className="hero-bottom"><span>SCROLL TO DISCOVER</span><span className="hero-bottom-line"/><span>考古不是回到過去，而是重新看見現在。</span></div></section>
 
@@ -292,6 +293,7 @@ function App() {
         <p className="activity-source">{chimeiActivities ? `館方清單核對：${formatTaipei(chimeiActivities.checkedAt) || chimeiActivities.checkedAt}；共 ${chimeiActivities.items.length} 筆。` : activityError ? '活動快照暫時無法載入。' : '正在開啟活動檔案…'} {activitySnapshotOld && <strong>快照已超過 14 天，可能有異動。</strong>}出發或購票前，請逐筆開啟<a href="https://www.chimeimuseum.org/exhibition-event" target="_blank" rel="noopener noreferrer">奇美官方活動頁 ↗</a>確認日期與名額。</p>
         {chimeiActivities && <div className="activity-grid">{chimeiActivities.items.map((item) => <article className="activity-card" key={item.id}><span>{item.type || '活動與節目'} · 奇美博物館</span><h3>{item.title}</h3><p className="activity-date">{item.dateText}</p><a href={officialUrl(item.sourceUrl) || chimeiActivities.sourceUrl} target="_blank" rel="noopener noreferrer">查看館方活動詳情 ↗</a></article>)}</div>}
       </section>
+      <DomainProgrammes/>
     </main><footer className="site-footer"><div><span className="footer-brand">✧ EVENT RADAR</span><p>沿著真實資料，繼續探索未知。</p></div><p>資訊取自各博物館與政府公開資料；展期、票價、休館與入場規定，以館方公告為準。</p><a href="#hero-title">回到頂端 ↑</a></footer>
   </>;
 }

@@ -17,6 +17,7 @@ test('OpenAPI 文件可解析，公開路由與所有引用存在', () => {
   assert.deepEqual(Object.keys(paths).sort(), [
     '/chimei-activities.json', '/health', '/museums', '/visit-status', '/exhibitions',
     '/exhibitions/{id}', '/exhibitions/{id}/changes', '/exhibitions/{id}/art-changes',
+    '/performances', '/marine-programmes',
   ].sort());
   function checkRefs(value: unknown): void {
     if (!value || typeof value !== 'object') return;

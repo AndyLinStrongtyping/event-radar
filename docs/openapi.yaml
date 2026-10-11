@@ -8,6 +8,40 @@ info:
 servers:
   - url: http://127.0.0.1:3000
 paths:
+  /performances:
+    get:
+      summary: 查詢已核對的表演節目與場次
+      operationId: listPerformances
+      description: 歌劇院目前僅抽樣官方清單首頁；scheduled 表示有場次，不能據此推定仍有票。
+      parameters:
+        - { name: source, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        '200':
+          description: 表演與場次清單
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DomainEventList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /marine-programmes:
+    get:
+      summary: 查詢海生館當日觀察到的每日節目表
+      operationId: listMarineProgrammes
+      description: observedOn 是官網當日節目表日期；不得推定未來日期或特殊開館。
+      parameters:
+        - { name: source, in: query, schema: { type: string } }
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        '200':
+          description: 每日節目表觀察結果
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/DomainEventList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
   /chimei-activities.json:
     get:
       summary: 奇美活動人工核對快照（靜態檔，非即時搜尋 API）
@@ -234,6 +268,55 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
   schemas:
+    DomainEventList:
+      type: object
+      required: [items, total, limit, offset]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/DomainEvent' } }
+        total: { type: integer, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    DomainEvent:
+      type: object
+      required: [id, sourceId, sourceKey, domain, title, venue, sourceUrl, ticketUrl, priceNote, sourceCheckedAt, observedOn, sessions, dailySchedule]
+      properties:
+        id: { type: string, format: uuid }
+        sourceId: { type: string, enum: [ntt, nmmba] }
+        sourceKey: { type: string }
+        domain: { type: string, enum: [performance, marine] }
+        title: { type: string }
+        venue: { type: string, nullable: true }
+        sourceUrl: { type: string, format: uri }
+        ticketUrl: { type: string, format: uri, nullable: true }
+        priceNote: { type: string, nullable: true }
+        sourceCheckedAt: { type: string, format: date-time }
+        observedOn: { type: string, format: date, nullable: true }
+        sessions:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/EventSession' }
+        dailySchedule:
+          type: array
+          nullable: true
+          items: { $ref: '#/components/schemas/DailySchedule' }
+    EventSession:
+      type: object
+      required: [startsAt, hall, ticketUrl, priceMin, priceMax, status]
+      properties:
+        startsAt: { type: string, format: date-time }
+        hall: { type: string, nullable: true }
+        ticketUrl: { type: string, format: uri, nullable: true }
+        priceMin: { type: integer, minimum: 0, nullable: true }
+        priceMax: { type: integer, minimum: 0, nullable: true }
+        status: { type: string, enum: [scheduled, sold_out, cancelled, postponed, unknown] }
+    DailySchedule:
+      type: object
+      required: [localTime, durationMinutes, venue, timezone]
+      properties:
+        localTime: { type: string }
+        durationMinutes: { type: integer, minimum: 1, nullable: true }
+        venue: { type: string, nullable: true }
+        timezone: { type: string, enum: [Asia/Taipei] }
     Error:
       type: object
       required: [error]

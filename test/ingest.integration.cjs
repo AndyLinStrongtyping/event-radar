@@ -140,6 +140,21 @@ async function checkPublicApiContract() {
     assert.equal(museums.items.find((museum) => museum.id === 'nstm').coverageStatus, 'deferred_partial');
     assert.equal(museums.items.find((museum) => museum.id === 'ntmofa').venueType, 'art_museum');
 
+    const performances = await get('/performances?source=ntt');
+    assert.equal(performances.total, 1);
+    assert.equal(performances.items[0].domain, 'performance');
+    assert.equal(performances.items[0].sessions.length, 2);
+    assert.equal(performances.items[0].dailySchedule, null);
+    assert.equal(performances.items[0].sessions[0].status, 'unknown',
+      '來源詳情消失的場次不可推定取消');
+    const marine = await get('/marine-programmes?source=nmmba');
+    assert.equal(marine.total, 1);
+    assert.equal(marine.items[0].domain, 'marine');
+    assert.equal(marine.items[0].observedOn, '2026-10-13');
+    assert.equal(marine.items[0].sessions, null);
+    assert.deepEqual(marine.items[0].dailySchedule.map((entry) => entry.localTime), ['10:00', '14:00']);
+    assert.equal((await get('/performances?source=other')).total, 0);
+
     const artList = await get('/exhibitions?museum=ntmofa&status=all');
     assert.equal(artList.total, 1);
     assert.deepEqual(artList.items[0].art.artistNames, ['乙藝術家']);
@@ -231,16 +246,16 @@ async function main() {
       cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href }, encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-  assert.match(migrate(), /新套用 16 份/, '空白資料庫應由單一命令建立');
+  assert.match(migrate(), /新套用 17 份/, '空白資料庫應由單一命令建立');
   assert.match(migrate(), /新套用 0 份/, '重跑不得重建表或重複寫入');
   let ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 16);
+  assert.equal(ledger.rows[0].count, 17);
   // 模擬舊版手動執行所有 migration 的資料庫；只有明確指定時才建立帳本。
   await testDb.query('DROP TABLE schema_migrations');
   assert.throws(() => migrate(), /舊版資料庫且沒有 migration 帳本/);
   assert.match(migrate('--baseline-existing'), /新套用 0 份/);
   ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 16);
+  assert.equal(ledger.rows[0].count, 17);
   assert.match(migrate(), /新套用 0 份/);
   const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
   async function checkCoverage(keys, rawKeys = [], provider = 'ntm') {
@@ -736,6 +751,39 @@ async function main() {
     .latestCoverageStatus, 'deferred_partial', '最近官方清單縮水須出現在健康報告');
   assert.equal(health.find((item) => item.museumId === 'nmns').health, 'failed',
     '最近同步失敗須優先於先前本機匯入成功');
+  const { importDomainEvents } = await import('../src/domain-events.ts');
+  const firstSession = { sessionKey: '2026-10-29T19:30+08:00', startsAt: '2026-10-29T19:30+08:00',
+    hall: '大劇院', ticketUrl: 'https://npacntt.tw/ticket', priceMin: null, priceMax: null,
+    status: 'scheduled' };
+  const secondSession = { ...firstSession, sessionKey: '2026-10-30T19:30+08:00',
+    startsAt: '2026-10-30T19:30+08:00' };
+  const performance = { sourceId: 'ntt', sourceKey: 'c-tv0mE3YHxoF', domain: 'performance',
+    title: '測試節目', venue: '大劇院', sourceUrl: 'https://www.npac-ntt.org/program/events/c-tv0mE3YHxoF',
+    ticketUrl: 'https://npacntt.tw/ticket', priceNote: null, observedOn: null,
+    sessions: [firstSession, secondSession] };
+  assert.deepEqual(await importDomainEvents(testDb,[performance],'single_detail','2026-10-11T12:00:00Z'),
+    {inserted:1,updated:0,unchanged:0});
+  assert.deepEqual(await importDomainEvents(testDb,[performance],'single_detail','2026-10-11T12:00:00Z'),
+    {inserted:0,updated:0,unchanged:1});
+  assert.deepEqual(await importDomainEvents(testDb,[{...performance,sessions:[secondSession]}],
+    'single_detail','2026-10-12T12:00:00Z'),{inserted:0,updated:1,unchanged:0});
+  await assert.rejects(importDomainEvents(testDb,[performance],'single_detail','2026-10-10T12:00:00Z'),/更舊/);
+  const marineProgramme = { sourceId:'nmmba', sourceKey:'大洋池餵食解說|大洋池',
+    domain:'marine', title:'大洋池餵食解說', venue:'大洋池',
+    sourceUrl:'https://www.nmmba.gov.tw/ActiveShow_D_Cus.aspx?n=33D045D1594ED637&sms=00C15C8CDECA96C3',
+    ticketUrl:null, priceNote:null, observedOn:'2026-10-12', recurrence:'daily',
+    times:[{localTime:'10:00',durationMinutes:15,venue:'大洋池'},
+      {localTime:'13:00',durationMinutes:15,venue:'大洋池'}] };
+  assert.deepEqual(await importDomainEvents(testDb,[marineProgramme],'daily_page','2026-10-12T02:00:00Z'),
+    {inserted:1,updated:0,unchanged:0});
+  assert.deepEqual(await importDomainEvents(testDb,[marineProgramme],'daily_page','2026-10-12T02:00:00Z'),
+    {inserted:0,updated:0,unchanged:1});
+  const nextProgramme = {...marineProgramme,observedOn:'2026-10-13',times:[
+    marineProgramme.times[0],{...marineProgramme.times[1],localTime:'14:00'}]};
+  assert.deepEqual(await importDomainEvents(testDb,[nextProgramme],'daily_page','2026-10-13T02:00:00Z'),
+    {inserted:0,updated:1,unchanged:0});
+  const domainChanges = await testDb.query(`SELECT field_name FROM domain_event_changes ORDER BY field_name`);
+  assert.deepEqual(domainChanges.rows.map((row) => row.field_name), ['recurringSchedule','sessions']);
   await checkPublicApiContract();
   assert.equal(ingestMockNstm(nstmFullHtml).coverageStatus, 'checked',
     '官方完整清單恢復後應重新通過完整度檢查');
