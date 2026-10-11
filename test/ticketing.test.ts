@@ -3,13 +3,15 @@ import assert from 'node:assert/strict';
 import { museumTickets, ticketingForExhibition } from '../src/ticketing.ts';
 
 test('票務索引只放館方來源或館方導向的購票入口', () => {
-  assert.equal(Object.keys(museumTickets).length, 9);
+  assert.equal(Object.keys(museumTickets).length, 10);
   for (const ticket of Object.values(museumTickets)) {
-    assert.match(ticket.price, /NT\$\d+/);
-    assert.equal(ticket.checkedOn, '2026-10-10');
+    assert.match(ticket.price, /NT\$\d+|免費/);
+    assert.match(ticket.checkedOn, /^2026-10-1[01]$/);
     assert.equal(new URL(ticket.infoUrl).protocol, 'https:');
     if (ticket.purchaseUrl) assert.equal(new URL(ticket.purchaseUrl).protocol, 'https:');
   }
+  assert.equal(museumTickets.ntmofa.price, '免費');
+  assert.equal(museumTickets.ntmofa.checkedOn, '2026-10-11');
 });
 
 test('一般入館票價不能冒充任何特展票價', () => {

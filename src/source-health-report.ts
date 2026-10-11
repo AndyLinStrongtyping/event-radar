@@ -50,7 +50,7 @@ export async function loadSourceHealth(pool: pg.Pool, now: Date = new Date()): P
   LEFT JOIN LATERAL (SELECT coverage_status,started_at FROM ingestion_runs
     WHERE museum_id=m.id AND status='succeeded' AND coverage_status<>'not_applicable'
     ORDER BY started_at DESC,id DESC LIMIT 1) coverage ON true
-  WHERE m.id IN ('nmns','npm-south','npm-north','nmmba','nstm') ORDER BY m.id`);
+  WHERE m.id IN ('nmns','npm-south','npm-north','nmmba','nstm','ntmofa') ORDER BY m.id`);
   return result.rows.map((row) => ({
     ...row,
     health: sourceHealth(row, now),

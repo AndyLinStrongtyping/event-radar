@@ -100,6 +100,11 @@ async function checkPublicApiContract() {
     }
     const guide = await fetch(base + '/guides/chimei.html');
     assert.equal(guide.status, 200, '既有館所介紹應繼續可用');
+    const artGuide = await fetch(base + '/guides/ntmofa.html');
+    assert.equal(artGuide.status, 200, '國美館圖鑑應可開啟');
+    assert.match(await artGuide.text(), /國立臺灣美術館/);
+    const artImage = await fetch(base + '/assets/ntmofa-building-commons.jpg');
+    assert.equal(artImage.status, 200, '國美館圖鑑照片應可載入');
     const programmes = await get('/chimei-activities.json');
     assert.ok(programmes.items.length > 0);
     assert.ok(programmes.items.every((item) => item.sourceUrl.startsWith('https://www.chimeimuseum.org/event/')));
@@ -110,7 +115,7 @@ async function checkPublicApiContract() {
       FROM source_records WHERE status='review' GROUP BY museum_id`);
     const pendingByMuseum = new Map(pending.rows.map((row) => [row.museum_id, row.count]));
     for (const museum of museums.items) {
-      for (const field of ['id', 'name', 'city', 'homepageUrl', 'sourceStatus']) {
+      for (const field of ['id', 'name', 'city', 'venueType', 'homepageUrl', 'sourceStatus']) {
         assert.equal(typeof museum[field], 'string', `museum.${field} 必須是字串`);
       }
       assert.ok(museum.lastSuccessAt === null || !Number.isNaN(Date.parse(museum.lastSuccessAt)));
@@ -133,6 +138,15 @@ async function checkPublicApiContract() {
     assert.equal(museums.items.find((museum) => museum.id === 'nmmba').coverageStatus, 'deferred_partial',
       '公開完整度警示與新鮮度需各自保留，不能互相掩蓋');
     assert.equal(museums.items.find((museum) => museum.id === 'nstm').coverageStatus, 'deferred_partial');
+    assert.equal(museums.items.find((museum) => museum.id === 'ntmofa').venueType, 'art_museum');
+
+    const artList = await get('/exhibitions?museum=ntmofa&status=all');
+    assert.equal(artList.total, 1);
+    assert.deepEqual(artList.items[0].art.artistNames, ['乙藝術家']);
+    assert.equal(artList.items[0].art.exhibitionType, 'education');
+    assert.equal(artList.items[0].art.relatedEvents[0].eventType, 'workshop');
+    const artDetail = await get(`/exhibitions/${artList.items[0].id}`);
+    assert.deepEqual(artDetail.art.artistNames, ['乙藝術家']);
 
     const list = await get('/exhibitions?from=2026-01-01&to=2027-12-31&museum=chimei&limit=2');
     assert.equal(typeof list.total, 'number');
@@ -211,16 +225,16 @@ async function main() {
       cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href }, encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-  assert.match(migrate(), /新套用 15 份/, '空白資料庫應由單一命令建立');
+  assert.match(migrate(), /新套用 16 份/, '空白資料庫應由單一命令建立');
   assert.match(migrate(), /新套用 0 份/, '重跑不得重建表或重複寫入');
   let ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 15);
+  assert.equal(ledger.rows[0].count, 16);
   // 模擬舊版手動執行所有 migration 的資料庫；只有明確指定時才建立帳本。
   await testDb.query('DROP TABLE schema_migrations');
   assert.throws(() => migrate(), /舊版資料庫且沒有 migration 帳本/);
   assert.match(migrate('--baseline-existing'), /新套用 0 份/);
   ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 15);
+  assert.equal(ledger.rows[0].count, 16);
   assert.match(migrate(), /新套用 0 份/);
   const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
   async function checkCoverage(keys, rawKeys = []) {
@@ -270,6 +284,36 @@ async function main() {
       rowCount: 2, baselineRowCount: 5 },
     '原始紀錄仍完整但解析後可公開展覽驟減，也必須暫緩缺席判定');
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
+  const artUrl = 'https://event.culture.tw/mocweb/reg/NTMOFA/Detail.init.ctr?actId=60146';
+  const artTitle = '測試藝術教育展';
+  const artCard = `<a href="${artUrl}" class="div-activity" title="${artTitle}">
+    <p class="activity-time">日期：2026-09-29 ~ 2027-08-29</p>
+    <p class="activity-season">地點：B1 教育展示空間</p></a>`;
+  const artDetail = (artist) => `<div class="programDetailGroup"><div class="title_01">${artTitle}</div></div>
+    <p>參展藝術家：${artist}</p><!--相關系列活動START-->
+    <a onclick="viewDetail('60148');">藝術家工作坊</a><!--相關系列活動END-->`;
+  const artSnapshot = await fixture('art-snapshot.json', { pages: [artCard, ''],
+    details: { [artUrl]: artDetail('甲藝術家') } });
+  const artArgs = ['--experimental-strip-types', 'src/ingest.ts', '--source', 'ntmofa', '--snapshot', artSnapshot];
+  const artEnv = { ...process.env, DATABASE_URL: testUrl.href };
+  const artIngest = () => JSON.parse(execFileSync(process.execPath, artArgs,
+    { cwd: project, env: artEnv, encoding: 'utf8' }));
+  assert.equal(artIngest().inserted, 1);
+  assert.equal(artIngest().unchanged, 1);
+  let artStored = await testDb.query(`SELECT a.artist_names,m.venue_type FROM art_exhibition_details a
+    JOIN exhibitions e ON e.id=a.exhibition_id JOIN museums m ON m.id=e.museum_id
+    WHERE e.museum_id='ntmofa'`);
+  assert.deepEqual(artStored.rows[0].artist_names, ['甲藝術家']);
+  assert.equal(artStored.rows[0].venue_type, 'art_museum');
+  await writeFile(artSnapshot, JSON.stringify({ pages: [artCard, ''],
+    details: { [artUrl]: artDetail('乙藝術家') } }), 'utf8');
+  artIngest();
+  artStored = await testDb.query(`SELECT a.artist_names FROM art_exhibition_details a
+    JOIN exhibitions e ON e.id=a.exhibition_id WHERE e.museum_id='ntmofa'`);
+  assert.deepEqual(artStored.rows[0].artist_names, ['乙藝術家']);
+  assert.equal((await testDb.query(`SELECT count(*)::int AS count FROM art_exhibition_changes
+    WHERE field_name='artistNames'`)).rows[0].count, 1);
+  assert.equal((await testDb.query(`SELECT count(*)::int AS count FROM art_related_events`)).rows[0].count, 1);
   const nstmData = Array.from({ length: 6 }, (_, index) => ({
     Category: '特展', ExhibitionName: `整合測試科工館展覽${index + 1}`,
     ExhibitionStartDate: '20260101', ExhibitionEndDate: '20991231', Floor: '2F',

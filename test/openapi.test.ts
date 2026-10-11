@@ -39,7 +39,7 @@ test('OpenAPI 回應驗證能抓出 enum 與巢狀票務格式錯誤', () => {
   assert.throws(() => assertOpenApiResponse('/health', 200,
     { status: 'ok', database: 'offline' }), /database.*enum/);
   const museum = {
-    id: 'chimei', name: '奇美博物館', city: '臺南市', homepageUrl: 'https://www.chimeimuseum.org/',
+    id: 'chimei', name: '奇美博物館', city: '臺南市', venueType: 'museum', homepageUrl: 'https://www.chimeimuseum.org/',
     sourceStatus: 'curated', lastSuccessAt: null, lastOfficialSuccessAt: null,
     lastAttemptStatus: null, lastAttemptAt: null, coverageStatus: null,
     pendingReviewCount: 0, dataStatus: 'manual', generalAdmission: null,

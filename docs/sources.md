@@ -11,7 +11,7 @@
 | 2 | 國立科學工藝博物館（高雄） | https://websrv.nstm.gov.tw/OtherInfo/OpenData/ExhibitionInfoOpenData.ashx | 公開 JSON 已與[官方特展列表](https://www.nstm.gov.tw/ExhibitionList.aspx?ExhibitionType=2&Period=2&Pindex=1)展名、展期唯一比對後本機匯入；無法對應者隔離 | 科學技術類與南部覆蓋 |
 | 2 | 國立海洋生物博物館（屏東） | https://www.nmmba.gov.tw/OpenData.aspx?SN=BF6D6EB9CB6876BB | 官方公開 JSON 已接入本機；缺展期隔離待審，尚未線上同步 | 海洋生物特展及南部覆蓋 |
 | 2 | 國立臺灣科學教育館（臺北） | https://www.ntsec.gov.tw/article/list.aspx?a=25 | 官網特展列表可匿名讀取；部分項目缺完整展期或連外部售票頁，尚無可安全納入每週同步的 adapter；API 待查 | 人體、生態、物質科學與科技教育 |
-| 2 | 國立臺灣美術館（臺中） | https://www.ntmofa.gov.tw/ | 官網當期展覽頁已找到，API 待查 | 美術類與中部覆蓋 |
+| 2 | 國立臺灣美術館（臺中） | https://www.ntmofa.gov.tw/News_Actives_photo.aspx?n=1462&sms=11893 | 官方當期／預告 HTML 清單及其連到的文化部 NTMOFA 詳情頁已接入**本機手動同步**；不是公開 API。首次 12 筆來源卡有 3 筆臺中本館限期展可匯入、9 筆館外／線上／常設／公告排除；清單完整性與跨週穩定待觀察 | 驗證美術館獨有的藝術家、策展、展區與相關活動關係 |
 | 2 | 臺南市美術館（臺南） | https://www.tnam.museum/ | 官網展覽頁已找到，API 待查 | 美術類與在地覆蓋 |
 
 盤點狀態只說明資料入口存在，**不代表**取得許可、API 可用或已自動擷取。優先順序依產品題材與地域平衡，不以館所價值排名。
@@ -62,10 +62,11 @@
 | 臺博館圖鑑卡片 | 228 公園內的主館正面 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:National_Taiwan_Museum_front_view_20070730.jpg)，攝影 Guillaume Paumier，[CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)；2007 年照片中的展覽布條不代表今日展期 | 960px 縮圖 `web/assets/ntm-building-commons.jpg`，卡片裁切顯示 |
 | 臺史博圖鑑卡片 | 展示教育大樓的光電雲牆 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:%E5%9C%8B%E7%AB%8B%E8%87%BA%E7%81%A3%E6%AD%B7%E5%8F%B2%E5%8D%9A%E7%89%A9%E9%A4%A8_02.jpg)，攝影 Pbdragonwang，[CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)；2011 年館舍照片 | 960px 縮圖 `web/assets/nmth-building-commons.jpg`，卡片裁切顯示 |
 | 科教館圖鑑卡片 | 士林館舍外觀 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:National_Taiwan_Science_Education_Center.jpg)，攝影 Kiyoteru Awaji，[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)；2021 年館舍照片中的布條不代表今日展期 | 960px 縮圖 `web/assets/ntsec-building-commons.jpg`，卡片裁切顯示 |
+| 國美館圖鑑卡片 | 本館外觀 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:%E5%9C%8B%E7%AB%8B%E5%8F%B0%E7%81%A3%E7%BE%8E%E8%A1%93%E9%A4%A8%E5%A4%96%E8%A7%80_20091115.jpg)，攝影 Chi-Hung Lin，[CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)；2009 年館舍照片中的展覽布條已過期 | 960px 縮圖 `web/assets/ntmofa-building-commons.jpg`，卡片裁切顯示 |
 
 科博館[網站宣告](https://www.nmns.edu.tw/ch/privacy-policy/index.html)將可開放的圖像導向政府資料開放平臺，臺博館另設[圖像授權申請](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5558)，奇美[會員條款](https://www.chimeimuseum.org/memberAccept)也保留官網圖片權利；因此這些館的官網照片尚未複製到本站。科博館木乃伊與奇美樂器廳照片是第三方於 Wikimedia Commons 授權發布的作品；故宮茶碗影像則來自故宮 Open Data，使用依據皆逐張核對。不能因圖片可在網頁看到，就推定可供本網站重新發布。
 
-首頁九張圖鑑卡片的對外署名與授權連結也列在 [`web/photo-credits.html`](../web/photo-credits.html)，從圖鑑區可直接開啟。新增的三張館舍照片未作檔案修圖；網頁以 `object-fit` 裁切並套用輕微色調。
+首頁十張圖鑑卡片的對外署名與授權連結也列在 [`web/photo-credits.html`](../web/photo-credits.html)，從圖鑑區可直接開啟。館舍照片未作檔案修圖；網頁以 `object-fit` 裁切並套用輕微色調。
 
 ## 交通規劃的依據與界線
 

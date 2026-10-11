@@ -233,11 +233,12 @@ components:
         note: { type: string }
     Museum:
       type: object
-      required: [id, name, city, homepageUrl, sourceStatus, lastSuccessAt, lastOfficialSuccessAt, lastAttemptStatus, lastAttemptAt, coverageStatus, pendingReviewCount, dataStatus, generalAdmission]
+      required: [id, name, city, venueType, homepageUrl, sourceStatus, lastSuccessAt, lastOfficialSuccessAt, lastAttemptStatus, lastAttemptAt, coverageStatus, pendingReviewCount, dataStatus, generalAdmission]
       properties:
         id: { type: string }
         name: { type: string }
         city: { type: string }
+        venueType: { type: string, enum: [museum, art_museum] }
         homepageUrl: { type: string, format: uri }
         sourceStatus: { type: string, enum: [curated, open_data, official_page, planned] }
         lastSuccessAt: { type: string, format: date-time, nullable: true }
@@ -255,7 +256,7 @@ components:
             - { $ref: '#/components/schemas/PriceGuide' }
     Exhibition:
       type: object
-      required: [id, title, museumId, museumName, city, sourceStatus, venue, startDate, endDate, priceNote, sourceUrl, summary, lastSeenAt, isSample, exhibitionStatus, admissionStatus, ticketing]
+      required: [id, title, museumId, museumName, city, sourceStatus, venue, startDate, endDate, priceNote, sourceUrl, summary, lastSeenAt, isSample, exhibitionStatus, admissionStatus, ticketing, art]
       properties:
         id: { type: string, format: uuid }
         title: { type: string }
@@ -273,6 +274,12 @@ components:
         isSample: { type: boolean }
         exhibitionStatus: { type: string, enum: [ongoing, upcoming, ended] }
         admissionStatus: { type: string, enum: [free, unknown] }
+        art:
+          description: 只有已核對的美術館展覽有資料，其餘為 null
+          type: object
+          nullable: true
+          allOf:
+            - { $ref: '#/components/schemas/ArtExhibitionDetails' }
         ticketing:
           type: object
           required: [exhibition, generalAdmission]
@@ -287,6 +294,24 @@ components:
               nullable: true
               allOf:
                 - { $ref: '#/components/schemas/PriceGuide' }
+    ArtExhibitionDetails:
+      type: object
+      required: [artistNames, curatorNames, exhibitionType, venueArea, floor, relatedEvents]
+      properties:
+        artistNames: { type: array, items: { type: string } }
+        curatorNames: { type: array, items: { type: string } }
+        exhibitionType: { type: string, enum: [temporary, education, biennial] }
+        venueArea: { type: string, nullable: true }
+        floor: { type: string, nullable: true }
+        relatedEvents:
+          type: array
+          items:
+            type: object
+            required: [title, sourceUrl, eventType]
+            properties:
+              title: { type: string }
+              sourceUrl: { type: string, format: uri }
+              eventType: { type: string, enum: [lecture, guided_tour, workshop, other] }
     ExhibitionChange:
       type: object
       required: [field, oldValue, newValue, detectedAt]

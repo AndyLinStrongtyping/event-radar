@@ -14,6 +14,7 @@ import { classifyMocChimei, mocExhibitionsUrl, verifiedMocChimeiRows } from './s
 import { correctedDraft, sourceHash } from './corrections.ts';
 import { trackMissingCandidates } from './source-missing.ts';
 import { assessOfficialSourceCoverage, type CoverageStatus } from './source-coverage.ts';
+import { classifyNtmofaPages, ntmofaPages, type ArtExhibitionDraft } from './sources/ntmofa.ts';
 
 function arg(name: string): string | undefined {
   const index = process.argv.indexOf(name);
@@ -33,13 +34,26 @@ async function fetchSource(url: string, host: string): Promise<string> {
   return new TextDecoder().decode(bytes);
 }
 
-type SourceBatch = { rows: ExhibitionDraft[]; records: SourceRecord[] };
+type IngestRow = ExhibitionDraft | ArtExhibitionDraft;
+type SourceBatch = { rows: IngestRow[]; records: SourceRecord[] };
 
 async function sourceRows(museum: string, file: string | undefined, snapshot: string | undefined,
   official: boolean, provider: string): Promise<SourceBatch> {
   if (snapshot) {
     const payload: unknown = JSON.parse(await readFile(snapshot, 'utf8'));
     if (museum === 'nmmba') return classifyNmmbaFeed(payload);
+    if (museum === 'ntmofa' && payload && typeof payload === 'object' && !Array.isArray(payload)) {
+      const item = payload as { pages?: unknown; details?: unknown };
+      if (!Array.isArray(item.pages) || item.pages.some((page) => typeof page !== 'string')
+        || !item.details || typeof item.details !== 'object' || Array.isArray(item.details)) {
+        throw new Error('國美館快照需要 pages 字串陣列與 details 對照表');
+      }
+      const details = item.details as Record<string, unknown>;
+      return classifyNtmofaPages(item.pages as string[], async (url) => {
+        if (typeof details[url] !== 'string') throw new Error('國美館快照缺少詳情頁');
+        return details[url] as string;
+      });
+    }
     if (museum === 'npm-north') return classifyNpmNorthFeed(payload);
     if (museum === 'nstm' && payload && typeof payload === 'object' && !Array.isArray(payload)) {
       const snapshot = payload as { data?: unknown; html?: unknown; today?: unknown };
@@ -85,6 +99,11 @@ async function sourceRows(museum: string, file: string | undefined, snapshot: st
     if (url.protocol !== 'https:' || url.hostname !== 'www.nmns.edu.tw') throw new Error('來源網址必須是科博館官方 HTTPS 網域');
     return { rows: normalizeNmnsFeed(JSON.parse(await fetchSource(url.href, 'www.nmns.edu.tw'))), records: [] };
   }
+  if (museum === 'ntmofa') {
+    const pages: string[] = [];
+    for (const url of ntmofaPages) pages.push(await fetchSource(url, 'www.ntmofa.gov.tw'));
+    return classifyNtmofaPages(pages, (url) => fetchSource(url, 'event.culture.tw'));
+  }
   if (museum === 'npm-south') {
     const pages: string[] = [];
     for (const url of npmSouthPages) pages.push(await fetchSource(url, 'south.npm.gov.tw'));
@@ -111,6 +130,53 @@ async function sourceRows(museum: string, file: string | undefined, snapshot: st
 }
 
 type Stored = ExhibitionDraft & { id: string; primaryProvider: string; visible: boolean };
+
+async function persistArtDetails(client: pg.PoolClient, exhibitionId: string, runId: string,
+  art: ArtExhibitionDraft['art']): Promise<void> {
+  const previous = await client.query<{ artist_names: string[]; curator_names: string[];
+    exhibition_type: string; venue_area: string | null; floor: string | null }>(
+    'SELECT artist_names,curator_names,exhibition_type,venue_area,floor FROM art_exhibition_details WHERE exhibition_id=$1',
+    [exhibitionId]);
+  const oldEvents = await client.query<{ title: string; sourceUrl: string; eventType: string }>(
+    `SELECT title,source_url AS "sourceUrl",event_type AS "eventType" FROM art_related_events
+     WHERE exhibition_id=$1 ORDER BY source_url`, [exhibitionId]);
+  const next = { artistNames: art.artistNames, curatorNames: art.curatorNames,
+    exhibitionType: art.exhibitionType, venueArea: art.venueArea, floor: art.floor,
+    relatedEvents: [...art.relatedEvents].sort((a, b) => a.sourceUrl.localeCompare(b.sourceUrl)) };
+  const old = previous.rowCount ? { artistNames: previous.rows[0].artist_names,
+    curatorNames: previous.rows[0].curator_names, exhibitionType: previous.rows[0].exhibition_type,
+    venueArea: previous.rows[0].venue_area, floor: previous.rows[0].floor,
+    relatedEvents: oldEvents.rows } : null;
+  await client.query(`INSERT INTO art_exhibition_details
+    (exhibition_id,artist_names,curator_names,exhibition_type,venue_area,floor)
+    VALUES ($1,$2::jsonb,$3::jsonb,$4,$5,$6)
+    ON CONFLICT (exhibition_id) DO UPDATE SET artist_names=EXCLUDED.artist_names,
+      curator_names=EXCLUDED.curator_names,exhibition_type=EXCLUDED.exhibition_type,
+      venue_area=EXCLUDED.venue_area,floor=EXCLUDED.floor,updated_at=now()
+    WHERE art_exhibition_details.artist_names IS DISTINCT FROM EXCLUDED.artist_names
+      OR art_exhibition_details.curator_names IS DISTINCT FROM EXCLUDED.curator_names
+      OR art_exhibition_details.exhibition_type IS DISTINCT FROM EXCLUDED.exhibition_type
+      OR art_exhibition_details.venue_area IS DISTINCT FROM EXCLUDED.venue_area
+      OR art_exhibition_details.floor IS DISTINCT FROM EXCLUDED.floor`,
+  [exhibitionId, JSON.stringify(next.artistNames), JSON.stringify(next.curatorNames),
+    next.exhibitionType, next.venueArea, next.floor]);
+  if (JSON.stringify(old?.relatedEvents ?? []) !== JSON.stringify(next.relatedEvents)) {
+    await client.query('DELETE FROM art_related_events WHERE exhibition_id=$1', [exhibitionId]);
+    for (const event of next.relatedEvents) {
+      await client.query(`INSERT INTO art_related_events(exhibition_id,source_url,title,event_type)
+        VALUES ($1,$2,$3,$4)`, [exhibitionId, event.sourceUrl, event.title, event.eventType]);
+    }
+  }
+  if (old) {
+    for (const field of ['artistNames', 'curatorNames', 'exhibitionType', 'venueArea', 'floor', 'relatedEvents'] as const) {
+      if (JSON.stringify(old[field]) === JSON.stringify(next[field])) continue;
+      await client.query(`INSERT INTO art_exhibition_changes
+        (exhibition_id,ingestion_run_id,field_name,old_value,new_value)
+        VALUES ($1,$2,$3,$4::jsonb,$5::jsonb)`,
+      [exhibitionId, runId, field, JSON.stringify(old[field]), JSON.stringify(next[field])]);
+    }
+  }
+}
 
 async function hideCorrectedExhibition(client: pg.PoolClient, museum: string,
   provider: string, record: SourceRecord, previousUrl: string | null): Promise<void> {
@@ -311,6 +377,7 @@ async function main(): Promise<void> {
         (museum_id,provider,source_key,exhibition_id) VALUES ($1,$2,$3,$4)
         ON CONFLICT (museum_id,provider,source_key) DO UPDATE SET last_seen_at=now()`,
       [museum, provider, row.sourceKey, exhibitionId]);
+      if ('art' in row) await persistArtDetails(client, exhibitionId, runId!, row.art);
     }
     if (official) {
       if (counts.coverageStatus === 'checked') {

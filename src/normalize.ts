@@ -5,6 +5,7 @@ const museums = {
   nmns: { city: '臺中市', host: 'nmns.edu.tw' },
   nmmba: { city: '屏東縣', host: 'nmmba.gov.tw' },
   nstm: { city: '高雄市', host: 'nstm.gov.tw' },
+  ntmofa: { city: '臺中市', host: 'event.culture.tw' },
   'npm-north': { city: '臺北市', host: 'npm.gov.tw' },
   'npm-south': { city: '嘉義縣', host: 'south.npm.gov.tw' },
 } as const;
@@ -45,7 +46,8 @@ function validDate(value: unknown): string {
 
 export function normalizeExhibition(row: Record<string, unknown>, expectedMuseum: string): ExhibitionDraft {
   if (expectedMuseum !== 'chimei' && expectedMuseum !== 'nmns' && expectedMuseum !== 'npm-south'
-    && expectedMuseum !== 'nmmba' && expectedMuseum !== 'npm-north' && expectedMuseum !== 'nstm') {
+    && expectedMuseum !== 'nmmba' && expectedMuseum !== 'npm-north' && expectedMuseum !== 'nstm'
+    && expectedMuseum !== 'ntmofa') {
     throw new Error('此館尚無匯入 adapter');
   }
   if (row.museumId !== expectedMuseum) throw new Error('資料列館別與匯入來源不一致');
@@ -57,6 +59,11 @@ export function normalizeExhibition(row: Record<string, unknown>, expectedMuseum
   if (url.protocol !== 'https:' || (url.hostname !== host && !url.hostname.endsWith(`.${host}`))) {
     throw new Error('展覽網址不是該館的官方 HTTPS 網址');
   }
+  if (expectedMuseum === 'ntmofa' && (url.hostname !== 'event.culture.tw'
+    || url.pathname !== '/mocweb/reg/NTMOFA/Detail.init.ctr'
+    || !/^\d{4,8}$/.test(url.searchParams.get('actId') ?? ''))) {
+    throw new Error('國美館展覽網址必須是館方連結的文化部 NTMOFA 詳情頁');
+  }
   const startDate = validDate(row.startDate);
   const endDate = validDate(row.endDate);
   if (endDate < startDate) throw new Error('結束日早於開始日');
@@ -66,7 +73,8 @@ export function normalizeExhibition(row: Record<string, unknown>, expectedMuseum
     && /^\d{5,20}$/.test(row.sourceKey) ? row.sourceKey : null;
   const chimeiSpecialId = expectedMuseum === 'chimei' && typeof row.sourceKey === 'string'
     && /^special:[a-zA-Z0-9_-]{1,64}$/.test(row.sourceKey) ? row.sourceKey : null;
-  const sourceKey = isSample ? optionalText(row.sourceKey, 200) : northId || chimeiSpecialId || sourceUrl;
+  const artId = expectedMuseum === 'ntmofa' ? `ntmofa:${url.searchParams.get('actId')}` : null;
+  const sourceKey = isSample ? optionalText(row.sourceKey, 200) : northId || chimeiSpecialId || artId || sourceUrl;
   if (!sourceKey) throw new Error('模擬資料需要 sourceKey');
   const data: Omit<ExhibitionDraft, 'contentHash'> = {
     museumId: expectedMuseum,

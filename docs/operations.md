@@ -1,11 +1,15 @@
 # 每週同步運作設計
 
+## 國美館本機手動同步（Phase 2）
+
+先在本機套用 `npm run migrate`，再以 `npm run probe:ntmofa` 只讀核對官方當期／預告清單與館內限期展，確認沒有異常待審後執行 `npm run sync -- --source ntmofa`。本來源讀國美館公開 HTML 及其連出的文化部 NTMOFA 詳情頁，沒有 API Key；目前不在五館 Queue 與每週 workflow 內。首次成功只建立 coverage 基準，下一次須比對來源鍵與館方頁，不能因清單缺席就自動認定展覽取消。
+
 目標頻率為臺灣時間每週二 04:15；博物館特展不需要每天讀取。排程在非整點，降低 GitHub Actions 整點壅塞機率；它仍可能延遲或漏跑，不能承諾準點更新。重要展期變動可手動執行單館同步。來源資料本身若未更新，重跑只刷新最後看見時間。
 
 `.github/workflows/weekly-sync.yml` 已備妥，但**尚未啟用**。預設所有同步工作與奇美每週檢查都由 `EVENT_RADAR_SYNC_ENABLED` 閘門關閉；推送程式碼只執行 CI 驗證，不會連接外部資料庫。啟用條件：
 
 1. 專案放到獨立 GitHub repo 的預設分支。
-2. 建立可從 GitHub Actions 連線的 PostgreSQL；**空白庫**執行 `npm run migrate` 即可。既有且已有 migration 帳本的資料庫也直接執行此命令，會套用尚未執行的版本（目前至 014）。若沿用早期手動建表、完全沒有帳本的舊庫，先備份並核對所有 migration 都已套用，再執行一次 `npm run migrate -- --baseline-existing`；結構缺漏會拒絕，不能用基線命令跳過真正缺少的 migration。
+2. 建立可從 GitHub Actions 連線的 PostgreSQL；**空白庫**執行 `npm run migrate` 即可。既有且已有 migration 帳本的資料庫也直接執行此命令，會套用尚未執行的版本（目前至 016）。若沿用早期手動建表、完全沒有帳本的舊庫，先備份並核對所有 migration 都已套用，再執行一次 `npm run migrate -- --baseline-existing`；結構缺漏會拒絕，不能用基線命令跳過真正缺少的 migration。
 3. Repository secrets 設 `DATABASE_URL` 與 `NMNS_API_KEY`。後者只在決定啟用線上同步時設定，切勿寫入程式碼、文件或 workflow 日誌；`NMNS_OPEN_DATA_URL` 可作展覽匯入的無金鑰備援，不能提供逐日開放時間。
 4. Repository variable 設 `EVENT_RADAR_SYNC_ENABLED=true`，先手動執行一次並確認 `ingestion_runs` 與 `/health`，才依排程運作。
 

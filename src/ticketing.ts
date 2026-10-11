@@ -54,6 +54,11 @@ export const museumTickets: Record<string, MuseumGuide> = {
     purchaseUrl: 'https://www.aquarium.com.tw/products_a.asp', checkedOn: '2026-10-10',
     note: '線上入口由館方票價頁連至經營團隊；特殊活動另查公告。',
   },
+  ntmofa: {
+    label: '一般入館', price: '免費', infoUrl: 'https://www.ntmofa.gov.tw/cp.aspx?n=1420',
+    purchaseUrl: null, checkedOn: '2026-10-11',
+    note: '個別活動的報名與費用仍請查看各活動公告。',
+  },
 };
 
 const pharaohUrl = 'https://www.chimeimuseum.org/special-exhibition/68a68f0a422a6/68a68fa1d1a3b';

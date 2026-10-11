@@ -48,7 +48,13 @@ const fields = `e.id,e.title,e.museum_id AS "museumId",m.name AS "museumName",m.
   e.venue,to_char(e.start_date,'YYYY-MM-DD') AS "startDate",
   to_char(e.end_date,'YYYY-MM-DD') AS "endDate",e.price_note AS "priceNote",
   e.source_url AS "sourceUrl",e.summary,e.last_seen_at AS "lastSeenAt",
-  e.is_sample AS "isSample"`;
+  e.is_sample AS "isSample",
+  (SELECT jsonb_build_object('artistNames',a.artist_names,'curatorNames',a.curator_names,
+    'exhibitionType',a.exhibition_type,'venueArea',a.venue_area,'floor',a.floor,
+    'relatedEvents',COALESCE((SELECT jsonb_agg(jsonb_build_object('title',r.title,
+      'sourceUrl',r.source_url,'eventType',r.event_type) ORDER BY r.source_url)
+      FROM art_related_events r WHERE r.exhibition_id=e.id),'[]'::jsonb))
+    FROM art_exhibition_details a WHERE a.exhibition_id=e.id) AS art`;
 
 const staticFiles = new Map<string, [string, string]>([
   ['/', ['../web/react-build/index.html', 'text/html; charset=utf-8']],
@@ -61,6 +67,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/guides/nmmba.html', ['../web/guides/nmmba.html', 'text/html; charset=utf-8']],
   ['/guides/nstm.html', ['../web/guides/nstm.html', 'text/html; charset=utf-8']],
   ['/guides/ntsec.html', ['../web/guides/ntsec.html', 'text/html; charset=utf-8']],
+  ['/guides/ntmofa.html', ['../web/guides/ntmofa.html', 'text/html; charset=utf-8']],
   ['/photo-credits.html', ['../web/photo-credits.html', 'text/html; charset=utf-8']],
   ['/chimei-activities.json', ['../data/chimei-activities.json', 'application/json; charset=utf-8']],
   ['/styles.css', ['../web/styles.css', 'text/css; charset=utf-8']],
@@ -81,6 +88,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/assets/ntm-building-commons.jpg', ['../web/assets/ntm-building-commons.jpg', 'image/jpeg']],
   ['/assets/nmth-building-commons.jpg', ['../web/assets/nmth-building-commons.jpg', 'image/jpeg']],
   ['/assets/ntsec-building-commons.jpg', ['../web/assets/ntsec-building-commons.jpg', 'image/jpeg']],
+  ['/assets/ntmofa-building-commons.jpg', ['../web/assets/ntmofa-building-commons.jpg', 'image/jpeg']],
 ]);
 
 const server = createServer(async (request, response) => {
@@ -112,7 +120,7 @@ const server = createServer(async (request, response) => {
       return;
     }
     if (url.pathname === '/museums') {
-      const result = await pool.query(`SELECT id,name,city,homepage_url AS "homepageUrl",
+      const result = await pool.query(`SELECT id,name,city,venue_type AS "venueType",homepage_url AS "homepageUrl",
         source_status AS "sourceStatus",last_success_at AS "lastSuccessAt",
         last_official_success_at AS "lastOfficialSuccessAt",
         latest.status AS "lastAttemptStatus",latest.created_at AS "lastAttemptAt",

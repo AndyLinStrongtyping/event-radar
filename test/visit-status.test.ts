@@ -23,6 +23,12 @@ test('科博館逐日 holiday 欄位決定狀態，不推測缺失資料', () =>
   assert.throws(() => parseNmnsHours(payload, '2026-10-07'));
 });
 
+test('國美館僅提供官方時間入口，不推測特定日開館', async () => {
+  const result = await visitStatus('ntmofa', '2026-10-11');
+  assert.equal(result.status, 'unknown');
+  assert.equal(result.sourceUrl, 'https://www.ntmofa.gov.tw/cp.aspx?n=1420');
+});
+
 test('未設定科博館金鑰時安全退回官方開放時間頁', async () => {
   const previous = process.env.NMNS_API_KEY;
   delete process.env.NMNS_API_KEY;

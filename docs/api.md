@@ -33,4 +33,6 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 
 `sourceStatus` 分為 `curated`（人工核對）、`open_data`（官方公開資料）、`official_page`（館方公開頁同步）與 `planned`（尚未接入）。`GET /exhibitions/:id/changes` 回傳 `{ "items": [{ "field": "endDate", "oldValue": "2026-12-06", "newValue": "2026-12-07", "detectedAt": "..." }] }`；沒有異動時為空陣列，不表示資料未曾被核對。
 
+`GET /museums` 另有 `venueType`（`museum`／`art_museum`）。`Exhibition.art` 對一般博物館是 `null`；已核對的國美館限期展回傳 `artistNames`、`curatorNames`、`exhibitionType`、`venueArea`、`floor` 與 `relatedEvents`。來源未明載人物名稱時是空陣列，不以介紹文章中的泛稱推測。相關活動只提供官方連結與類型，**不代表該場次仍可報名**。美術欄位的異動保存在 `art_exhibition_changes`；目前 `/exhibitions/:id/changes` 仍只查共通展覽欄位，尚未對外提供美術異動歷史。
+
 CI 的 `npm run test:integration` 會建立隔離 PostgreSQL 資料庫、匯入測試展覽並啟動真正的 HTTP 服務，驗證以上端點的狀態碼、JSON 欄位與型別、日期／官方連結格式、清單與詳情一致性、空結果、異動紀錄及 400／404 錯誤格式。外部館方 API 的即時內容不作為 CI 的固定預期值；來源解析與無效資料隔離由固定樣本測試驗證，避免館方改資料或網路故障讓 CI 產生誤判。

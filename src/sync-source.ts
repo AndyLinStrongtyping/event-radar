@@ -6,8 +6,8 @@ import { isTransientSyncFailure, retryDelaysMs } from './retry-policy.ts';
 
 const position = process.argv.indexOf('--source');
 const source = position < 0 ? '' : process.argv[position + 1];
-if (!['nmns', 'npm-south', 'npm-north', 'nmmba', 'nstm'].includes(source)) {
-  throw new Error('用法：npm run sync -- --source <nmns|npm-south|npm-north|nmmba|nstm>');
+if (!['nmns', 'npm-south', 'npm-north', 'nmmba', 'nstm', 'ntmofa'].includes(source)) {
+  throw new Error('用法：npm run sync -- --source <nmns|npm-south|npm-north|nmmba|nstm|ntmofa>');
 }
 const pool = process.env.DATABASE_URL ? new pg.Pool({ connectionString: process.env.DATABASE_URL }) : null;
 const syncId = randomUUID();

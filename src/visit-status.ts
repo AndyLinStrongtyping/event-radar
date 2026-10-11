@@ -20,6 +20,7 @@ const links: Record<string, string> = {
   ntm: 'https://www.ntm.gov.tw/',
   nmth: 'https://www.nmth.gov.tw/',
   ntsec: 'https://www.ntsec.gov.tw/',
+  ntmofa: 'https://www.ntmofa.gov.tw/cp.aspx?n=1420',
 };
 const hoursCache = new Map<string, { payload: unknown; expires: number }>();
 

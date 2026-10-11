@@ -44,6 +44,11 @@ const transportByGuide = {
     note: '可從捷運士林站或劍潭站轉乘公車至「國立科教館」站；館方另有地下停車場資訊。',
     official: 'https://www.ntsec.gov.tw/article/detail.aspx?a=22',
   },
+  'ntmofa.html': {
+    name: '國立臺灣美術館', city: '臺中市', destination: '國立臺灣美術館 臺中市西區五權西路一段2號',
+    note: '館方交通頁列有公車、開車及停車資訊；實際班次與步行路段請於出發前查詢。',
+    official: 'https://www.ntmofa.gov.tw/cp.aspx?n=1422',
+  },
 };
 
 const counties = [
