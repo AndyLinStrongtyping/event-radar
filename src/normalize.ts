@@ -64,7 +64,9 @@ export function normalizeExhibition(row: Record<string, unknown>, expectedMuseum
   if (row.isSample !== undefined && typeof row.isSample !== 'boolean') throw new Error('isSample 必須是布林值');
   const northId = expectedMuseum === 'npm-north' && typeof row.sourceKey === 'string'
     && /^\d{5,20}$/.test(row.sourceKey) ? row.sourceKey : null;
-  const sourceKey = isSample ? optionalText(row.sourceKey, 200) : northId || sourceUrl;
+  const chimeiSpecialId = expectedMuseum === 'chimei' && typeof row.sourceKey === 'string'
+    && /^special:[a-zA-Z0-9_-]{1,64}$/.test(row.sourceKey) ? row.sourceKey : null;
+  const sourceKey = isSample ? optionalText(row.sourceKey, 200) : northId || chimeiSpecialId || sourceUrl;
   if (!sourceKey) throw new Error('模擬資料需要 sourceKey');
   const data: Omit<ExhibitionDraft, 'contentHash'> = {
     museumId: expectedMuseum,

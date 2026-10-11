@@ -23,6 +23,13 @@ test('拒絕無效展期與假冒來源', () => {
   assert.throws(() => normalizeExhibition({ ...row, sourceUrl: 'http://www.chimeimuseum.org/' }, 'chimei'));
 });
 
+test('只有奇美特展候選 ID 保留來源鍵，既有人工資料仍依官方網址識別', () => {
+  assert.equal(normalizeExhibition({ ...row, sourceKey: 'special:68a68f0a422a6' }, 'chimei').sourceKey,
+    'special:68a68f0a422a6');
+  assert.equal(normalizeExhibition({ ...row, sourceKey: 'unverified-key' }, 'chimei').sourceKey,
+    row.sourceUrl);
+});
+
 test('科博館假資料必須標記並使用獨立身份', () => {
   const sample = normalizeExhibition({
     museumId: 'nmns', title: '模擬特展', startDate: '2026-10-01', endDate: '2026-12-31',

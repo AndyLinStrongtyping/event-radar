@@ -1,4 +1,5 @@
 import { robotsAllowPath } from './sources/chimei.ts';
+import { classifyChimeiInternalPayload } from './sources/chimei-internal.ts';
 
 const origin = 'https://www.chimeimuseum.org';
 const userAgent = 'EventRadarMonitor/0.1 (+https://github.com/AndyLinStrongtyping)';
@@ -59,7 +60,6 @@ async function main(): Promise<void> {
   const counts: Record<string, number> = {};
   const fields: Record<string, string[]> = {};
   const seen = new Set<string>();
-  let usableSpecialDates = 0;
   for (const group of ['specialEvent', 'permanentEvent', 'expoEvent']) {
     const items = records(payload[group], group);
     counts[group] = items.length;
@@ -72,15 +72,16 @@ async function main(): Promise<void> {
       const key = group === 'permanentEvent' ? link.href : String(item.id ?? '');
       if (!key || seen.has(`${group}:${key}`)) throw new Error(`${group} 來源身份缺失或重複`);
       seen.add(`${group}:${key}`);
-      if (group === 'specialEvent' && typeof item.date === 'string'
-        && /^\d{4}[./]\d{2}[./]\d{2}\s*-\s*\d{4}[./]\d{2}[./]\d{2}$/.test(item.date.trim())) {
-        usableSpecialDates += 1;
-      }
     }
   }
   if (Object.values(counts).every((count) => count === 0)) throw new Error('三組資料皆為空');
+  const classified = classifyChimeiInternalPayload(payload);
   process.stdout.write(`${JSON.stringify({ checkedAt: new Date().toISOString(), status: 'candidate_probe_ok',
-    counts, fields, usableSpecialDates, note: '只讀契約檢查；不代表授權、完整性或跨日穩定性' })}\n`);
+    counts, fields, candidateSpecialRows: classified.rows.length,
+    specialNeedsReview: classified.records.filter((record) => record.status === 'review').length,
+    specialReviewReasons: [...new Set(classified.records.filter((record) => record.status === 'review')
+      .map((record) => record.reason))],
+    note: '只讀契約檢查；不代表授權、完整性或跨週穩定性' })}\n`);
 }
 
 main().catch((error: unknown) => {

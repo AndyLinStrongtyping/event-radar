@@ -2,7 +2,7 @@
 
 功能狀態最後核對：2026-10-11（臺灣時間）。**網站仍是本機 MVP，尚未公開部署或啟用線上每週同步。**[技術處理與決策紀錄](docs/technical-decisions.md)逐項說明做法、取捨及證據；[目前與目標架構](docs/architecture.md)分開標示已實作和構想；[第四階段紀錄](docs/stage-2026-10-05-phase4.md)記錄科博館 API 與休館提醒的實測；[來源狀態階段紀錄](docs/stage-2026-10-10-freshness.md)記錄最新網站提示與驗證；[票務來源與維護](docs/ticketing.md)記錄票價查證範圍。
 
-奇美官網內部 JSON 端點是**候選來源**：無 Cookie／CSRF 的 POST 回 419；公開頁正常匿名流程經 PowerShell 與 Node.js 低頻實測皆回 200 JSON（三組筆數 1／4／10）。新增 `npm run probe:chimei` 只讀檢查，但尚未建 adapter、未驗證跨日穩定、完整性或可持續使用條件；詳見[實測與啟用門檻](docs/stage-2026-10-11-chimei-probe.md)、[候選來源評估](docs/chimei-internal-endpoint.md)及[技術決策 ER-40](docs/technical-decisions.md#er-40奇美官網內部-json-端點候選尚未接入)。
+奇美官網內部 JSON 端點是**候選來源**：無 Cookie／CSRF 的 POST 回 419；公開頁正常匿名流程曾回 200 JSON（三組筆數 1／4／10）。`npm run probe:chimei` 是只讀檢查；現已加入奇美專用**離線候選適配器**，分流限期特展、常設展及活動，僅完整單一展期轉換為候選，其餘待審。尚未接入資料庫、Queue 或每週排程，也未驗證跨週穩定、完整性與可持續使用條件；詳見[實測與啟用門檻](docs/stage-2026-10-11-chimei-probe.md)、[候選來源評估](docs/chimei-internal-endpoint.md)及[技術決策 ER-42](docs/technical-decisions.md#er-42奇美內部-json-的離線候選適配器已實作尚未接入匯入)。
 
 | 能力 | 實際狀態 |
 | --- | --- |
@@ -54,3 +54,5 @@ React 本機首頁改版已完成；[本階段紀錄](docs/stage-2026-10-10-reac
 2026-10-11 排程 Queue 階段：五館週排程 workflow 改用單館 jobs:scheduled，依 job ID 隔離、等待退避重試並回報成功或死信；隔離 PostgreSQL 整合測試通過。排程閘門仍關閉，尚無線上運作證據。詳見[階段紀錄](docs/stage-2026-10-11-scheduled-source-queue.md)及[技術決策 ER-39](docs/technical-decisions.md#er-39每日排程接入單館來源-queue已實作本機驗證)。
 
 2026-10-11 頻率調整：五館同步設定為每週二臺灣時間 04:15 的候選排程，官方來源時間過期提醒改為 14 天；每週排程仍未在線上啟用。型別檢查、37 項單元測試、隔離 PostgreSQL 整合測試與 workflow 靜態核對通過。決策與限制見[ER-41](docs/technical-decisions.md#er-41來源同步改為每週候選頻率已修改程式路徑未線上啟用)。
+
+2026-10-11 奇美候選適配器階段：離線分類三種頂層資料，限期特展只接受有效單一展期及官方連結；只讀 probe 當日第二次回 1／4／10，結構可解析候選 1、待審 0。42 項單元測試、型別檢查及隔離 PostgreSQL 整合測試通過。候選資料未寫入 DB，正式同步仍待跨週穩定性、官網清單完整度、詳情與既有人工資料關聯及使用條件核對；見[ER-42](docs/technical-decisions.md#er-42奇美內部-json-的離線候選適配器已實作尚未接入匯入)。
