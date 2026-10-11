@@ -30,13 +30,13 @@ const pageSize = 18;
 const guides = [
   { id: 'chimei', city: '臺南', name: '奇美博物館', line: '藝術、樂器與跨越時代的文明線索', tag: '藝術與古文明', image: '/assets/chimei-instrument-hall-commons.jpg', alt: '奇美博物館樂器廳內的弦樂器展櫃' },
   { id: 'nmns', city: '臺中', name: '國立自然科學博物館', line: '從恐龍骨骼走進生命與地球歷史', tag: '自然史', image: '/assets/nmns-dinosaur-user.jpg', alt: '科博館展櫃內的恐龍骨骼展示' },
-  { id: 'npm-south', city: '嘉義', name: '故宮南院', line: '亞洲藝術、茶文化與織品的旅程', tag: '亞洲文物' },
-  { id: 'npm-north', city: '臺北', name: '故宮北院', line: '沿著玉器、青銅器與陶瓷讀文明', tag: '典藏' },
-  { id: 'ntm', city: '臺北', name: '國立臺灣博物館', line: '島嶼的自然與人群故事', tag: '臺灣' },
-  { id: 'nmth', city: '臺南', name: '國立臺灣歷史博物館', line: '從最初抵岸到當代生活', tag: '歷史' },
-  { id: 'nstm', city: '高雄', name: '國立科學工藝博物館', line: '機械與工業如何改變生活', tag: '科技' },
-  { id: 'ntsec', city: '臺北', name: '國立臺灣科學教育館', line: '用實驗和互動探索科學', tag: '科學' },
-  { id: 'nmmba', city: '屏東', name: '國立海洋生物博物館', line: '從臺灣水域游向世界海洋', tag: '海洋' },
+  { id: 'npm-south', city: '嘉義', name: '故宮南院', line: '亞洲藝術、茶文化與織品的旅程', tag: '亞洲文物', image: '/assets/npm-south-building-commons.jpg', alt: '故宮南院一館的建築外觀' },
+  { id: 'npm-north', city: '臺北', name: '故宮北院', line: '沿著玉器、青銅器與陶瓷讀文明', tag: '典藏', image: '/assets/npm-north-building-commons.jpg', alt: '故宮北院主建築與入口階梯' },
+  { id: 'ntm', city: '臺北', name: '國立臺灣博物館', line: '島嶼的自然與人群故事', tag: '臺灣', image: '/assets/ntm-building-commons.jpg', alt: '二二八和平紀念公園內的國立臺灣博物館正面' },
+  { id: 'nmth', city: '臺南', name: '國立臺灣歷史博物館', line: '從最初抵岸到當代生活', tag: '歷史', image: '/assets/nmth-building-commons.jpg', alt: '國立臺灣歷史博物館的光電雲牆外觀' },
+  { id: 'nstm', city: '高雄', name: '國立科學工藝博物館', line: '機械與工業如何改變生活', tag: '科技', image: '/assets/nstm-switchboard.jpg', alt: '科工館電信展廳的磁石式電話交換機' },
+  { id: 'ntsec', city: '臺北', name: '國立臺灣科學教育館', line: '用實驗和互動探索科學', tag: '科學', image: '/assets/ntsec-building-commons.jpg', alt: '士林國立臺灣科學教育館的建築外觀' },
+  { id: 'nmmba', city: '屏東', name: '國立海洋生物博物館', line: '從臺灣水域游向世界海洋', tag: '海洋', image: '/assets/nmmba-kelp-commons.jpg', alt: '海生館世界水域館的海藻森林展示缸' },
 ];
 
 function officialUrl(value: string | null | undefined) {
@@ -269,7 +269,7 @@ function App() {
         </div>
       </section>
 
-      <section className="guides-section" id="guides" aria-labelledby="guides-title"><div className="section-kicker"><span>03</span> MUSEUM FIELD NOTES</div><div className="intro-heading"><h2 id="guides-title">館所圖鑑，<em>從這裡展開。</em></h2><p>九座館所的特色、常設展線索與平常開館時間。例行時間為人工核對，特殊日子出發前仍須看館方公告。</p></div><div className="guide-grid">{guides.map((guide, index) => <a className={`guide-card ${index < 2 ? 'featured' : ''}`} key={guide.id} href={`/guides/${guide.id}.html`}>{guide.image && <div className="guide-image"><img src={guide.image} alt={guide.alt || ''} loading="lazy"/></div>}<div className="guide-card-copy"><span>FIELD GUIDE {String(index + 1).padStart(2, '0')} / {guide.city}</span><h3>{guide.name}</h3><p>{guide.line}</p><div><b>{guide.tag}</b><strong aria-hidden="true">↗</strong></div></div></a>)}</div></section>
+      <section className="guides-section" id="guides" aria-labelledby="guides-title"><div className="section-kicker"><span>03</span> MUSEUM FIELD NOTES</div><div className="intro-heading"><h2 id="guides-title">館所圖鑑，<em>從這裡展開。</em></h2><p>九座館所的特色、常設展線索與平常開館時間。例行時間為人工核對，特殊日子出發前仍須看館方公告。</p></div><div className="guide-grid">{guides.map((guide, index) => <a className="guide-card" key={guide.id} href={`/guides/${guide.id}.html`}><div className="guide-image"><img src={guide.image} alt={guide.alt} loading="lazy"/></div><div className="guide-card-copy"><span>FIELD GUIDE {String(index + 1).padStart(2, '0')} / {guide.city}</span><h3>{guide.name}</h3><p>{guide.line}</p><div><b>{guide.tag}</b><strong aria-hidden="true">↗</strong></div></div></a>)}</div><p className="guide-photo-note">照片包含館舍外觀與過往展場紀錄，並非當期展件清單。<a href="/photo-credits.html">查看照片來源與授權 ↗</a></p></section>
 
       <section className="tickets-section" id="tickets" aria-labelledby="tickets-title"><div className="section-kicker"><span>04</span> PLAN YOUR VISIT</div><div className="intro-heading"><h2 id="tickets-title">出發前，<em>先核對票務。</em></h2><p>以下為一般入館或常設展票價，不等於每檔特展門票。優惠、預約與售票狀態以館方頁面為準。</p></div><div className="ticket-city-tabs" role="group" aria-label="依城市查看票務"><button type="button" className={!ticketCity ? 'active' : ''} aria-pressed={!ticketCity} onClick={() => setTicketCity('')}>全部館所</button>{ticketCities.map((city) => <button type="button" key={city} className={ticketCity === city ? 'active' : ''} aria-pressed={ticketCity === city} onClick={() => setTicketCity(city)}>{city}</button>)}</div><div className="ticket-grid">{ticketMuseums.map((museum) => { const ticket = museum.generalAdmission!; return <article className="ticket-card" key={museum.id}><span>{museum.city} / {ticket.label}</span><h3>{museum.name}</h3><strong>{ticket.price}</strong><p>{ticket.note}</p><div className="ticket-card-links"><a href={officialUrl(ticket.infoUrl) || '#tickets'} target="_blank" rel="noopener noreferrer">官方票價 ↗</a>{officialUrl(ticket.purchaseUrl) ? <a href={ticket.purchaseUrl || ''} target="_blank" rel="noopener noreferrer">購票入口 ↗</a> : <small>依館方說明購票</small>}</div><small>最後人工核對：{ticket.checkedOn}</small></article>; })}</div></section>
     </main><footer className="site-footer"><div><span className="footer-brand">✧ EVENT RADAR</span><p>沿著真實資料，繼續探索未知。</p></div><p>資訊取自各博物館與政府公開資料；展期、票價、休館與入場規定，以館方公告為準。</p><a href="#hero-title">回到頂端 ↑</a></footer>

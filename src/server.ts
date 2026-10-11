@@ -61,6 +61,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/guides/nmmba.html', ['../web/guides/nmmba.html', 'text/html; charset=utf-8']],
   ['/guides/nstm.html', ['../web/guides/nstm.html', 'text/html; charset=utf-8']],
   ['/guides/ntsec.html', ['../web/guides/ntsec.html', 'text/html; charset=utf-8']],
+  ['/photo-credits.html', ['../web/photo-credits.html', 'text/html; charset=utf-8']],
   ['/styles.css', ['../web/styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['../web/app.js', 'text/javascript; charset=utf-8']],
   ['/transport.js', ['../web/transport.js', 'text/javascript; charset=utf-8']],
@@ -76,6 +77,9 @@ const staticFiles = new Map<string, [string, string]>([
   ['/assets/npm-north-building-commons.jpg', ['../web/assets/npm-north-building-commons.jpg', 'image/jpeg']],
   ['/assets/nmmba-kelp-commons.jpg', ['../web/assets/nmmba-kelp-commons.jpg', 'image/jpeg']],
   ['/assets/npm-teacup-commons.jpg', ['../web/assets/npm-teacup-commons.jpg', 'image/jpeg']],
+  ['/assets/ntm-building-commons.jpg', ['../web/assets/ntm-building-commons.jpg', 'image/jpeg']],
+  ['/assets/nmth-building-commons.jpg', ['../web/assets/nmth-building-commons.jpg', 'image/jpeg']],
+  ['/assets/ntsec-building-commons.jpg', ['../web/assets/ntsec-building-commons.jpg', 'image/jpeg']],
 ]);
 
 const server = createServer(async (request, response) => {

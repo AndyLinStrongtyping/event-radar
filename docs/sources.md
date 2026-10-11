@@ -59,8 +59,13 @@
 | 故宮南院 | 越南黎朝白瓷印花菊花碗 | [國立故宮博物院 Open Data 影像於 Wikimedia Commons 的檔案頁](https://commons.wikimedia.org/wiki/File:Teacup_impressed_with_chrysanthemum_decoration_in_white_glaze.tif)，[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)；不代表當期在南院展出 | 使用 Commons 由原 TIFF 產生的 1280px JPG 縮圖，存為 `web/assets/npm-teacup-commons.jpg`；頁面可能裁切顯示 |
 | 故宮北院 | 主建築與入口階梯外觀 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:National_Palace_Museum,_Taipei.jpg)，攝影 Jason Zhang，[CC0 1.0](https://creativecommons.org/publicdomain/zero/1.0/)；2017 年館舍照片，非當期展覽 | 1280px 縮圖 `web/assets/npm-north-building-commons.jpg`，版面可能裁切顯示 |
 | 海生館 | 世界水域館海藻森林展示缸 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:Kelp_Forests,_National_Museum_of_Marine_Biology_and_Aquarium_20130825.jpg)，攝影 Mk2010，[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/)；2013 年展場照片，不代表今日展示狀態 | 1280px 縮圖 `web/assets/nmmba-kelp-commons.jpg`，版面可能裁切顯示 |
+| 臺博館圖鑑卡片 | 228 公園內的主館正面 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:National_Taiwan_Museum_front_view_20070730.jpg)，攝影 Guillaume Paumier，[CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)；2007 年照片中的展覽布條不代表今日展期 | 960px 縮圖 `web/assets/ntm-building-commons.jpg`，卡片裁切顯示 |
+| 臺史博圖鑑卡片 | 展示教育大樓的光電雲牆 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:%E5%9C%8B%E7%AB%8B%E8%87%BA%E7%81%A3%E6%AD%B7%E5%8F%B2%E5%8D%9A%E7%89%A9%E9%A4%A8_02.jpg)，攝影 Pbdragonwang，[CC BY-SA 3.0](https://creativecommons.org/licenses/by-sa/3.0/)；2011 年館舍照片 | 960px 縮圖 `web/assets/nmth-building-commons.jpg`，卡片裁切顯示 |
+| 科教館圖鑑卡片 | 士林館舍外觀 | [Wikimedia Commons 檔案頁](https://commons.wikimedia.org/wiki/File:National_Taiwan_Science_Education_Center.jpg)，攝影 Kiyoteru Awaji，[CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)；2021 年館舍照片中的布條不代表今日展期 | 960px 縮圖 `web/assets/ntsec-building-commons.jpg`，卡片裁切顯示 |
 
 科博館[網站宣告](https://www.nmns.edu.tw/ch/privacy-policy/index.html)將可開放的圖像導向政府資料開放平臺，臺博館另設[圖像授權申請](https://www.ntm.gov.tw/cp.aspx?Create=1&n=5558)，奇美[會員條款](https://www.chimeimuseum.org/memberAccept)也保留官網圖片權利；因此這些館的官網照片尚未複製到本站。科博館木乃伊與奇美樂器廳照片是第三方於 Wikimedia Commons 授權發布的作品；故宮茶碗影像則來自故宮 Open Data，使用依據皆逐張核對。不能因圖片可在網頁看到，就推定可供本網站重新發布。
+
+首頁九張圖鑑卡片的對外署名與授權連結也列在 [`web/photo-credits.html`](../web/photo-credits.html)，從圖鑑區可直接開啟。新增的三張館舍照片未作檔案修圖；網頁以 `object-fit` 裁切並套用輕微色調。
 
 ## 交通規劃的依據與界線
 
