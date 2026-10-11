@@ -10,11 +10,11 @@
 
 [早期首頁畫面](docs/screenshots/event-radar-showcase.png)保留作設計歷程。
 
-[架構圖：目前實作與目標方向](docs/architecture.md)將已完成的本機資料流程與使用者提供的長期構想分開標示；目前只有本機 PostgreSQL 來源 Queue 與未啟用的每日排程路徑，概念圖中的多階段 Queue、通知與遠端監控仍未實作。
+[架構圖：目前實作與目標方向](docs/architecture.md)將已完成的本機資料流程與使用者提供的長期構想分開標示；目前只有本機 PostgreSQL 來源 Queue 與未啟用的每週排程路徑，概念圖中的多階段 Queue、通知與遠端監控仍未實作。
 
 目標是從臺灣各博物館的官方資訊取得特展資料，整理展期、展館、城市與簡介，供人依地點與日期查詢，並回到官方公告核對。第一版聚焦**特展與期間限定展**，不收市集、音樂會或一般演出。
 
-目前是 **本機 MVP**：資料庫、查詢 API、五館公開資料或官方頁匯入、文化部奇美補充來源、九館博物館介紹、來源隔離、本機審核頁、有限重試及嘗試紀錄、來源 Queue 與未啟用的每日排程路徑、同館去重、欄位異動紀錄與測試已完成本機驗證。搜尋可按展覽狀態與明確免費資訊篩選；現有來源多數沒有可靠的**個別展覽票價**，所以免費結果可能為空。首頁另有九館一般入館票價與購票入口的人工核對索引，奇美法老展有單獨的特展票價；兩種票務資訊分開顯示。[票務來源與維護](docs/ticketing.md)列出人工核對證據，[最新階段紀錄](docs/stage-2026-10-05-phase5.md)列出先前實測與索引判斷。每日同步排程與 CI 已寫成 GitHub Actions 設定檔，但線上每日同步與公開網站尚未啟用，因此不列為已上線系統。
+目前是 **本機 MVP**：資料庫、查詢 API、五館公開資料或官方頁匯入、文化部奇美補充來源、九館博物館介紹、來源隔離、本機審核頁、有限重試及嘗試紀錄、來源 Queue 與未啟用的每週排程路徑、同館去重、欄位異動紀錄與測試已完成本機驗證。搜尋可按展覽狀態與明確免費資訊篩選；現有來源多數沒有可靠的**個別展覽票價**，所以免費結果可能為空。首頁另有九館一般入館票價與購票入口的人工核對索引，奇美法老展有單獨的特展票價；兩種票務資訊分開顯示。[票務來源與維護](docs/ticketing.md)列出人工核對證據，[最新階段紀錄](docs/stage-2026-10-05-phase5.md)列出先前實測與索引判斷。每週同步排程與 CI 已寫成 GitHub Actions 設定檔，但線上每週同步與公開網站尚未啟用，因此不列為已上線系統。
 
 ## 範圍
 
@@ -28,7 +28,7 @@
 - 九頁導覽都有交通規劃：可選出發縣市並選填更精確的地址或車站，分別開啟 Google Maps 大眾運輸與開車路線，旁邊保留館方交通連結。只選縣市時以該縣市政府作示意起點；本站不計算即時車程、票價或「最佳」交通方式，也不儲存輸入地點。
 - 奇美公開特展頁已有**本機可執行的每週變更檢查**（`npm run check:chimei`）。該檢查與文化部補充匯入互相獨立；前者比對官網初始 HTML 明確列出的連結及已知特展詳情的展名／展期，後者只納入能通過官網逐筆核對的文化部資料，兩者都不保證完整奇美展覽清單。線上排程尚未啟用。
 
-詳見 [需求規格](docs/requirements.md)、[API 契約](docs/api.md)、[來源盤點](docs/sources.md)、[官方 API／第三方資料源查證](docs/api-source-research.md)、[每日同步運作設計](docs/operations.md)與[後續方向（館所與 Queue）](docs/future-roadmap.md)。
+詳見 [需求規格](docs/requirements.md)、[API 契約](docs/api.md)、[來源盤點](docs/sources.md)、[官方 API／第三方資料源查證](docs/api-source-research.md)、[每週同步運作設計](docs/operations.md)與[後續方向（館所與 Queue）](docs/future-roadmap.md)。
 
 **奇美來源新線索（2026-10-11）**：官網展覽頁使用一個未公開文件化的內部 JSON 端點；無 session 請求回 419；公開頁正常匿名流程可由 Node.js 取得 200。`npm run probe:chimei` 可只讀重測，但尚未證明跨日穩定或接入自動同步，也不稱它為公開 API。[實測與啟用門檻](docs/stage-2026-10-11-chimei-probe.md)及[候選來源評估](docs/chimei-internal-endpoint.md)記錄細節。
 
@@ -81,7 +81,7 @@ npm run jobs:enqueue -- --source all
 npm run jobs:work
 npm run jobs:status
 # 單館排程程式路徑（不會開啟線上同步）
-# npm run jobs:daily -- --source nstm
+# npm run jobs:scheduled -- --source nstm
 # dead 工作核對原因後，才用 npm run jobs:replay -- --id <UUID>
 # 僅限本機管理頁，需另外設定至少 16 字元的 EVENT_RADAR_ADMIN_PASSWORD
 npm run admin
@@ -92,4 +92,4 @@ npm start
 
 ## 已完成與未完成
 
-已完成本機驗證：規格、schema 與 migration、科博館私人 Key 展覽／開放時間 API、其他四館公開資料或官方頁 adapter、文化部奇美補充 adapter、查詢 API、休館提醒介面、原始資料隔離、密碼保護的本機審核頁、有限次來源重試與嘗試紀錄、同館跨來源保守去重、欄位異動歷史、PostgreSQL 來源工作佇列及未啟用的每日排程路徑、單元與資料庫整合測試。未完成：奇美新聞自動同步、其他館逐日休館資料、多階段 Queue／通知 worker、線上每日同步、跨館同展關聯、通知、公開部署與 AWS。
+已完成本機驗證：規格、schema 與 migration、科博館私人 Key 展覽／開放時間 API、其他四館公開資料或官方頁 adapter、文化部奇美補充 adapter、查詢 API、休館提醒介面、原始資料隔離、密碼保護的本機審核頁、有限次來源重試與嘗試紀錄、同館跨來源保守去重、欄位異動歷史、PostgreSQL 來源工作佇列及未啟用的每週排程路徑、單元與資料庫整合測試。未完成：奇美新聞自動同步、其他館逐日休館資料、多階段 Queue／通知 worker、線上每週同步、跨館同展關聯、通知、公開部署與 AWS。

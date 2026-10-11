@@ -1,6 +1,7 @@
 export type SourceFreshness = 'manual' | 'planned' | 'never' | 'untracked' | 'failed' | 'stale' | 'recent';
 
-const STALE_AFTER_MS = 7 * 24 * 60 * 60 * 1000;
+// Weekly polling gets one missed-cycle grace period before the age alone becomes stale.
+const STALE_AFTER_MS = 14 * 24 * 60 * 60 * 1000;
 
 export function sourceFreshness(
   sourceStatus: string,

@@ -112,7 +112,7 @@
 
 ### ER-18｜每日排程與奇美每週檢查（已設計但未啟用）
 
-- **處理**：[每日 workflow](../.github/workflows/daily-sync.yml)定義五館獨立 job；[奇美檢查](../.github/workflows/chimei-check.yml)定義每週只讀檢查。兩者都受 `EVENT_RADAR_SYNC_ENABLED` 變數閘門控制。
+- **處理**：當時的每日 workflow 定義五館獨立 job；該檔現已更名為[每週 workflow](../.github/workflows/weekly-sync.yml)。[奇美檢查](../.github/workflows/chimei-check.yml)定義每週只讀檢查。兩者都受 `EVENT_RADAR_SYNC_ENABLED` 變數閘門控制。
 - **決策**：目標是約每日一次，符合特展更新節奏；先有可手動執行、可觀察的工作，再開啟無人值守排程。奇美來源尚不完整，不納入五館每日資料庫同步。
 - **界線**：尚無遠端 PostgreSQL／Secret 與已啟用的線上排程；workflow 檔存在不等於每天有新資料。
 
@@ -245,7 +245,7 @@
 
 ### ER-39｜每日排程接入單館來源 Queue（已實作／本機驗證）
 
-- **處理**：[`source-job-schedule.ts`](../src/source-job-schedule.ts)以臺灣日期入列一館，使用目標 job ID 領取並等待重試／最終狀態；[`source-jobs.ts`](../src/source-jobs.ts)的選用 ID 篩選同時限制到期租約回收與待辦領取。`jobs:daily` 最多等待八分鐘，成功回零、`dead` 或逾時回非零。[`daily-sync.yml`](../.github/workflows/daily-sync.yml)五館工作改呼叫這條路，仍由關閉的變數閘門保護。
+- **處理**：[`source-job-schedule.ts`](../src/source-job-schedule.ts)以臺灣日期入列一館，使用目標 job ID 領取並等待重試／最終狀態；[`source-jobs.ts`](../src/source-jobs.ts)的選用 ID 篩選同時限制到期租約回收與待辦領取。`jobs:daily` 最多等待八分鐘，成功回零、`dead` 或逾時回非零。[`weekly-sync.yml`](../.github/workflows/weekly-sync.yml)五館工作改呼叫這條路，仍由關閉的變數閘門保護。
 - **決策**：五館每日工作彼此獨立，不能因別館先到期而領錯來源；延遲重試須在同一次排程呼叫內等待最終結果，避免第一次可重試失敗就誤判整個工作失敗。同館同日沿用既有冪等鍵，排程重跑不自動重新抓取已成功工作或重播死信。
 - **界線／證據**：這不是多階段 Queue，也沒有線上排程運作或主動告警證據。啟用需先備妥可連線資料庫、migration 與 Secrets，再逐館手動驗證。隔離 PostgreSQL 整合測試驗證來源隔離、暫時失敗後成功、同日冪等及永久失敗；型別與單元測試通過。見[階段紀錄](stage-2026-10-11-scheduled-source-queue.md)。
 
@@ -256,6 +256,12 @@
 - **觀察**：使用者以 DevTools 發現官網頁面呼叫 `POST /exhibition-event/api`，回應分 `specialEvent`、`permanentEvent`、`expoEvent`，日期格式不固定。本站於 2026-10-11 無 Cookie／CSRF 的 Node POST 收到 419；同日以公開頁正常發出的匿名 session 與 CSRF meta 重送一次，回 200 JSON，三組筆數為 1／4／10。未輸出或保存憑證、回應全文，也沒有嘗試繞過保護。這是**官網內部使用、未公開文件化的 JSON 端點**，不得稱為「奇美官方公開 API」。
 - **決策**：先記錄為候選來源，不實作自動 adapter、不加入五館每日 Queue，也不改公開展覽表為可空日期。未來若驗證可持續且可接受的取得方式，只在奇美 adapter 內解析三種不一致的結構：限期特展需完整起訖日才進搜尋；常設展與活動先分開；不明日期留原始值及待審。現有 `normalizeExhibition` 會把奇美來源鍵改為網址，實作 ID 去重前必須改造並測試。欄位歷史與清單縮水判定也需按新來源格式擴充，不能把來源消失當作取消。
 - **證據／界線**：[候選來源評估](chimei-internal-endpoint.md)及[2026-10-11 實測](stage-2026-10-11-chimei-probe.md)列出 419／200 兩次路徑、Node.js 只讀 probe、日期／標籤篩選、資料模型差距與完成條件。公開頁前端未見分頁參數、當日唯一特展與詳情頁一致；仍未證明清單無隱含上限、跨日穩定或可持續第三方介接。Probe 故意不匯入、不保存 token 或全文，失敗時不更動舊資料；個人非商業使用也不自動取得內容再利用權利。
+
+### ER-41｜來源同步改為每週候選頻率（已修改程式路徑，未線上啟用）
+
+- **處理**：將原每日同步 workflow 改為[每週二臺灣時間 04:15 的五館排程](../.github/workflows/weekly-sync.yml)，各館仍獨立執行 `jobs:scheduled`；`jobs:daily` 保留為舊命令相容入口。`source-jobs` 的同館同日冪等鍵保持不變，供當天手動重跑及排程重送共用。奇美官網檢查本來就是每週一，候選 JSON 端點仍未加入排程。排程的 `EVENT_RADAR_SYNC_ENABLED` 閘門仍關閉。
+- **決策**：特展資訊通常不需要每日重新取得；先以每週一次作為成本與來源負載較低的**預設候選頻率**，重大變動可手動執行單館。公開頁與來源健康狀態改以最後成功取得官方來源的時間判斷，超過 14 天才因時間標示可能過期，容納一個每週週期漏跑。最近七天的工作失敗率是另一個統計窗口，不能混同 14 天門檻。排程頻率與來源可靠性是兩件事：即使每週跑，仍要驗證結果、隔離異常並觀察跨週成功；單次成功不稱穩定來源。
+- **界線／證據**：此修改只更動本機程式、設定與說明；沒有啟用 GitHub Actions 線上同步、遠端資料庫或通知。歷史 ER-18／20／32／39 的每日排程或七天新鮮度描述保留為當時決策，由本節取代其**目前設定**。`npm run typecheck`、37 項單元測試、隔離 PostgreSQL 整合測試、前端建置，以及 workflow 靜態核對（每週 cron、五館工作與閘門）均已通過；尚無真正跨週執行證據。
 
 ## 後續更新方式
 

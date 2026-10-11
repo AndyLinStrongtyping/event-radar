@@ -10,7 +10,7 @@ const base = {
 
 test('來源失敗與過期優先於人工待審；重試後成功不算失敗', () => {
   assert.equal(sourceHealth({ ...base, lastAttemptStatus: 'failed', pendingReview: 1 }, now), 'failed');
-  assert.equal(sourceHealth({ ...base, lastOfficialSuccessAt: '2026-10-01T03:00:00Z',
+  assert.equal(sourceHealth({ ...base, lastOfficialSuccessAt: '2026-09-25T03:00:00Z',
     missingNeedsReview: 1 }, now), 'stale');
   assert.equal(sourceHealth({ ...base, pendingReview: 1 }, now), 'needs_review');
   assert.equal(sourceHealth({ ...base, missingNeedsReview: 1 }, now), 'needs_review');

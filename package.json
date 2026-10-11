@@ -15,6 +15,7 @@
     "sync:status": "node --env-file-if-exists=.env --experimental-strip-types src/sync-status.ts",
     "jobs:enqueue": "node --env-file-if-exists=.env --experimental-strip-types src/source-job-cli.ts enqueue",
     "jobs:daily": "node --env-file-if-exists=.env --experimental-strip-types src/source-job-cli.ts daily",
+    "jobs:scheduled": "node --env-file-if-exists=.env --experimental-strip-types src/source-job-cli.ts scheduled",
     "jobs:work": "node --env-file-if-exists=.env --experimental-strip-types src/source-job-cli.ts work",
     "jobs:status": "node --env-file-if-exists=.env --experimental-strip-types src/source-job-cli.ts status",
     "jobs:replay": "node --env-file-if-exists=.env --experimental-strip-types src/source-job-cli.ts replay",

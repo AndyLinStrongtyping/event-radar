@@ -13,8 +13,8 @@ flowchart LR
     E --> F[("PostgreSQL<br/>展覽、來源原始紀錄<br/>來源別名、異動、待審<br/>缺席候選與人工核對歷史")]
     G["本機命令列同步<br/>來源別有限重試"] --> B
     G --> H[("同步嘗試紀錄")]
-    S["每日 workflow 程式路徑<br/>閘門關閉、未線上執行"] -.-> Q
-    Q[("PostgreSQL 來源工作表<br/>每日或手動入列、租約、死信")] --> W["本機 worker<br/>單館官方匯入"]
+    S["每週 workflow 程式路徑<br/>閘門關閉、未線上執行"] -.-> Q
+    Q[("PostgreSQL 來源工作表<br/>排程或手動入列、租約、死信")] --> W["本機 worker<br/>單館官方匯入"]
     W --> B
     W --> H
     F --> I["REST 查詢 API"]
@@ -27,7 +27,7 @@ flowchart LR
 
 網站由 `src/server.ts` 提供靜態頁面與 `/museums`、`/exhibitions`、`/exhibitions/:id/changes`、`/visit-status` 等 API。可依城市、館所、日期、展覽狀態及**明確標示免費**的資料查詢；關鍵字目前使用 `ILIKE`。九館常設展頁是人工編寫的靜態導覽，不是自動同步的展件清單。
 
-本機 `sync:status` 與登入後的 `/health` 頁從同步嘗試、官方成功時間與待審量計算來源健康狀態；重試依 `sync_id` 歸為同一工作。手動 PostgreSQL Queue 已能讓五館成為獨立來源工作，租約到期後由下一次 worker 領取流程回收；**每日 workflow 已接入單館 Queue，但閘門仍關閉**。這是本機排查與手動執行工具，沒有主動告警。GitHub Actions 的 CI 已執行型別、單元與 PostgreSQL 整合測試。每日同步 workflow 雖已寫好，仍受 `EVENT_RADAR_SYNC_ENABLED` 關閉；沒有遠端資料庫、公開網站或線上每日更新。詳見[目前進度](../STATUS.md)與[運作設計](operations.md)。
+本機 `sync:status` 與登入後的 `/health` 頁從同步嘗試、官方成功時間與待審量計算來源健康狀態；重試依 `sync_id` 歸為同一工作。手動 PostgreSQL Queue 已能讓五館成為獨立來源工作，租約到期後由下一次 worker 領取流程回收；**每週 workflow 已接入單館 Queue，但閘門仍關閉**。這是本機排查與手動執行工具，沒有主動告警。GitHub Actions 的 CI 已執行型別、單元與 PostgreSQL 整合測試。每週同步 workflow 雖已寫好，仍受 `EVENT_RADAR_SYNC_ENABLED` 關閉；沒有遠端資料庫、公開網站或線上定期更新。詳見[目前進度](../STATUS.md)與[運作設計](operations.md)。
 
 ## 目標架構（概念圖，尚未實作）
 
@@ -37,7 +37,7 @@ flowchart LR
 
 | 概念圖區塊 | 現況與展示方式 |
 | --- | --- |
-| Scheduler | 有本機命令列同步與未啟用的每日 workflow；沒有已運作的線上排程。 |
+| Scheduler | 有本機命令列同步與未啟用的每週 workflow；沒有已運作的線上排程。 |
 | Queue、Worker 並行、DLQ、Replay | 已有本機 PostgreSQL `FETCH_SOURCE` 工作表、可並行領取、`dead` 狀態與人工重播；圖中的多階段 Queue、通知 worker 及線上服務仍未完成。 |
 | Retry | 只有來源別程序重試，最多三次；沒有圖上的第三段 10 分鐘退避。 |
 | 原始資料與異動歷史 | 已保存來源原始紀錄與欄位變更；沒有完整 HTML 檔案庫或任意版本重播。 |
@@ -49,7 +49,7 @@ flowchart LR
 ## 接下來的工程順序
 
 1. **先提高來源可靠性。** 特別釐清奇美正式資料取得方式與涵蓋率，保留官方連結、驗證日期與待審證據；不以抓取成功等同資料正確。
-2. **讓已完成的同步真正可運作。** 準備可從 GitHub Actions 連線的資料庫與 Secret，手動執行每個來源，核對成功時間、失敗隔離及資料新鮮度，再決定是否開啟每日排程與公開網站。
+2. **讓已完成的同步真正可運作。** 準備可從 GitHub Actions 連線的資料庫與 Secret，手動執行每個來源，核對成功時間、失敗隔離及資料新鮮度，再決定是否開啟每週排程與公開網站。
 3. **以故障情境決定 Queue 擴充。** 先量測來源工作表接入排程後的重試與死信，再決定是否啟用線上運作；只有資料量或故障情境需要時才比較 Redis/BullMQ、拆成多階段 worker。通知與遠端監控在此之後按需求加入。
 
 每完成一階段，都應更新這份文件的現況、測試證據與概念圖標示，避免把設計目標誤寫成工作經驗。

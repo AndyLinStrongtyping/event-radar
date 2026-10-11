@@ -55,8 +55,8 @@ function sourceMessage(museum: Museum) {
   let message: string;
   switch (museum.dataStatus) {
     case 'manual': message = imported ? `人工核對；最後匯入：${imported}。展期變動請查館方。` : '人工核對資料；請查館方最新公告。'; break;
-    case 'recent': message = `最近 7 天內曾成功取得官方來源（${official}）；館方內容未必每日變動。`; break;
-    case 'stale': message = `超過 7 天沒有成功取得官方來源；上次成功：${official}。請查館方原頁。`; break;
+    case 'recent': message = `最近 14 天內曾成功取得官方來源（${official}）；各館展覽仍請以官網為準。`; break;
+    case 'stale': message = `超過 14 天沒有成功取得官方來源；上次成功：${official}。請查館方原頁。`; break;
     case 'failed': message = `最近一次同步失敗；${official ? `上次取得官方來源：${official}。` : '尚無成功取得官方來源紀錄。'}請查館方原頁。`; break;
     case 'untracked': message = imported ? `已有匯入資料（${imported}），但沒有可核對的官方同步紀錄；請查館方原頁。` : '官方同步狀態尚無法核對；請查館方原頁。'; break;
     case 'snapshot': message = '本機展示快照，沒有線上同步；展期請查館方公告。'; break;

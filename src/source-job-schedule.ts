@@ -13,7 +13,7 @@ type State = {
   attempts: number; available_at: Date; lease_until: Date | null; last_error: string | null;
 };
 
-/** Run only the named daily job; another source's due job must never be claimed here. */
+/** Run only the named scheduled job; another source's due job must never be claimed here. */
 export async function runScheduledSourceJob(
   pool: pg.Pool, source: string, runDate: string,
   execute: (job: SourceJob) => Promise<JobOutcome>,

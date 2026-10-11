@@ -1,8 +1,8 @@
-name: 每日博物館特展同步
+name: 每週博物館特展同步
 
 on:
   schedule:
-    - cron: '15 4 * * *'
+    - cron: '15 4 * * 2'
       timezone: 'Asia/Taipei'
   workflow_dispatch:
 
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: event-radar-daily-sync
+  group: event-radar-weekly-sync
   cancel-in-progress: false
 
 jobs:
@@ -33,7 +33,7 @@ jobs:
       - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: 排程匯入科博館官方特展
-        run: npm run jobs:daily -- --source nmns
+        run: npm run jobs:scheduled -- --source nmns
   sync-npm-south:
     name: 同步故宮南院
     if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
@@ -51,7 +51,7 @@ jobs:
       - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: 排程匯入故宮南院官方展覽
-        run: npm run jobs:daily -- --source npm-south
+        run: npm run jobs:scheduled -- --source npm-south
 
   sync-npm-north:
     name: 同步故宮北院
@@ -70,7 +70,7 @@ jobs:
       - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: 排程匯入故宮北院官方展覽
-        run: npm run jobs:daily -- --source npm-north
+        run: npm run jobs:scheduled -- --source npm-north
 
   sync-nmmba:
     name: 同步海生館
@@ -89,7 +89,7 @@ jobs:
       - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: 排程匯入海生館官方特展
-        run: npm run jobs:daily -- --source nmmba
+        run: npm run jobs:scheduled -- --source nmmba
 
   sync-nstm:
     name: 同步科工館
@@ -108,4 +108,4 @@ jobs:
       - name: 安裝專案依賴
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: 排程匯入科工館官方展覽
-        run: npm run jobs:daily -- --source nstm
+        run: npm run jobs:scheduled -- --source nstm
