@@ -100,6 +100,9 @@ async function checkPublicApiContract() {
     }
     const guide = await fetch(base + '/guides/chimei.html');
     assert.equal(guide.status, 200, '既有館所介紹應繼續可用');
+    const programmes = await get('/chimei-activities.json');
+    assert.ok(programmes.items.length > 0);
+    assert.ok(programmes.items.every((item) => item.sourceUrl.startsWith('https://www.chimeimuseum.org/event/')));
 
     const museums = await get('/museums');
     assert.ok(Array.isArray(museums.items) && museums.items.length > 0);
@@ -208,16 +211,16 @@ async function main() {
       cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href }, encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-  assert.match(migrate(), /新套用 14 份/, '空白資料庫應由單一命令建立');
+  assert.match(migrate(), /新套用 15 份/, '空白資料庫應由單一命令建立');
   assert.match(migrate(), /新套用 0 份/, '重跑不得重建表或重複寫入');
   let ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 14);
+  assert.equal(ledger.rows[0].count, 15);
   // 模擬舊版手動執行所有 migration 的資料庫；只有明確指定時才建立帳本。
   await testDb.query('DROP TABLE schema_migrations');
   assert.throws(() => migrate(), /舊版資料庫且沒有 migration 帳本/);
   assert.match(migrate('--baseline-existing'), /新套用 0 份/);
   ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 14);
+  assert.equal(ledger.rows[0].count, 15);
   assert.match(migrate(), /新套用 0 份/);
   const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
   async function checkCoverage(keys, rawKeys = []) {
@@ -835,6 +838,51 @@ async function main() {
   assert.equal(thrownScheduled.lastError, 'worker unexpected error');
   assert.equal((await testDb.query('SELECT status FROM source_jobs WHERE id=$1', [unrelated.id])).rows[0].status,
     'pending');
+  const { importChimeiProgrammeSnapshot } = await import('../src/chimei-programmes.ts');
+  const programmeA = { id: '207', title: '西洋武術工作坊', dateText: '2026/10/31\n2026/09/14 啟售',
+    type: null, sourceUrl: 'https://www.chimeimuseum.org/event/6a9e550542b15' };
+  const programmeB = { id: '197', title: 'VR 沉浸探險',
+    dateText: '2026/01/29 - 2027/01/10\n博物館開放日', type: '期間限定節目',
+    sourceUrl: 'https://www.chimeimuseum.org/event/691aeece01a23' };
+  const candidate = { checkedAt: '2026-10-11T06:00:00Z',
+    sourceUrl: 'https://www.chimeimuseum.org/exhibition-event',
+    items: [programmeA, programmeB] };
+  assert.deepEqual(await importChimeiProgrammeSnapshot(testDb, candidate),
+    { inserted: 2, updated: 0, unchanged: 0 });
+  assert.deepEqual(await importChimeiProgrammeSnapshot(testDb, candidate),
+    { inserted: 0, updated: 0, unchanged: 2 }, '重跑相同快照不得新增活動或異動');
+  const revised = { ...candidate, checkedAt: '2026-10-12T06:00:00Z',
+    items: [{ ...programmeA, title: '西洋武術工作坊（更新）' },
+      { ...programmeB, dateText: '2026/01/30 - 2027/01/10\n博物館開放日' }] };
+  assert.deepEqual(await importChimeiProgrammeSnapshot(testDb, revised),
+    { inserted: 0, updated: 2, unchanged: 0 });
+  const programmeRows = await testDb.query(`SELECT source_event_id,schedule_type,
+    to_char(start_date,'YYYY-MM-DD') AS start_date,raw_date
+    FROM programme_events ORDER BY source_event_id`);
+  assert.equal(programmeRows.rows.length, 2);
+  assert.equal(programmeRows.rows.find((row) => row.source_event_id === '197').start_date,
+    '2026-01-30');
+  assert.equal(programmeRows.rows.find((row) => row.source_event_id === '207').start_date,
+    null, '售票日期不能寫入活動起日');
+  const changedFields = await testDb.query(`SELECT field_name FROM programme_event_changes
+    ORDER BY field_name`);
+  assert.deepEqual(changedFields.rows.map((row) => row.field_name),
+    ['rawDate', 'startDate', 'title']);
+  await assert.rejects(importChimeiProgrammeSnapshot(testDb,
+    { ...revised, checkedAt: '2026-10-13T06:00:00Z', items: [programmeA] }),
+  /疑似縮水/);
+  await assert.rejects(importChimeiProgrammeSnapshot(testDb, candidate), /更舊/);
+  assert.equal((await testDb.query('SELECT count(*)::int AS count FROM programme_events')).rows[0].count,
+    2, '來源異常或舊快照不得修改既有活動');
+  const followup = (id) => ({ ...programmeA, id: String(id), title: `候選活動 ${id}`,
+    sourceUrl: `https://www.chimeimuseum.org/event/test${id}` });
+  const step = (checkedAt, items) => importChimeiProgrammeSnapshot(testDb,
+    { ...candidate, checkedAt, items });
+  await step('2026-10-13T06:00:00Z', [programmeA, followup(201)]);
+  await step('2026-10-14T06:00:00Z', [followup(201), followup(202)]);
+  await step('2026-10-15T06:00:00Z', [followup(202), followup(203)]);
+  assert.equal((await testDb.query('SELECT count(*)::int AS count FROM programme_events')).rows[0].count,
+    5, '歷史缺席項可保留，但覆蓋率只與上一份可信快照比較');
   process.stdout.write('匯入回滾、去重、欄位異動及公開 API 回應契約：通過\n');
 }
 

@@ -15,7 +15,7 @@ test('OpenAPI 文件可解析，公開路由與所有引用存在', () => {
   assert.equal(api.openapi, '3.0.3');
   const paths = api.paths as Record<string, unknown>;
   assert.deepEqual(Object.keys(paths).sort(), [
-    '/health', '/museums', '/visit-status', '/exhibitions',
+    '/chimei-activities.json', '/health', '/museums', '/visit-status', '/exhibitions',
     '/exhibitions/{id}', '/exhibitions/{id}/changes',
   ].sort());
   function checkRefs(value: unknown): void {

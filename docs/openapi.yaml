@@ -8,6 +8,35 @@ info:
 servers:
   - url: http://127.0.0.1:3000
 paths:
+  /chimei-activities.json:
+    get:
+      summary: 奇美活動人工核對快照（靜態檔，非即時搜尋 API）
+      operationId: getChimeiActivitySnapshot
+      description: |
+        本機人工更新的候選清單；日期原文可能含售票日、多場次或僅時段。
+        不提供即時場次、已取消或售罄保證，活動詳情以奇美博物館官方頁為準。
+      responses:
+        '200':
+          description: 人工核對的活動快照
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [checkedAt, sourceUrl, items]
+                properties:
+                  checkedAt: { type: string, format: date-time }
+                  sourceUrl: { type: string, format: uri }
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [id, title, dateText, type, sourceUrl]
+                      properties:
+                        id: { type: string }
+                        title: { type: string }
+                        dateText: { type: string }
+                        type: { type: string, nullable: true }
+                        sourceUrl: { type: string, format: uri }
   /health:
     get:
       summary: 檢查服務與資料庫就緒狀態

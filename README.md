@@ -4,6 +4,8 @@
 
 目前做到哪裡、哪些尚未接入：請先看 [統一進度](STATUS.md)。每項能力的實作、取捨、證據與限制集中在[技術處理與決策紀錄](docs/technical-decisions.md)；後續功能進度要同步更新該文件。
 
+目前依[11 階段修正版路線圖](docs/future-roadmap.md#2026-10-11-優先順序取代下方舊版擴館部署順序)先做資料來源與 Domain 模型，之後才公開部署。奇美活動已有人工快照及本機候選表的冪等／欄位異動驗證；網站仍讀快照，奇美官網內部端點**不是公開文件化 API**，尚無自動活動同步或公開活動搜尋。
+
 首頁已改為 React 互動介面，採古文明、化石與考古檔案視覺；載入展覽時顯示短暫的文物發掘動畫，並遵守「減少動態效果」系統設定。此為本機改版，尚未公開部署。[本階段實作紀錄](docs/stage-2026-10-10-react.md)記載驗證結果。
 
 ![Event Radar React 考古主視覺](docs/screenshots/event-radar-react-hero.jpg)
@@ -30,7 +32,7 @@
 
 詳見 [需求規格](docs/requirements.md)、[API 契約](docs/api.md)、[來源盤點](docs/sources.md)、[官方 API／第三方資料源查證](docs/api-source-research.md)、[每週同步運作設計](docs/operations.md)與[後續方向（館所與 Queue）](docs/future-roadmap.md)。
 
-**奇美來源新線索（2026-10-11）**：官網展覽頁使用一個未公開文件化的內部 JSON 端點；無 session 請求回 419；公開頁正常匿名流程可由 Node.js 取得 200。`npm run probe:chimei` 可只讀重測；奇美專用離線適配器可分類限期特展、常設展與活動，但尚未接入資料庫或自動同步，也未證明跨週穩定，不稱它為公開 API。[實測與啟用門檻](docs/stage-2026-10-11-chimei-probe.md)及[候選來源評估](docs/chimei-internal-endpoint.md)記錄細節。
+**奇美來源新線索（2026-10-11）**：官網展覽頁使用未公開文件化的內部 JSON 端點；無 session 請求回 419；公開頁正常匿名流程可由 Node.js 取得 200。`npm run probe:chimei` 可只讀重測；離線適配器分類限期特展、常設展與活動，活動可手動更新快照並匯入本機候選表，**特展候選未接正式匯入**。沒有跨週穩定、自動同步或公開 API 證據。[實測與啟用門檻](docs/stage-2026-10-11-chimei-probe.md)及[候選來源評估](docs/chimei-internal-endpoint.md)記錄細節。
 
 ## 結構
 
@@ -57,6 +59,7 @@ npm ci
 docker compose up -d db
 $env:DATABASE_URL='postgres://event_radar:event_radar@localhost:5432/event_radar'
 npm run migrate
+npm run import:chimei:programmes # 可選：把已人工刷新之奇美活動快照匯入本機候選表
 npm test
 npm run test:integration
 npm run ingest -- --file test/fixtures/chimei.json --source chimei

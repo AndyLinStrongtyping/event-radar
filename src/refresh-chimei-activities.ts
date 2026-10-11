@@ -16,7 +16,7 @@ async function main(): Promise<void> {
   if (previous?.items?.length) {
     const previousIds = new Set(previous.items.map((item) => item.id));
     const overlap = snapshot.items.filter((item) => previousIds.has(item.id)).length;
-    if (snapshot.items.length < Math.ceil(previous.items.length / 2) || overlap < Math.ceil(previous.items.length / 3)) {
+    if (snapshot.items.length * 2 <= previous.items.length || overlap < Math.ceil(previous.items.length / 3)) {
       throw new Error('奇美活動清單疑似縮水或來源 ID 大量更換，保留舊快照供人工核對');
     }
   }

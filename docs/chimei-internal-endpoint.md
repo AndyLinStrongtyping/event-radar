@@ -1,6 +1,6 @@
 # 奇美官網內部 JSON 端點：候選來源與驗證界線
 
-紀錄日期：2026-10-11。**候選來源：限期特展已有離線適配器；活動／節目另有一次性清單快照。尚未接入資料庫或每週排程。**這是奇美官網頁面自己使用、未公開文件化的 JSON 端點，不稱作「奇美官方公開 API」，也不代表館方授權第三方持續介接。
+紀錄日期：2026-10-11。**候選來源：限期特展已有離線適配器；活動／節目另有人工快照及本機候選活動表。限期特展未接入自動匯入，奇美活動未接入每週排程或公開活動 API。**這是奇美官網頁面自己使用、未公開文件化的 JSON 端點，不稱作「奇美官方公開 API」，也不代表館方授權第三方持續介接。
 
 ## 已知與尚未證明
 
@@ -23,13 +23,15 @@
 | `permanentEvent` | `link`、`webp`、`image`、`mimetype`、`subtitle`、`title`、`intro` | 常設展導覽候選，與限期特展搜尋分開；不因缺結束日就塞進展覽主表。 |
 | `expoEvent` | `id`、`img`、`link`、`hastag`、`tag`、`type`、`location`、`title`、`isfree`、`hasdate`、`date` | 活動／節目候選；本站以一次性快照在獨立區塊展示必要文字和官方連結，**不混入限期特展搜尋**。若日後要做日期搜尋，先定義多場次模型。 |
 
-`npm run refresh:chimei:activities` 會以公開頁正常匿名流程取得三組資料、檢查活動 ID 與官方詳情網址，再原子更新 `data/chimei-activities.json`。它是**人工觸發的快照更新**，不是排程同步；空清單、疑似大幅縮水或 ID 大量更換時保留舊快照。前端只顯示標題、類型、清理 HTML 後的館方時間文字和官網逐筆連結，不保存圖片、長篇介紹、匿名 cookie 或 CSRF token。來源時間可能含售票日、多場次、即日起或僅時段，沒有安全解析的情況不推論「即將開始」或「展出中」，訪客須回官網確認。詳細見 [ER-50](technical-decisions.md#er-50奇美活動與節目的人工更新快照已實作本機驗證)。
+`npm run refresh:chimei:activities` 會以公開頁正常匿名流程取得三組資料、檢查活動 ID 與官方詳情網址，再原子更新 `data/chimei-activities.json`。它是**人工觸發的快照更新**，不是排程同步；空清單、縮水達一半或 ID 大量更換時保留舊快照。前端只顯示標題、類型、清理 HTML 後的館方時間文字和官網逐筆連結，不保存圖片、長篇介紹、匿名 cookie 或 CSRF token。來源時間可能含售票日、多場次、即日起或僅時段，沒有安全解析的情況不推論「即將開始」或「展出中」，訪客須回官網確認。詳細見 [ER-50](technical-decisions.md#er-50奇美活動與節目的人工更新快照已實作本機驗證)。
+
+在執行 `npm run migrate` 後，可**人工**執行 `npm run import:chimei:programmes`，把上述快照放入本機 `programme_events` 候選表。來源身份固定為 `chimei + chimei-internal + expo + <id>`，`UNIQUE` 約束與交易鎖阻止重複；相同內容只更新最後核對時間，欄位變更寫入 `programme_event_changes`。解析器只把明確完整範圍加「博物館開放日」轉為日期；音樂節列為多場次、即日起列為長期、僅時段列為 time-only，工作坊含售票日列為 unknown，皆保留 `raw_date` 且起迄日為 `NULL`。來源消失不刪除或自動標取消；舊快照與大幅縮水回滾。這些表**尚未成為公開 API 或前端卡片的資料源**；前端仍讀人工快照。見 [ER-51](technical-decisions.md#er-51奇美活動候選表的冪等匯入與異動歷史已實作本機驗證)。
 
 `date` 在候選的最小化原始紀錄中保留 `rawDate`，先將 `<br>` 留成分隔，再解析明確格式，例如 `YYYY.MM.DD - YYYY.MM.DD` 與 `YYYY/MM/DD - YYYY/MM/DD`。適配器可標 `date_range`、`multiple_dates`、`ongoing`、`time_only`、`unknown`；「即日起」、只有時段、已開課或多個不連續場次**不可猜成單一起訖日**。無法安全解析的候選之 `startDate`、`endDate` 為 `null` 並標 `review`；現有公開 `exhibitions.start_date/end_date`、`ExhibitionDraft` 與搜尋 API 仍要求有效起訖日。需要展示多場次時再設計 occurrence 資料模型。
 
 來源身份使用 `museum_id=chimei`、未來獨立 `provider` 與帶類型的 `source_key`（如 `special:207` 或字母數字 ID）。[`normalizeExhibition`](../src/normalize.ts)現已只對符合 `special:<id>` 的奇美來源鍵保留 ID；其他奇美匯入仍沿用原有官方網址鍵。API 的單段特展連結與官網詳情的雙段連結都只在奇美 HTTPS 網域接受；正式匯入前仍須核對跳轉後的詳情、舊人工資料關聯與網址異動時的身份。常設展暫不寫入 `exhibition_sources`。
 
-現有 `exhibition_changes` 只支援 `title`、`venue`、`startDate`、`endDate`、`priceNote`、`sourceUrl`、`summary`。新增 `rawDate`、`isFree`、`type`、`tag` 的欄位歷史，需要先定義對外語意、資料表遷移及變更測試；不能在文件中當成已完成。來源消失也不能直接推定活動取消或刪除。現有疑似清單縮水保護 `deferred_partial` 可作設計基礎，但新來源須按組別、篩選與分頁比較筆數，並區分 `lastFetchAt`、成功解析時間、最後可信完整同步時間；419、空回應或疑似部分回應不能刷新「完整來源已同步」聲明。
+現有 `exhibition_changes` 只支援 `title`、`venue`、`startDate`、`endDate`、`priceNote`、`sourceUrl`、`summary`。新候選活動表另記 `title`、`rawDate`、`scheduleType`、`startDate`、`endDate`、`eventType`、`sourceUrl` 的異動；`isFree`、`location`、`tag` 尚未有安全定義與入庫，不宣稱已追蹤。來源消失也不能直接推定活動取消或刪除。現有疑似清單縮水保護 `deferred_partial` 可作設計基礎，但新來源須按組別、篩選與分頁比較筆數，並區分 `lastFetchAt`、成功解析時間、最後可信完整同步時間；419、空回應或疑似部分回應不能刷新「完整來源已同步」聲明。
 
 ## 取用與啟用條件
 

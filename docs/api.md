@@ -4,6 +4,8 @@
 
 Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "error": { "code": "...", "message": "..." } }`。[OpenAPI 3.0 規格](openapi.yaml)描述公開唯讀端點，可供文件工具匯入；`npm test` 會檢查語法、路由及引用。
 
+奇美「活動與節目」目前由本機人工快照提供靜態 `/chimei-activities.json` 給首頁顯示，另有**不公開的候選** `programme_events` 資料表。靜態快照已列入 OpenAPI 並由 CI 驗證回應格式，但它**不是正式活動搜尋 API**；目前沒有活動日期查詢、場次或取消狀態保證。下表六條 REST 路由與這一條快照路由分開。
+
 | Method | Path | 說明 |
 | --- | --- | --- |
 | GET | `/health` | 檢查服務與資料庫 |
@@ -12,6 +14,8 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 | GET | `/exhibitions` | 搜尋特展 |
 | GET | `/exhibitions/:id` | 特展詳情 |
 | GET | `/exhibitions/:id/changes` | 欄位異動紀錄（最近 100 筆） |
+
+另外 `GET /chimei-activities.json` 回傳 `{checkedAt, sourceUrl, items}`；每筆含 `id, title, dateText, type, sourceUrl`。`dateText` 是清理 HTML 後的館方時間原文，可能包含售票日，不可直接視為活動日期。頁面及 API 使用者應開啟 `sourceUrl` 核對最新場次與票務。
 
 `GET /exhibitions` 接受 `city`、`museum`（來源 ID）、`q`、`from`、`to`、`asOf`、`status`、`admission`、`limit`（預設 20，最多 100）、`offset`（預設 0）、`includeSample=true`。`from`／`to` 是可選的展期交集範圍；`asOf` 是判斷展覽狀態的基準日，預設臺灣今天。`status` 預設 `active`（未結束），也可選 `ongoing`（展出中）、`upcoming`（即將開始）、`ended`（已結束）、`all`（含歷史展覽）。起日及迄日都包含當日。`admission` 預設 `all`，`free` 只收錄 `priceNote` 完全等於「免費」「免費入場」或「免門票」的資料；票價空白或含糊說明不推斷為免費。模擬資料預設隱藏，只在 `includeSample=true` 時顯示。回應 `{ "items": [Exhibition], "total": 42, "limit": 20, "offset": 0 }`。Exhibition 包含 `id, title, museumId, museumName, city, venue, startDate, endDate, priceNote, sourceUrl, summary, lastSeenAt, sourceStatus, isSample`，另有依 `asOf` 計算的 `exhibitionStatus` 及保守判斷的 `admissionStatus`（`free`／`unknown`），以及 `ticketing: { exhibition, generalAdmission }`。票務物件含 `label, price, infoUrl, purchaseUrl, checkedOn, note`。`exhibition` 只在該檔展覽的官方票價查證完成時有值；`generalAdmission` 是館所一般參觀資訊，不代表該展票價。模擬展覽的票務物件兩欄皆為 `null`。
 

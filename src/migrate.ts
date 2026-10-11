@@ -32,10 +32,13 @@ const requiredColumns: Record<string, string[]> = {
   source_jobs: ['id', 'idempotency_key', 'worker_token'],
   official_source_baselines: ['museum_id', 'provider', 'row_count', 'identity_keys'],
   source_baseline_reviews: ['id', 'ingestion_run_id', 'evidence_url'],
+  programme_events: ['id', 'museum_id', 'source_type', 'source_event_id', 'raw_date', 'schedule_type'],
+  programme_event_changes: ['id', 'event_id', 'field_name'],
 };
 const requiredIndexes = [
   'exhibitions_source_identity', 'exhibitions_dates_idx', 'exhibitions_title_idx',
   'source_records_review_idx', 'source_jobs_due_idx', 'source_jobs_expired_idx',
+  'programme_events_source_identity', 'programme_event_changes_event_idx',
 ];
 
 function migrationBody(sql: string): string {
