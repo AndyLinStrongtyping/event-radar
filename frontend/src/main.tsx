@@ -19,6 +19,9 @@ type Exhibition = {
 };
 type Visit = { status: 'open' | 'closed' | 'unknown'; message: string; sourceUrl: string; newsUrl?: string | null; checkedAt?: string | null };
 type Filters = { q: string; city: string; museum: string; status: string; admission: string; asOf: string; includeSample: boolean };
+type ChimeiActivitySnapshot = { checkedAt: string; sourceUrl: string; items: Array<{
+  id: string; title: string; dateText: string; type: string | null; sourceUrl: string;
+}> };
 
 const cities = ['臺北市', '臺中市', '臺南市', '嘉義縣', '高雄市', '屏東縣'];
 const statusOptions = [
@@ -145,6 +148,8 @@ function App() {
   const [visitError, setVisitError] = useState(false);
   const [preview, setPreview] = useState(false);
   const [ticketCity, setTicketCity] = useState('');
+  const [chimeiActivities, setChimeiActivities] = useState<ChimeiActivitySnapshot | null>(null);
+  const [activityError, setActivityError] = useState(false);
 
   useEffect(() => () => { if (demoTimer.current) clearTimeout(demoTimer.current); }, []);
 
@@ -167,6 +172,11 @@ function App() {
       if (found) setFilters((current) => ({ ...current, city: found.city, museum: found.id }));
     }).catch((error: Error) => { if (error.name !== 'AbortError') setMuseumError(error.message); });
     fetch('/preview-status').then((response) => response.ok ? response.json() : null).then((data) => setPreview(Boolean(data?.preview))).catch(() => {});
+    fetch('/chimei-activities.json', { signal: controller.signal }).then((response) => {
+      if (!response.ok) throw new Error('奇美活動快照暫時無法載入');
+      return response.json();
+    }).then((data: ChimeiActivitySnapshot) => setChimeiActivities(data))
+      .catch((error: Error) => { if (error.name !== 'AbortError') setActivityError(true); });
     return () => controller.abort();
   }, []);
 
@@ -242,11 +252,12 @@ function App() {
   const selectedMuseum = availableMuseums.find((museum) => museum.id === filters.museum);
   const ticketMuseums = museums.filter((museum) => museum.generalAdmission && (!ticketCity || museum.city === ticketCity));
   const ticketCities = [...new Set(museums.filter((museum) => museum.generalAdmission).map((museum) => museum.city))];
+  const activitySnapshotOld = chimeiActivities && Date.now() - Date.parse(chimeiActivities.checkedAt) > 14 * 86400_000;
   const updateFilter = <K extends keyof Filters>(name: K, value: Filters[K]) => setFilters((current) => ({ ...current, [name]: value }));
 
   return <>
     <a className="skip-link" href="#results">跳到展覽結果</a>
-    <header className="site-header"><div className="header-inner"><a className="brand" href="/" aria-label="Event Radar 首頁"><span className="brand-glyph">✧</span><span>EVENT <b>RADAR</b><small>博物館探索檔案</small></span></a><nav aria-label="主要導覽"><a href="#explore-title">探索特展</a><a href="#guides">博物館圖鑑</a><a href="#tickets">票務索引</a></nav><span className="header-edition">FIELD JOURNAL <i>01 / TAIWAN</i></span></div></header>
+    <header className="site-header"><div className="header-inner"><a className="brand" href="/" aria-label="Event Radar 首頁"><span className="brand-glyph">✧</span><span>EVENT <b>RADAR</b><small>博物館探索檔案</small></span></a><nav aria-label="主要導覽"><a href="#explore-title">探索特展</a><a href="#activities">活動與節目</a><a href="#guides">博物館圖鑑</a><a href="#tickets">票務索引</a></nav><span className="header-edition">FIELD JOURNAL <i>01 / TAIWAN</i></span></div></header>
     <main>
       <section className="hero" aria-labelledby="hero-title"><div className="hero-grain" aria-hidden="true"/><div className="hero-inner"><div className="hero-copy-block"><p className="eyebrow"><span className="eyebrow-line"/> A LIVING ARCHIVE OF DISCOVERY</p><h1 id="hero-title">翻開地層，<br/>遇見<span>未知的故事。</span></h1><p className="hero-lede">從古埃及的文字、遠古生命的化石，到藏在博物館裡的當期特展。跟著官方資料留下的線索，選一站，開始你的探索。</p><div className="hero-actions"><a className="primary-cta" href="#explore-title">開始發掘展覽 <span aria-hidden="true">↗</span></a><a className="text-cta" href="#guides">先認識博物館 <span aria-hidden="true">→</span></a></div><div className="hero-coordinate">25° N — 22° N <span>／</span> NINE MUSEUMS, MANY STORIES</div></div><div className="hero-art" aria-label="古文明展品的考古檔案視覺"><span className="art-corner art-corner-top"/><img src="/assets/egypt-writing-user.jpg" alt="博物館內的羅塞塔石碑複製品展示，表面刻有古代文字"/><span className="art-corner art-corner-bottom"/><div className="artifact-tag"><span>FIELD NOTE / 001</span><strong>文字留下的線索</strong><small>古文明 · 自攝展品照片</small></div><div className="art-seal" aria-hidden="true"><CompassIcon/></div></div></div><div className="hero-bottom"><span>SCROLL TO DISCOVER</span><span className="hero-bottom-line"/><span>考古不是回到過去，而是重新看見現在。</span></div></section>
 
@@ -272,6 +283,10 @@ function App() {
       <section className="guides-section" id="guides" aria-labelledby="guides-title"><div className="section-kicker"><span>03</span> MUSEUM FIELD NOTES</div><div className="intro-heading"><h2 id="guides-title">館所圖鑑，<em>從這裡展開。</em></h2><p>九座館所的特色、常設展線索與平常開館時間。例行時間為人工核對，特殊日子出發前仍須看館方公告。</p></div><div className="guide-grid">{guides.map((guide, index) => <a className="guide-card" key={guide.id} href={`/guides/${guide.id}.html`}><div className="guide-image"><img src={guide.image} alt={guide.alt} loading="lazy"/></div><div className="guide-card-copy"><span>FIELD GUIDE {String(index + 1).padStart(2, '0')} / {guide.city}</span><h3>{guide.name}</h3><p>{guide.line}</p><div><b>{guide.tag}</b><strong aria-hidden="true">↗</strong></div></div></a>)}</div><p className="guide-photo-note">照片包含館舍外觀與過往展場紀錄，並非當期展件清單。<a href="/photo-credits.html">查看照片來源與授權 ↗</a></p></section>
 
       <section className="tickets-section" id="tickets" aria-labelledby="tickets-title"><div className="section-kicker"><span>04</span> PLAN YOUR VISIT</div><div className="intro-heading"><h2 id="tickets-title">出發前，<em>先核對票務。</em></h2><p>以下為一般入館或常設展票價，不等於每檔特展門票。優惠、預約與售票狀態以館方頁面為準。</p></div><div className="ticket-city-tabs" role="group" aria-label="依城市查看票務"><button type="button" className={!ticketCity ? 'active' : ''} aria-pressed={!ticketCity} onClick={() => setTicketCity('')}>全部館所</button>{ticketCities.map((city) => <button type="button" key={city} className={ticketCity === city ? 'active' : ''} aria-pressed={ticketCity === city} onClick={() => setTicketCity(city)}>{city}</button>)}</div><div className="ticket-grid">{ticketMuseums.map((museum) => { const ticket = museum.generalAdmission!; return <article className="ticket-card" key={museum.id}><span>{museum.city} / {ticket.label}</span><h3>{museum.name}</h3><strong>{ticket.price}</strong><p>{ticket.note}</p><div className="ticket-card-links"><a href={officialUrl(ticket.infoUrl) || '#tickets'} target="_blank" rel="noopener noreferrer">官方票價 ↗</a>{officialUrl(ticket.purchaseUrl) ? <a href={ticket.purchaseUrl || ''} target="_blank" rel="noopener noreferrer">購票入口 ↗</a> : <small>依館方說明購票</small>}</div><small>最後人工核對：{ticket.checkedOn}</small></article>; })}</div></section>
+      <section className="activities-section" id="activities" aria-labelledby="activities-title"><div className="section-kicker"><span>05</span> CHIMEI EVENTS & PROGRAMMES</div><div className="intro-heading"><h2 id="activities-title">奇美活動，<em>不只有限期特展。</em></h2><p>工作坊、音樂節、VR 與實境遊戲屬於活動／節目，和上方特展搜尋分開。以下是一次館方清單快照，非即時場次或售票狀態。</p></div>
+        <p className="activity-source">{chimeiActivities ? `館方清單核對：${formatTaipei(chimeiActivities.checkedAt) || chimeiActivities.checkedAt}；共 ${chimeiActivities.items.length} 筆。` : activityError ? '活動快照暫時無法載入。' : '正在開啟活動檔案…'} {activitySnapshotOld && <strong>快照已超過 14 天，可能有異動。</strong>}出發或購票前，請逐筆開啟<a href="https://www.chimeimuseum.org/exhibition-event" target="_blank" rel="noopener noreferrer">奇美官方活動頁 ↗</a>確認日期與名額。</p>
+        {chimeiActivities && <div className="activity-grid">{chimeiActivities.items.map((item) => <article className="activity-card" key={item.id}><span>{item.type || '活動與節目'} · 奇美博物館</span><h3>{item.title}</h3><p className="activity-date">{item.dateText}</p><a href={officialUrl(item.sourceUrl) || chimeiActivities.sourceUrl} target="_blank" rel="noopener noreferrer">查看館方活動詳情 ↗</a></article>)}</div>}
+      </section>
     </main><footer className="site-footer"><div><span className="footer-brand">✧ EVENT RADAR</span><p>沿著真實資料，繼續探索未知。</p></div><p>資訊取自各博物館與政府公開資料；展期、票價、休館與入場規定，以館方公告為準。</p><a href="#hero-title">回到頂端 ↑</a></footer>
   </>;
 }

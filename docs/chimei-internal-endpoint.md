@@ -1,6 +1,6 @@
 # 奇美官網內部 JSON 端點：候選來源與驗證界線
 
-紀錄日期：2026-10-11。**候選來源：已有離線適配器，但尚未接入匯入器、資料庫或每週排程。**這是奇美官網頁面自己使用、未公開文件化的 JSON 端點，不稱作「奇美官方公開 API」，也不代表館方授權第三方持續介接。
+紀錄日期：2026-10-11。**候選來源：限期特展已有離線適配器；活動／節目另有一次性清單快照。尚未接入資料庫或每週排程。**這是奇美官網頁面自己使用、未公開文件化的 JSON 端點，不稱作「奇美官方公開 API」，也不代表館方授權第三方持續介接。
 
 ## 已知與尚未證明
 
@@ -21,7 +21,9 @@
 | --- | --- | --- |
 | `specialEvent` | `id`、`img`、`link`、`tag`、`title`、`txt`、`date`、`isfree` | 限期特展候選；展名、詳情連結與完整日期驗證通過才公開。 |
 | `permanentEvent` | `link`、`webp`、`image`、`mimetype`、`subtitle`、`title`、`intro` | 常設展導覽候選，與限期特展搜尋分開；不因缺結束日就塞進展覽主表。 |
-| `expoEvent` | `id`、`img`、`link`、`hastag`、`tag`、`type`、`location`、`title`、`isfree`、`hasdate`、`date` | 活動／節目候選；本站現階段不自動混入限期特展搜尋。若日後納入，先定義類型與多場次模型。 |
+| `expoEvent` | `id`、`img`、`link`、`hastag`、`tag`、`type`、`location`、`title`、`isfree`、`hasdate`、`date` | 活動／節目候選；本站以一次性快照在獨立區塊展示必要文字和官方連結，**不混入限期特展搜尋**。若日後要做日期搜尋，先定義多場次模型。 |
+
+`npm run refresh:chimei:activities` 會以公開頁正常匿名流程取得三組資料、檢查活動 ID 與官方詳情網址，再原子更新 `data/chimei-activities.json`。它是**人工觸發的快照更新**，不是排程同步；空清單、疑似大幅縮水或 ID 大量更換時保留舊快照。前端只顯示標題、類型、清理 HTML 後的館方時間文字和官網逐筆連結，不保存圖片、長篇介紹、匿名 cookie 或 CSRF token。來源時間可能含售票日、多場次、即日起或僅時段，沒有安全解析的情況不推論「即將開始」或「展出中」，訪客須回官網確認。詳細見 [ER-50](technical-decisions.md#er-50奇美活動與節目的人工更新快照已實作本機驗證)。
 
 `date` 在候選的最小化原始紀錄中保留 `rawDate`，先將 `<br>` 留成分隔，再解析明確格式，例如 `YYYY.MM.DD - YYYY.MM.DD` 與 `YYYY/MM/DD - YYYY/MM/DD`。適配器可標 `date_range`、`multiple_dates`、`ongoing`、`time_only`、`unknown`；「即日起」、只有時段、已開課或多個不連續場次**不可猜成單一起訖日**。無法安全解析的候選之 `startDate`、`endDate` 為 `null` 並標 `review`；現有公開 `exhibitions.start_date/end_date`、`ExhibitionDraft` 與搜尋 API 仍要求有效起訖日。需要展示多場次時再設計 occurrence 資料模型。
 

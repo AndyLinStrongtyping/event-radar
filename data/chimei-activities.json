@@ -1,0 +1,76 @@
+{
+  "checkedAt": "2026-10-11T06:08:21.409Z",
+  "sourceUrl": "https://www.chimeimuseum.org/exhibition-event",
+  "items": [
+    {
+      "id": "207",
+      "title": "2026奇美歐洲兵器探索【西洋武術大師工作坊—戴文．伯爾曼】",
+      "dateText": "2026/10/31 (六)\n義大利長劍 09:30-12:30\n義大利西洋劍 14:00-17:00\n2026/09/14 (一) 中午12點啟售",
+      "type": null,
+      "sourceUrl": "https://www.chimeimuseum.org/event/6a9e550542b15"
+    },
+    {
+      "id": "200",
+      "title": "奇美音樂節【燦爛的深邃：布拉姆斯與他的時代】",
+      "dateText": "2026\n09/05 (六) 14:30\n09/12 (六) 14:30\n09/19 (六) 14:30\n10/03 (六) 14:30\n10/17 (六) 14:30\n11/14 (六) 14:30",
+      "type": null,
+      "sourceUrl": "https://www.chimeimuseum.org/event/6a30f7fdb5d47"
+    },
+    {
+      "id": "197",
+      "title": "VR沉浸探險【消失的法老】",
+      "dateText": "2026/01/29 - 2027/01/10\n博物館開放日",
+      "type": "期間限定節目",
+      "sourceUrl": "https://www.chimeimuseum.org/event/691aeece01a23"
+    },
+    {
+      "id": "185",
+      "title": "穿越時空的航海家",
+      "dateText": "2024/03/01 - 2027/12/31\n博物館開放日",
+      "type": "實境遊戲",
+      "sourceUrl": "https://www.chimeimuseum.org/event/65a5df4f29d3c"
+    },
+    {
+      "id": "146",
+      "title": "穹頂計畫III 末日慶典",
+      "dateText": "即日起~2027/12/31\n博物館開放日",
+      "type": "實境遊戲",
+      "sourceUrl": "https://www.chimeimuseum.org/event/62b964cb3ff31"
+    },
+    {
+      "id": "145",
+      "title": "穹頂計畫Ⅱ 潘神之子",
+      "dateText": "即日起~2027/12/31\n博物館開放日",
+      "type": "實境遊戲",
+      "sourceUrl": "https://www.chimeimuseum.org/event/62b96425d5e25"
+    },
+    {
+      "id": "144",
+      "title": "穹頂計畫",
+      "dateText": "即日起~2027/12/31\n博物館開放日",
+      "type": "實境遊戲",
+      "sourceUrl": "https://www.chimeimuseum.org/event/62b9622897e39"
+    },
+    {
+      "id": "174",
+      "title": "窺探奇美名畫：原來畫框很有飾！",
+      "dateText": "已開課",
+      "type": null,
+      "sourceUrl": "https://www.chimeimuseum.org/event/64d04be72d063"
+    },
+    {
+      "id": "38",
+      "title": "窺探奇美典藏：從名畫探索色彩奧秘",
+      "dateText": "已開課",
+      "type": null,
+      "sourceUrl": "https://www.chimeimuseum.org/event/62035f9f4fd39"
+    },
+    {
+      "id": "16",
+      "title": "時間的房間",
+      "dateText": "9:30 - 17:00 (每15分鐘一場)",
+      "type": "沉浸式體驗",
+      "sourceUrl": "https://www.chimeimuseum.org/event/60d427d3a906c"
+    }
+  ]
+}

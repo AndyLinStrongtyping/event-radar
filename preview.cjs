@@ -15,6 +15,7 @@ const files = {
   '/guides/nmmba.html': ['guides/nmmba.html', 'text/html; charset=utf-8'],
   '/guides/nstm.html': ['guides/nstm.html', 'text/html; charset=utf-8'],
   '/guides/ntsec.html': ['guides/ntsec.html', 'text/html; charset=utf-8'],
+  '/chimei-activities.json': ['../data/chimei-activities.json', 'application/json; charset=utf-8'],
   '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
   '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
   '/transport.js': ['transport.js', 'text/javascript; charset=utf-8'],
