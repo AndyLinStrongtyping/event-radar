@@ -195,16 +195,16 @@ async function main() {
       cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href }, encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-  assert.match(migrate(), /新套用 13 份/, '空白資料庫應由單一命令建立');
+  assert.match(migrate(), /新套用 14 份/, '空白資料庫應由單一命令建立');
   assert.match(migrate(), /新套用 0 份/, '重跑不得重建表或重複寫入');
   let ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 13);
+  assert.equal(ledger.rows[0].count, 14);
   // 模擬舊版手動執行所有 migration 的資料庫；只有明確指定時才建立帳本。
   await testDb.query('DROP TABLE schema_migrations');
   assert.throws(() => migrate(), /舊版資料庫且沒有 migration 帳本/);
   assert.match(migrate('--baseline-existing'), /新套用 0 份/);
   ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 13);
+  assert.equal(ledger.rows[0].count, 14);
   assert.match(migrate(), /新套用 0 份/);
   const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
   async function checkCoverage(keys, rawKeys = []) {
@@ -225,19 +225,20 @@ async function main() {
   }
   const allKeys = ['a', 'b', 'c', 'd', 'e', 'f'];
   assert.deepEqual(await checkCoverage(allKeys),
-    { status: 'baseline_created', identityCount: 6, baselineCount: null,
+    { status: 'baseline_created', identityCount: 6, identityKeys: allKeys, baselineCount: null,
       rowCount: 6, baselineRowCount: null });
   assert.deepEqual(await checkCoverage(['a', 'b']),
-    { status: 'deferred_partial', identityCount: 2, baselineCount: 6,
+    { status: 'deferred_partial', identityCount: 2, identityKeys: ['a', 'b'], baselineCount: 6,
       rowCount: 2, baselineRowCount: 6 });
   let coverageBaseline = await testDb.query(`SELECT identity_count FROM official_source_baselines
     WHERE museum_id='ntm' AND provider='ntm'`);
   assert.equal(coverageBaseline.rows[0].identity_count, 6, '疑似部分回應不得降低可信比較基準');
   assert.deepEqual(await checkCoverage(allKeys),
-    { status: 'checked', identityCount: 6, baselineCount: 6,
+    { status: 'checked', identityCount: 6, identityKeys: allKeys, baselineCount: 6,
       rowCount: 6, baselineRowCount: 6 });
   assert.deepEqual(await checkCoverage(['a', 'x', 'y', 'z', 'q', 'r']),
-    { status: 'deferred_partial', identityCount: 6, baselineCount: 6,
+    { status: 'deferred_partial', identityCount: 6,
+      identityKeys: ['a', 'q', 'r', 'x', 'y', 'z'], baselineCount: 6,
       rowCount: 6, baselineRowCount: 6 },
     '筆數相同但來源鍵幾乎全換，也不得判定舊展已從官方清單消失');
   const preservedKeys = await testDb.query(`SELECT identity_keys FROM official_source_baselines
@@ -245,10 +246,11 @@ async function main() {
   assert.deepEqual(preservedKeys.rows[0].identity_keys, allKeys,
     '疑似清單替換不得覆寫上次可信來源鍵');
   assert.deepEqual(await checkCoverage(allKeys.slice(0, 5)),
-    { status: 'checked', identityCount: 5, baselineCount: 6,
+    { status: 'checked', identityCount: 5, identityKeys: allKeys.slice(0, 5), baselineCount: 6,
       rowCount: 5, baselineRowCount: 6 });
   assert.deepEqual(await checkCoverage(['a', 'b'], allKeys.slice(0, 5)),
-    { status: 'deferred_partial', identityCount: 5, baselineCount: 5,
+    { status: 'deferred_partial', identityCount: 5,
+      identityKeys: allKeys.slice(0, 5), baselineCount: 5,
       rowCount: 2, baselineRowCount: 5 },
     '原始紀錄仍完整但解析後可公開展覽驟減，也必須暫緩缺席判定');
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
@@ -677,6 +679,38 @@ async function main() {
   const missingAfterReplacement = await testDb.query(`SELECT count(*)::int AS count
     FROM source_missing_candidates WHERE museum_id='nstm' AND status='pending'`);
   assert.equal(missingAfterReplacement.rows[0].count, 0);
+  const { inspectBaselineCandidate, acceptBaselineCandidate } =
+    await import('../src/source-baseline-review.ts');
+  const reviewPreview = await inspectBaselineCandidate(testDb, 'nstm', 'nstm');
+  assert.equal(reviewPreview.coverageStatus, 'deferred_partial');
+  assert.equal(reviewPreview.canAccept, true);
+  assert.equal(reviewPreview.removedKeys.length, reviewPreview.baselineCount);
+  assert.equal(reviewPreview.addedKeys.length, reviewPreview.candidateCount);
+  const reviewInput = { museum: 'nstm', provider: 'nstm', runId: reviewPreview.runId,
+    evidenceUrl: 'https://www.nstm.gov.tw/ExhibitionList.aspx?ExhibitionType=2',
+    reviewer: '整合測試審查人', note: '已核對官方列表確實整季更換' };
+  await assert.rejects(acceptBaselineCandidate(testDb, { ...reviewInput,
+    evidenceUrl: 'https://example.com/fake' }), /官方網域/);
+  await assert.rejects(acceptBaselineCandidate(testDb, { ...reviewInput,
+    runId: require('node:crypto').randomUUID() }), /最新且成功匯入/);
+  const baselineBeforeReview = await testDb.query(`SELECT identity_count,row_count,last_run_id
+    FROM official_source_baselines WHERE museum_id='nstm' AND provider='nstm'`);
+  assert.equal(baselineBeforeReview.rows[0].identity_count, reviewPreview.baselineCount);
+  const reviewId = await acceptBaselineCandidate(testDb, reviewInput);
+  assert.match(reviewId, /^[0-9a-f-]{36}$/i);
+  const reviewed = await testDb.query(`SELECT previous_run_id,accepted_identity_count,
+    array_length(accepted_identity_keys,1) AS accepted_keys FROM source_baseline_reviews
+    WHERE id=$1`, [reviewId]);
+  assert.equal(reviewed.rows[0].previous_run_id, baselineBeforeReview.rows[0].last_run_id);
+  assert.equal(reviewed.rows[0].accepted_identity_count, reviewPreview.candidateCount);
+  assert.equal(reviewed.rows[0].accepted_keys, reviewPreview.candidateCount);
+  await assert.rejects(acceptBaselineCandidate(testDb, reviewInput), /此批次已成為基準/);
+  nstmVisibility = await testDb.query(`SELECT count(*)::int AS count FROM exhibitions
+    WHERE museum_id='nstm' AND visible`);
+  assert.equal(nstmVisibility.rows[0].count, 12,
+    '更新來源基準本身不可隱藏既有展覽');
+  assert.equal(ingestMockNstm(replacedHtml, replacedJson).coverageStatus, 'checked',
+    '已核對的整季更換在下次相同官方清單同步時恢復正常比較');
   const { enqueueSourceJob, claimSourceJob, finishSourceJob, replayDeadJob } =
     await import('../src/source-jobs.ts');
   const queuedSea = await enqueueSourceJob(testDb, 'nmmba', '2026-10-10');

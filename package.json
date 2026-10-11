@@ -19,6 +19,7 @@
     "jobs:work": "node --env-file-if-exists=.env --experimental-strip-types src/source-job-cli.ts work",
     "jobs:status": "node --env-file-if-exists=.env --experimental-strip-types src/source-job-cli.ts status",
     "jobs:replay": "node --env-file-if-exists=.env --experimental-strip-types src/source-job-cli.ts replay",
+    "coverage:baseline": "node --env-file-if-exists=.env --experimental-strip-types src/source-baseline-review-cli.ts",
     "review": "node --env-file-if-exists=.env --experimental-strip-types src/review.ts",
     "review:approve": "node --env-file-if-exists=.env --experimental-strip-types src/approve-review.ts",
     "admin": "node --env-file-if-exists=.env --experimental-strip-types src/admin-server.ts",

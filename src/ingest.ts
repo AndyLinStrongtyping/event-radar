@@ -226,12 +226,14 @@ async function main(): Promise<void> {
       unchanged: 0, linked: 0, skipped: records.filter((record) => record.status === 'ignored').length,
       review: records.filter((record) => record.status === 'review').length, missing: 0,
       coverageStatus: 'not_applicable' as CoverageStatus | 'not_applicable',
-      sourceIdentities: null as number | null, coverageBaseline: null as number | null,
+      sourceIdentities: null as number | null, sourceIdentityKeys: null as string[] | null,
+      coverageBaseline: null as number | null,
       sourceRows: null as number | null, coverageBaselineRows: null as number | null };
     if (official && rows.length > 0) {
       const coverage = await assessOfficialSourceCoverage(client, museum, provider, runId!, rows, records);
       counts.coverageStatus = coverage.status;
       counts.sourceIdentities = coverage.identityCount;
+      counts.sourceIdentityKeys = coverage.identityKeys;
       counts.coverageBaseline = coverage.baselineCount;
       counts.sourceRows = coverage.rowCount;
       counts.coverageBaselineRows = coverage.baselineRowCount;
@@ -317,10 +319,11 @@ async function main(): Promise<void> {
       fetched_count=$2,inserted_count=$3,updated_count=$4,unchanged_count=$5,linked_count=$6,
       skipped_count=$7,review_count=$8,missing_count=$9,coverage_status=$10,
       source_identity_count=$11,coverage_baseline_count=$12,source_row_count=$13,
-      coverage_baseline_row_count=$14 WHERE id=$1`,
+      coverage_baseline_row_count=$14,source_identity_keys=$15 WHERE id=$1`,
     [runId, counts.fetched, counts.inserted, counts.updated, counts.unchanged, counts.linked,
       counts.skipped, counts.review, counts.missing, counts.coverageStatus,
-      counts.sourceIdentities, counts.coverageBaseline, counts.sourceRows, counts.coverageBaselineRows]);
+      counts.sourceIdentities, counts.coverageBaseline, counts.sourceRows, counts.coverageBaselineRows,
+      counts.sourceIdentityKeys]);
     if (rows.length > 0 && (official || rows.some((row) => !row.isSample))) {
       await client.query('UPDATE museums SET last_success_at=now() WHERE id=$1', [museum]);
     }

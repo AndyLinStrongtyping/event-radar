@@ -21,7 +21,7 @@ const migrations = await Promise.all(files.map(async (file) => {
 const requiredColumns: Record<string, string[]> = {
   museums: ['id', 'source_status', 'last_official_success_at'],
   exhibitions: ['id', 'primary_provider', 'visible'],
-  ingestion_runs: ['id', 'review_count', 'missing_count', 'coverage_status', 'coverage_baseline_row_count'],
+  ingestion_runs: ['id', 'review_count', 'missing_count', 'coverage_status', 'coverage_baseline_row_count', 'source_identity_keys'],
   exhibition_sources: ['museum_id', 'provider', 'source_key', 'exhibition_id'],
   exhibition_changes: ['id', 'exhibition_id', 'field_name'],
   source_records: ['museum_id', 'provider', 'source_key', 'status'],
@@ -31,6 +31,7 @@ const requiredColumns: Record<string, string[]> = {
   source_missing_reviews: ['id', 'observed_missed_runs', 'decision'],
   source_jobs: ['id', 'idempotency_key', 'worker_token'],
   official_source_baselines: ['museum_id', 'provider', 'row_count', 'identity_keys'],
+  source_baseline_reviews: ['id', 'ingestion_run_id', 'evidence_url'],
 };
 const requiredIndexes = [
   'exhibitions_source_identity', 'exhibitions_dates_idx', 'exhibitions_title_idx',

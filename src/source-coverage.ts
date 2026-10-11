@@ -6,6 +6,7 @@ export type CoverageStatus = 'baseline_created' | 'checked' | 'deferred_partial'
 export type CoverageResult = {
   status: CoverageStatus;
   identityCount: number;
+  identityKeys: string[];
   baselineCount: number | null;
   rowCount: number;
   baselineRowCount: number | null;
@@ -40,7 +41,7 @@ export async function assessOfficialSourceCoverage(client: pg.PoolClient, museum
     await client.query(`INSERT INTO official_source_baselines
       (museum_id,provider,identity_count,row_count,last_run_id,identity_keys) VALUES ($1,$2,$3,$4,$5,$6)`,
     [museum, provider, identityCount, rowCount, runId, identityKeys]);
-    return { status: 'baseline_created', identityCount, baselineCount: null,
+    return { status: 'baseline_created', identityCount, identityKeys, baselineCount: null,
       rowCount, baselineRowCount: null };
   }
   const baselineCount = previous.rows[0].identity_count;
@@ -49,11 +50,11 @@ export async function assessOfficialSourceCoverage(client: pg.PoolClient, museum
     || isSuspiciousDrop(baselineRowCount, rowCount)
     || (previous.rows[0].identity_keys !== null
       && isSuspiciousReplacement(previous.rows[0].identity_keys, identityKeys))) {
-    return { status: 'deferred_partial', identityCount, baselineCount,
+    return { status: 'deferred_partial', identityCount, identityKeys, baselineCount,
       rowCount, baselineRowCount };
   }
   await client.query(`UPDATE official_source_baselines SET identity_count=$3,row_count=$4,last_run_id=$5,identity_keys=$6,
     updated_at=now() WHERE museum_id=$1 AND provider=$2`,
   [museum, provider, identityCount, rowCount, runId, identityKeys]);
-  return { status: 'checked', identityCount, baselineCount, rowCount, baselineRowCount };
+  return { status: 'checked', identityCount, identityKeys, baselineCount, rowCount, baselineRowCount };
 }
