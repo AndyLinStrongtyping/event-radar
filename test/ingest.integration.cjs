@@ -105,6 +105,11 @@ async function checkPublicApiContract() {
     assert.match(await artGuide.text(), /國立臺灣美術館/);
     const artImage = await fetch(base + '/assets/ntmofa-building-commons.jpg');
     assert.equal(artImage.status, 200, '國美館圖鑑照片應可載入');
+    const theaterGuide = await fetch(base + '/guides/ntt.html');
+    assert.equal(theaterGuide.status, 200, '歌劇院場館圖鑑應可開啟');
+    assert.match(await theaterGuide.text(), /臺中國家歌劇院/);
+    const theaterImage = await fetch(base + '/assets/ntt-building-commons.jpg');
+    assert.equal(theaterImage.status, 200, '歌劇院圖鑑照片應可載入');
     const programmes = await get('/chimei-activities.json');
     assert.ok(programmes.items.length > 0);
     assert.ok(programmes.items.every((item) => item.sourceUrl.startsWith('https://www.chimeimuseum.org/event/')));

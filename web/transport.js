@@ -49,6 +49,11 @@ const transportByGuide = {
     note: '館方交通頁列有公車、開車及停車資訊；實際班次與步行路段請於出發前查詢。',
     official: 'https://www.ntmofa.gov.tw/cp.aspx?n=1422',
   },
+  'ntt.html': {
+    name: '臺中國家歌劇院', city: '臺中市', destination: '臺中國家歌劇院 臺中市西屯區惠來路二段101號',
+    note: '捷運市政府站 1 號出口步行約 10–15 分鐘；其他公車、高鐵轉乘與停車資訊以館方交通頁為準。',
+    official: 'https://www.npac-ntt.org/visit/transportation',
+  },
 };
 
 const counties = [

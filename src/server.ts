@@ -68,6 +68,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/guides/nstm.html', ['../web/guides/nstm.html', 'text/html; charset=utf-8']],
   ['/guides/ntsec.html', ['../web/guides/ntsec.html', 'text/html; charset=utf-8']],
   ['/guides/ntmofa.html', ['../web/guides/ntmofa.html', 'text/html; charset=utf-8']],
+  ['/guides/ntt.html', ['../web/guides/ntt.html', 'text/html; charset=utf-8']],
   ['/photo-credits.html', ['../web/photo-credits.html', 'text/html; charset=utf-8']],
   ['/chimei-activities.json', ['../data/chimei-activities.json', 'application/json; charset=utf-8']],
   ['/styles.css', ['../web/styles.css', 'text/css; charset=utf-8']],
@@ -89,6 +90,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/assets/nmth-building-commons.jpg', ['../web/assets/nmth-building-commons.jpg', 'image/jpeg']],
   ['/assets/ntsec-building-commons.jpg', ['../web/assets/ntsec-building-commons.jpg', 'image/jpeg']],
   ['/assets/ntmofa-building-commons.jpg', ['../web/assets/ntmofa-building-commons.jpg', 'image/jpeg']],
+  ['/assets/ntt-building-commons.jpg', ['../web/assets/ntt-building-commons.jpg', 'image/jpeg']],
 ]);
 
 const server = createServer(async (request, response) => {
