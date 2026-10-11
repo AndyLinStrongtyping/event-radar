@@ -7,6 +7,7 @@ import { normalizeNmnsFeed } from './sources/nmns.ts';
 import { fetchNmnsApi } from './nmns-api.ts';
 import { mergeNpmSouthPages, npmSouthPages } from './sources/npm-south.ts';
 import { classifyNmmbaFeed, nmmbaDataUrl, type SourceRecord } from './sources/nmmba.ts';
+import { verifyNmmbaDetails } from './sources/nmmba-detail.ts';
 import { classifyNpmNorthFeed, npmNorthDataUrl } from './sources/npm-north.ts';
 import { classifyNstmFeed, nstmDataUrl, nstmListUrl } from './sources/nstm.ts';
 import { classifyMocChimei, mocExhibitionsUrl, verifiedMocChimeiRows } from './sources/moc-chimei.ts';
@@ -90,7 +91,8 @@ async function sourceRows(museum: string, file: string | undefined, snapshot: st
     return { rows: mergeNpmSouthPages(pages), records: [] };
   }
   if (museum === 'nmmba') {
-    return classifyNmmbaFeed(JSON.parse(await fetchSource(nmmbaDataUrl, 'www.nmmba.gov.tw')));
+    const batch = classifyNmmbaFeed(JSON.parse(await fetchSource(nmmbaDataUrl, 'www.nmmba.gov.tw')));
+    return verifyNmmbaDetails(batch, (url) => fetchSource(url, 'www.nmmba.gov.tw'));
   }
   if (museum === 'npm-north') {
     return classifyNpmNorthFeed(JSON.parse(await fetchSource(npmNorthDataUrl, 'odapi.npm.gov.tw')));
