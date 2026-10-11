@@ -241,7 +241,7 @@
 
 - **處理**：[`docs/openapi.yaml`](openapi.yaml)記錄六個公開唯讀端點、查詢參數、主要成功／錯誤狀態及 Museum、Exhibition、票務和異動資料形狀；仍以 [`docs/api.md`](api.md)說明保守的資料來源與票價語意。單元測試用 YAML parser 檢查文件可解析、公開路由及元件引用。
 - **決策**：管理表單是只綁本機的 HTML 介面，匯入由 CLI 執行；兩者不冒充公開 REST API。規格先描述實際回應，不添加未實作的寫入端點或 JWT。
-- **界線／證據**：目前是靜態規格與基本結構驗證；已有隔離 PostgreSQL 的 HTTP 回應契約測試，但尚未自動將每個回應逐欄套 OpenAPI schema 驗證。
+- **界線／證據**：最初只有靜態結構與人工欄位斷言；2026-10-11 的 ER-45 已在隔離 PostgreSQL 整合測試中對實際 HTTP 回應套用本文件目前使用的 OpenAPI schema 子集。
 
 ### ER-39｜每日排程接入單館來源 Queue（已實作／本機驗證）
 
@@ -282,6 +282,13 @@
 - **處理**：[`014_source_baseline_reviews.sql`](../db/014_source_baseline_reviews.sql)讓新官方匯入紀錄保存完整來源鍵快照，並建立不可重複核准同一批次的審查紀錄表。`npm run coverage:baseline -- inspect --source <館別>` 顯示最新官方批次、可信基準與新增／消失的來源鍵；站長對照館方官方頁後，才用 `accept` 提供批次 UUID、同館 HTTPS 證據網址、審查人和理由。[`source-baseline-review.ts`](../src/source-baseline-review.ts)在交易中取得與匯入共用的館別鎖，重新確認它仍是最新成功且被暫緩的官方批次、比較基準未改，然後一次寫入審查與新的可信基準。舊批次或重複核准都拒絕。
 - **決策**：核准只表示「以這批清單作為下次比較基準」，**不**表示館方取消舊展，也不更新展覽可見性或將既有缺席候選結案。該批 `ingestion_runs.coverage_status` 保留歷史判定；下一次成功官方同步才重新評估，若清單仍相同便可回 `checked`。歷史批次沒有可靠鍵快照，不做推測回填，也不能用本功能核准。錯誤證據或錯誤人工判斷仍可能讓基準失準，故保留審查紀錄及原始批次供追查；此流程不是自動來源完整性證明。
 - **證據／界線**：型別檢查、43 項單元測試與隔離 PostgreSQL 整合測試通過。整合測試涵蓋同筆數全換、預覽差異、錯誤官方網域、非最新批次、重複核准、審查紀錄、核准不隱藏舊展及下次相同清單恢復 `checked`。本機 migration 與實際跨週人工操作狀態見[階段紀錄](stage-2026-10-11-source-baseline-review.md)；沒有在線上啟用同步。
+
+### ER-45｜CI 用 OpenAPI 驗證實際公開 API 回應（已實作／本機驗證）
+
+- **問題**：原整合測試手寫部分欄位斷言；OpenAPI 文件另做靜態檢查。若新增巢狀欄位、改壞 nullable 或 enum，兩者可能各自通過卻互相不符。
+- **處理**：[`openapi-response-validator.cjs`](../test/openapi-response-validator.cjs)讀取版本庫內的 [`openapi.yaml`](openapi.yaml)，解析本檔 `$ref`、`allOf`、`nullable`、必填欄位、陣列、型別、enum、數值範圍及已使用的日期／時間／UUID／URI 格式。[隔離 PostgreSQL 整合測試](../test/ingest.integration.cjs)對實際 HTTP 成功與錯誤回應逐層驗證，也要求文件中的每條公開 GET 路由至少有一筆 200 回應受驗；原本的業務斷言仍保留。CI 原已執行此整合測試，因此推送後會自動做相同核對。
+- **決策**：針對目前文件實際使用的 schema 功能寫小型驗證器，遇到不支援的組合運算子或 format 明確失敗，不默默略過。這是**測試中的回應契約驗證**，不在正式請求路徑重複解析 schema；也不宣稱是完整的 OpenAPI 3.0 實作。新增 schema 語法或路由時需同步擴充驗證及測試案例。
+- **證據／界線**：44 項單元測試、型別檢查及隔離 PostgreSQL 整合測試通過；單元測試刻意注入錯誤 enum 與巢狀購票欄位，確認驗證器會失敗。整合測試涵蓋目前六條 GET 路由的成功回應及既有 400／404 案例。503 與 500 等故障回應仍未以隔離資料庫流程逐條觸發；詳見[階段紀錄](stage-2026-10-11-openapi-response-validation.md)。
 
 ## 後續更新方式
 

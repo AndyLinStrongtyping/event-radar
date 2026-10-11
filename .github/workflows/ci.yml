@@ -38,5 +38,5 @@ jobs:
         run: npm run typecheck
       - name: 執行單元測試
         run: npm test
-      - name: 驗證資料庫匯入與公開 API 回應格式
+      - name: 驗證資料庫匯入與公開 API 的 OpenAPI 回應格式
         run: npm run test:integration

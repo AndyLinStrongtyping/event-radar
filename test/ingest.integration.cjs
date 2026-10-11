@@ -5,6 +5,7 @@ const { tmpdir } = require('node:os');
 const { join, resolve } = require('node:path');
 const { pathToFileURL } = require('node:url');
 const pg = require('pg');
+const { assertOpenApiResponse, documentedGetPaths } = require('./openapi-response-validator.cjs');
 
 if (!process.env.DATABASE_URL) throw new Error('整合測試需要 DATABASE_URL');
 const project = resolve(__dirname, '..');
@@ -60,6 +61,7 @@ function assertExhibition(value) {
 async function checkPublicApiContract() {
   const port = 33000 + Math.floor(Math.random() * 2000);
   const base = `http://127.0.0.1:${port}`;
+  const coveredSuccessPaths = new Set();
   const server = spawn(process.execPath, ['--experimental-strip-types', 'src/server.ts'], {
     cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href, PORT: String(port), NMNS_API_KEY: '' },
     stdio: 'ignore',
@@ -68,7 +70,10 @@ async function checkPublicApiContract() {
     const response = await fetch(base + path);
     assert.equal(response.status, status, `${path} 應回傳 ${status}`);
     assert.match(response.headers.get('content-type') ?? '', /^application\/json/);
-    return response.json();
+    const body = await response.json();
+    const template = assertOpenApiResponse(path, status, body);
+    if (status === 200) coveredSuccessPaths.add(template);
+    return body;
   }
   try {
     let ready = false;
@@ -177,6 +182,8 @@ async function checkPublicApiContract() {
     }
     const missing = await get('/exhibitions/00000000-0000-0000-0000-000000000000', 404);
     assert.equal(missing.error.code, 'NOT_FOUND');
+    assert.deepEqual([...coveredSuccessPaths].sort(), [...documentedGetPaths].sort(),
+      '每條公開 GET 路由都至少要有一筆真實 HTTP 成功回應通過 OpenAPI schema');
   } finally {
     if (server.exitCode === null && server.signalCode === null) {
       const exited = new Promise((resolve) => server.once('exit', resolve));
