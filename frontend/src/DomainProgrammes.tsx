@@ -93,6 +93,14 @@ function DeepSeaExpedition() {
   const observedOn = items[0]?.observedOn;
   const isToday = observedOn === todayTaipei();
   return <section className="deep-sea-section" id="deep-sea" aria-labelledby="deep-sea-title">
+    <div className="sea-shore" aria-hidden="true">
+      <svg className="sea-shore-shape" viewBox="0 0 1440 300" preserveAspectRatio="none">
+        <path className="sea-shore-sand" d="M0 0H1440V147C1240 130 1120 170 950 160C770 150 620 111 451 153C273 197 146 145 0 167Z"/>
+        <path className="sea-shore-foam" d="M0 191C160 169 280 211 451 177C613 144 784 179 948 184C1132 190 1284 165 1440 180"/>
+        <path className="sea-shore-foam sea-shore-foam-soft" d="M0 218C166 196 290 229 461 201C627 174 792 205 958 209C1129 214 1291 188 1440 208"/>
+      </svg>
+      <div className="sea-shore-copy"><span>FROM LAND TO SEA / 07</span><strong>從陸地，向海裡走。</strong></div>
+    </div>
     <div className="sea-light" aria-hidden="true"/><div className="sea-bubbles" aria-hidden="true"/>
     <div className="sea-intro"><div className="sea-intro-inner">
       <div className="section-kicker"><span>07</span> DEEP SEA EXPEDITION</div>
