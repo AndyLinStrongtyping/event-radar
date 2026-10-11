@@ -2,7 +2,7 @@
 
 功能狀態最後核對：2026-10-11（臺灣時間）。**網站仍是本機 MVP，尚未公開部署或啟用線上每日同步。**[技術處理與決策紀錄](docs/technical-decisions.md)逐項說明做法、取捨及證據；[目前與目標架構](docs/architecture.md)分開標示已實作和構想；[第四階段紀錄](docs/stage-2026-10-05-phase4.md)記錄科博館 API 與休館提醒的實測；[來源狀態階段紀錄](docs/stage-2026-10-10-freshness.md)記錄最新網站提示與驗證；[票務來源與維護](docs/ticketing.md)記錄票價查證範圍。
 
-奇美官網內部 JSON 端點是新發現的**候選來源**：使用者提供 DevTools 回應形狀，本機無 Cookie／CSRF 的單次 POST 回 419。尚未建 adapter、未驗證完整性或可持續介接方式；詳見[候選來源評估](docs/chimei-internal-endpoint.md)及[技術決策 ER-40](docs/technical-decisions.md#er-40奇美官網內部-json-端點候選尚未接入)。
+奇美官網內部 JSON 端點是新發現的**候選來源**：使用者提供 DevTools 回應形狀，本機無 Cookie／CSRF 的 POST 回 419；公開頁正常匿名 session／CSRF 流程單次回 200 JSON（三組筆數 1／4／10）。尚未建 adapter、未驗證完整性或可持續介接方式；詳見[候選來源評估](docs/chimei-internal-endpoint.md)及[技術決策 ER-40](docs/technical-decisions.md#er-40奇美官網內部-json-端點候選尚未接入)。
 
 | 能力 | 實際狀態 |
 | --- | --- |

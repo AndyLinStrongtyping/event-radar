@@ -18,7 +18,7 @@
 
 ### 奇美特展來源查證（2026-10-04）
 
-**2026-10-11 補充**：使用者提供官網內部 `POST /exhibition-event/api` 的 DevTools 回應欄位；本站一次無 Cookie／CSRF 的 Node POST 回 419，尚未取得可供 adapter 驗證的資料。它仍是「官網內部使用、未公開文件化的 JSON 端點」，不是館方提供第三方的公開 API，也未接入每日同步。資料分類、日期、來源鍵與啟用條件詳見[候選來源評估](chimei-internal-endpoint.md)。
+**2026-10-11 補充**：使用者提供官網內部 `POST /exhibition-event/api` 的 DevTools 回應欄位；本站無 Cookie／CSRF 的 Node POST 回 419；以公開頁正常發出的匿名 session／CSRF 單次重送回 200 JSON，三組筆數 1／4／10。仍未驗證逐欄契約、分頁與跨日穩定度。它仍是「官網內部使用、未公開文件化的 JSON 端點」，不是館方提供第三方的公開 API，也未接入每日同步。資料分類、日期、來源鍵與啟用條件詳見[候選來源評估](chimei-internal-endpoint.md)。
 
 - [官方特展列表](https://www.chimeimuseum.org/index.php/exhibition-event)公開顯示展名、簡介、展期與展覽連結。頁面程式會向官網自己的 `/exhibition-event/api` 發送帶 CSRF token 的 POST 請求；這是官網內部資料呼叫，不能據此稱為提供第三方使用的公開 API。
 - 官網 `robots.txt` 只列出 `/weyacms/` 與 `/admin/` 禁止擷取；robots 規則不是內容再利用授權。[主站著作權與隱私權頁](https://www.chimeimuseum.org/privacy)也未提供特展資料的開放授權或 API 條款。線上商店的使用條款適用於不同網域，不應直接當成主站特展資料條款。
