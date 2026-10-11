@@ -7,7 +7,9 @@
 - 使用者由 Chrome DevTools Network 觀察到 `POST https://www.chimeimuseum.org/exhibition-event/api`，payload 為 `{"date":"","tags":""}`；回應含 `specialEvent`、`permanentEvent`、`expoEvent`。三組頂層名稱已由本站單次正常公開頁流程驗證；各筆欄位與日期例子仍以使用者的 DevTools 觀察為依據，尚未逐欄建立契約測試。
 - 本機於 2026-10-11 低頻檢查：`robots.txt` 回 200，列出 `Disallow: /weyacms/`、`Disallow: /admin/`；隨後一次不帶 Cookie／session／CSRF token 的 Node POST 回 **419**、`application/json`，只見頂層 `message`，沒有三組活動資料。未嘗試繞過保護。robots 未禁止該路徑不等於資料重用授權。館方[展覽與活動頁](https://www.chimeimuseum.org/exhibition-event)的初始 HTML 使用前端模板，不能從該 HTML 推定完整活動數；[著作權與隱私權頁](https://www.chimeimuseum.org/privacy)也未提供此端點的公開介接授權。
 - 同日再由公開展覽頁正常取得匿名 `XSRF-TOKEN`、`chimeimuseum_session` cookie 與 CSRF meta，使用該次暫時 session 送出同一 POST，回 **200 JSON**；頂層三組分別有 `specialEvent=1`、`permanentEvent=4`、`expoEvent=10`。只記狀態與筆數，未保存 cookie、token 或回應全文，也未碰登入／驗證碼。這證明當次**正常公開頁流程技術上可讀**，不是公開文件化 API 或長期可用性的證據。
-- 尚未驗證官網實際顯示數與各組回應數、指定 `date`／`tags` 篩選、隱藏分頁、連續多日 schema 穩定度，以及 cookie 與 CSRF 各自是否必要。無 session 的 419 與正常公開頁流程的 200 都要保留；目前仍不能標為穩定來源。
+- 尚未完整核對官網實際顯示數與各組回應數、伺服器隱含資料上限、連續多日 schema 穩定度，以及 cookie 與 CSRF 各自是否必要。無 session 的 419 與正常公開頁流程的 200 都要保留；目前仍不能標為穩定來源。
+
+**後續實測補充**：2026-10-11 已用 Node.js 以同樣匿名流程取得 200，並核對 `date=2026-10-11`、`tags=68` 篩選；官網前端程式未見分頁參數，當日唯一限期特展日期與官方詳情頁一致。這縮小了技術風險，但仍不能證明跨日穩定、清單完整或再利用條件。詳細筆數、欄位與啟用門檻見[階段核對](stage-2026-10-11-chimei-probe.md)。
 
 ## 適配器設計（待驗證後實作）
 

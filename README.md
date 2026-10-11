@@ -30,7 +30,7 @@
 
 詳見 [需求規格](docs/requirements.md)、[API 契約](docs/api.md)、[來源盤點](docs/sources.md)、[官方 API／第三方資料源查證](docs/api-source-research.md)、[每日同步運作設計](docs/operations.md)與[後續方向（館所與 Queue）](docs/future-roadmap.md)。
 
-**奇美來源新線索（2026-10-11）**：官網展覽頁使用一個未公開文件化的內部 JSON 端點；無 session 請求回 419；使用公開頁正常發出的匿名 session／CSRF 單次重送回 200，但仍未接入自動同步，也不稱它為公開 API。[候選來源評估](docs/chimei-internal-endpoint.md)記錄分類、日期、去重及後續驗證條件。
+**奇美來源新線索（2026-10-11）**：官網展覽頁使用一個未公開文件化的內部 JSON 端點；無 session 請求回 419；公開頁正常匿名流程可由 Node.js 取得 200。`npm run probe:chimei` 可只讀重測，但尚未證明跨日穩定或接入自動同步，也不稱它為公開 API。[實測與啟用門檻](docs/stage-2026-10-11-chimei-probe.md)及[候選來源評估](docs/chimei-internal-endpoint.md)記錄細節。
 
 ## 結構
 
