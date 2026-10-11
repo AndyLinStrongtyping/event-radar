@@ -5,7 +5,7 @@
 `.github/workflows/weekly-sync.yml` 已備妥，但**尚未啟用**。預設所有同步工作與奇美每週檢查都由 `EVENT_RADAR_SYNC_ENABLED` 閘門關閉；推送程式碼只執行 CI 驗證，不會連接外部資料庫。啟用條件：
 
 1. 專案放到獨立 GitHub repo 的預設分支。
-2. 建立可從 GitHub Actions 連線的 PostgreSQL；**空白庫**執行 `npm run migrate` 即可。若沿用早期手動建表的舊庫，先備份、核對結構，再執行一次 `npm run migrate -- --baseline-existing`。這只登記已存在的 001–012；結構缺漏會拒絕，不能用基線命令跳過真正缺少的 migration。
+2. 建立可從 GitHub Actions 連線的 PostgreSQL；**空白庫**執行 `npm run migrate` 即可。既有且已有 migration 帳本的資料庫也直接執行此命令，會套用尚未執行的 013。若沿用早期手動建表、完全沒有帳本的舊庫，先備份並核對所有 migration 都已套用，再執行一次 `npm run migrate -- --baseline-existing`；結構缺漏會拒絕，不能用基線命令跳過真正缺少的 migration。
 3. Repository secrets 設 `DATABASE_URL` 與 `NMNS_API_KEY`。後者只在決定啟用線上同步時設定，切勿寫入程式碼、文件或 workflow 日誌；`NMNS_OPEN_DATA_URL` 可作展覽匯入的無金鑰備援，不能提供逐日開放時間。
 4. Repository variable 設 `EVENT_RADAR_SYNC_ENABLED=true`，先手動執行一次並確認 `ingestion_runs` 與 `/health`，才依排程運作。
 
@@ -23,7 +23,7 @@
 
 條件式請求（ETag、`If-Modified-Since`）只在官方端實際提供標頭且驗證 `304` 行為後實作。奇美官網尚未確認可自動擷取與使用條件，不列入每週資料庫同步。
 
-官方匯入若首次見到同館／provider 清單，只建立筆數基準，不做舊展缺席判斷；之後來源鍵或解析後展覽筆數由至少 4 筆跌至一半或更少、且至少少 2 筆時，`coverage_status=deferred_partial`，這次不新增或結案缺席候選。有效展覽仍會匯入，最後官方成功時間仍會更新。先查 `ingestion_runs` 的 `source_identity_count`、`source_row_count` 和兩個 `coverage_baseline_*` 欄位，再對照官方原頁；若來源真的永久縮小，目前需人工評估基準重設，沒有自動覆寫。詳見[完整度階段紀錄](stage-2026-10-10-source-coverage.md)。
+官方匯入若首次見到同館／provider 清單，只建立筆數與來源鍵基準，不做舊展缺席判斷；之後來源鍵或解析後展覽筆數由至少 4 筆跌至一半或更少、且至少少 2 筆時，`coverage_status=deferred_partial`。即使筆數不減，若上次至少 4 筆中至少 3 筆消失、且本次與上次重疊不超過四分之一，也同樣暫緩。這次不新增或結案缺席候選，也不因本批待審資料隱藏舊展；有效展覽仍會匯入，最後官方成功時間仍會更新。先查 `ingestion_runs` 的 `source_identity_count`、`source_row_count`、兩個 `coverage_baseline_*` 欄位與 `official_source_baselines.identity_keys`，再對照官方原頁。舊版筆數基準的 `identity_keys` 為 `NULL`，下一次通過筆數檢查的官方同步才建立鍵清單。真正的季節輪替也可能觸發警示；目前需人工評估，不自動覆寫異常基準。詳見[完整度階段紀錄](stage-2026-10-10-source-coverage.md)與[本階段紀錄](stage-2026-10-11-source-identity-coverage.md)。
 
 ## 本機 PostgreSQL 來源工作佇列
 

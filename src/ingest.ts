@@ -330,7 +330,7 @@ async function main(): Promise<void> {
     await client.query('COMMIT');
     inTransaction = false;
     if (counts.coverageStatus === 'deferred_partial') {
-      process.stderr.write(`官方清單疑似縮水：${museum}/${provider}，缺席判定已暫緩；請核對來源。\n`);
+      process.stderr.write(`官方清單疑似不完整或項目大幅變動：${museum}/${provider}，缺席判定已暫緩；請核對來源。\n`);
     }
     process.stdout.write(`${JSON.stringify(counts)}\n`);
   } catch (error) {

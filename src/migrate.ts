@@ -30,7 +30,7 @@ const requiredColumns: Record<string, string[]> = {
   source_missing_candidates: ['museum_id', 'source_key', 'reviewed_missed_runs'],
   source_missing_reviews: ['id', 'observed_missed_runs', 'decision'],
   source_jobs: ['id', 'idempotency_key', 'worker_token'],
-  official_source_baselines: ['museum_id', 'provider', 'row_count'],
+  official_source_baselines: ['museum_id', 'provider', 'row_count', 'identity_keys'],
 };
 const requiredIndexes = [
   'exhibitions_source_identity', 'exhibitions_dates_idx', 'exhibitions_title_idx',
@@ -68,7 +68,7 @@ try {
     `SELECT to_regclass('museums')::text AS exists`)).rows[0].exists !== null;
 
   if (!ledgerExists && legacyExists && !baselineExisting) {
-    throw new Error('偵測到舊版資料庫且沒有 migration 帳本。先備份並確認已套用 001–012，然後執行 npm run migrate -- --baseline-existing');
+    throw new Error('偵測到舊版資料庫且沒有 migration 帳本。先備份並確認已套用所有 migration，再執行 npm run migrate -- --baseline-existing');
   }
   if (baselineExisting && (ledgerExists || !legacyExists)) {
     throw new Error('--baseline-existing 只適用於已有結構、但沒有 migration 帳本的資料庫');

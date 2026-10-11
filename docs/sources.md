@@ -10,7 +10,7 @@
 | 1 | 國立臺灣歷史博物館（臺南） | https://www.nmth.gov.tw/default.aspx | 官網已找到，API 待查 | 臺灣史主題 |
 | 2 | 國立科學工藝博物館（高雄） | https://websrv.nstm.gov.tw/OtherInfo/OpenData/ExhibitionInfoOpenData.ashx | 公開 JSON 已與[官方特展列表](https://www.nstm.gov.tw/ExhibitionList.aspx?ExhibitionType=2&Period=2&Pindex=1)展名、展期唯一比對後本機匯入；無法對應者隔離 | 科學技術類與南部覆蓋 |
 | 2 | 國立海洋生物博物館（屏東） | https://www.nmmba.gov.tw/OpenData.aspx?SN=BF6D6EB9CB6876BB | 官方公開 JSON 已接入本機；缺展期隔離待審，尚未線上同步 | 海洋生物特展及南部覆蓋 |
-| 2 | 國立臺灣科學教育館（臺北） | https://www.ntsec.gov.tw/ | 官網常設展與特展頁已找到，API 待查 | 人體、生態、物質科學與科技教育 |
+| 2 | 國立臺灣科學教育館（臺北） | https://www.ntsec.gov.tw/article/list.aspx?a=25 | 官網特展列表可匿名讀取；部分項目缺完整展期或連外部售票頁，尚無可安全納入每週同步的 adapter；API 待查 | 人體、生態、物質科學與科技教育 |
 | 2 | 國立臺灣美術館（臺中） | https://www.ntmofa.gov.tw/ | 官網當期展覽頁已找到，API 待查 | 美術類與中部覆蓋 |
 | 2 | 臺南市美術館（臺南） | https://www.tnam.museum/ | 官網展覽頁已找到，API 待查 | 美術類與在地覆蓋 |
 

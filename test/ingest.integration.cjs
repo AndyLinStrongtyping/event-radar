@@ -195,16 +195,16 @@ async function main() {
       cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href }, encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-  assert.match(migrate(), /新套用 12 份/, '空白資料庫應由單一命令建立');
+  assert.match(migrate(), /新套用 13 份/, '空白資料庫應由單一命令建立');
   assert.match(migrate(), /新套用 0 份/, '重跑不得重建表或重複寫入');
   let ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 12);
-  // 模擬舊版手動執行 001–012 的資料庫；只有明確指定時才建立帳本。
+  assert.equal(ledger.rows[0].count, 13);
+  // 模擬舊版手動執行所有 migration 的資料庫；只有明確指定時才建立帳本。
   await testDb.query('DROP TABLE schema_migrations');
   assert.throws(() => migrate(), /舊版資料庫且沒有 migration 帳本/);
   assert.match(migrate('--baseline-existing'), /新套用 0 份/);
   ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 12);
+  assert.equal(ledger.rows[0].count, 13);
   assert.match(migrate(), /新套用 0 份/);
   const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
   async function checkCoverage(keys, rawKeys = []) {
@@ -236,6 +236,14 @@ async function main() {
   assert.deepEqual(await checkCoverage(allKeys),
     { status: 'checked', identityCount: 6, baselineCount: 6,
       rowCount: 6, baselineRowCount: 6 });
+  assert.deepEqual(await checkCoverage(['a', 'x', 'y', 'z', 'q', 'r']),
+    { status: 'deferred_partial', identityCount: 6, baselineCount: 6,
+      rowCount: 6, baselineRowCount: 6 },
+    '筆數相同但來源鍵幾乎全換，也不得判定舊展已從官方清單消失');
+  const preservedKeys = await testDb.query(`SELECT identity_keys FROM official_source_baselines
+    WHERE museum_id='ntm' AND provider='ntm'`);
+  assert.deepEqual(preservedKeys.rows[0].identity_keys, allKeys,
+    '疑似清單替換不得覆寫上次可信來源鍵');
   assert.deepEqual(await checkCoverage(allKeys.slice(0, 5)),
     { status: 'checked', identityCount: 5, baselineCount: 6,
       rowCount: 5, baselineRowCount: 6 });
@@ -260,12 +268,12 @@ async function main() {
   await writeFile(nstmFullHtml, nstmCards.join(''), 'utf8');
   await writeFile(nstmPartialHtml, nstmCards.slice(0, 2).join(''), 'utf8');
   await writeFile(nstmUnmatchedHtml, nstmCards[0].replace(nstmData[0].ExhibitionName, '未配對的展覽'), 'utf8');
-  function ingestMockNstm(htmlPath) {
+  function ingestMockNstm(htmlPath, jsonPath = nstmJson) {
     return JSON.parse(execFileSync(process.execPath,
       ['--import', pathToFileURL(join(project, 'test/fixtures/mock-nstm-fetch.mjs')).href,
         '--experimental-strip-types', 'src/ingest.ts', '--source', 'nstm', '--official'],
       { cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href,
-        TEST_NSTM_JSON: nstmJson, TEST_NSTM_HTML: htmlPath }, encoding: 'utf8' }));
+        TEST_NSTM_JSON: jsonPath, TEST_NSTM_HTML: htmlPath }, encoding: 'utf8' }));
   }
   assert.equal(ingestMockNstm(nstmFullHtml).coverageStatus, 'baseline_created');
   let nstmVisibility = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nstm' AND visible");
@@ -654,6 +662,21 @@ async function main() {
     '官方完整清單恢復後應重新通過完整度檢查');
   nstmVisibility = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nstm' AND visible");
   assert.equal(nstmVisibility.rows[0].count, 6);
+  const replacedData = nstmData.map((entry, index) => ({
+    ...entry, ExhibitionName: `另一批科工館展覽${index + 1}`,
+  }));
+  const replacedJson = await fixture('nstm-replaced.json', replacedData);
+  const replacedHtml = join(directory, 'nstm-replaced.html');
+  files.push(replacedHtml);
+  await writeFile(replacedHtml, replacedData.map((entry, index) => `<div class="exhi_data_list">
+    <span><i>展覽日期：</i>115-01-01 ~ 188-12-31</span>
+    <a href="/Exhibition.aspx?KeyID=00000000-0000-0000-0000-${String(index + 101).padStart(12, '0')}"
+      title="${entry.ExhibitionName}">詳情</a></div>`).join(''), 'utf8');
+  assert.equal(ingestMockNstm(replacedHtml, replacedJson).coverageStatus, 'deferred_partial',
+    '清單筆數維持六筆但來源鍵全部換掉時，須暫緩缺席判定');
+  const missingAfterReplacement = await testDb.query(`SELECT count(*)::int AS count
+    FROM source_missing_candidates WHERE museum_id='nstm' AND status='pending'`);
+  assert.equal(missingAfterReplacement.rows[0].count, 0);
   const { enqueueSourceJob, claimSourceJob, finishSourceJob, replayDeadJob } =
     await import('../src/source-jobs.ts');
   const queuedSea = await enqueueSourceJob(testDb, 'nmmba', '2026-10-10');
