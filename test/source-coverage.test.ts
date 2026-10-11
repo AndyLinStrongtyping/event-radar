@@ -6,7 +6,10 @@ test('large official list drops require manual source review before missing dete
   assert.equal(isSuspiciousDrop(6, 2), true);
   assert.equal(isSuspiciousDrop(4, 2), true);
   assert.equal(isSuspiciousDrop(6, 5), false);
-  assert.equal(isSuspiciousDrop(3, 1), false);
+  assert.equal(isSuspiciousDrop(3, 1), true);
+  assert.equal(isSuspiciousDrop(3, 2), false);
+  assert.equal(isSuspiciousDrop(2, 1), true);
+  assert.equal(isSuspiciousDrop(1, 0), false);
 });
 
 test('same-size official lists with mostly different identities require review', () => {

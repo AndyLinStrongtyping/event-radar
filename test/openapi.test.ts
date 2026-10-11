@@ -16,7 +16,7 @@ test('OpenAPI 文件可解析，公開路由與所有引用存在', () => {
   const paths = api.paths as Record<string, unknown>;
   assert.deepEqual(Object.keys(paths).sort(), [
     '/chimei-activities.json', '/health', '/museums', '/visit-status', '/exhibitions',
-    '/exhibitions/{id}', '/exhibitions/{id}/changes',
+    '/exhibitions/{id}', '/exhibitions/{id}/changes', '/exhibitions/{id}/art-changes',
   ].sort());
   function checkRefs(value: unknown): void {
     if (!value || typeof value !== 'object') return;
@@ -52,4 +52,8 @@ test('OpenAPI 回應驗證能抓出 enum 與巢狀票務格式錯誤', () => {
   /generalAdmission\.purchaseUrl.*string/);
   assert.throws(() => assertOpenApiResponse('/museums', 200,
     { items: [{ ...museum, dataStatus: undefined }] }), /dataStatus.*enum/);
+  assert.throws(() => assertOpenApiResponse(
+    '/exhibitions/00000000-0000-0000-0000-000000000000/art-changes', 200,
+    { items: [{ field: 'artistNames', oldValue: ['甲'], newValue: [42],
+      detectedAt: '2026-10-11T00:00:00Z' }] }), /newValue.*anyOf/);
 });

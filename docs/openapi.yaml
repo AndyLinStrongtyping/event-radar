@@ -182,6 +182,29 @@ paths:
                     items: { $ref: '#/components/schemas/ExhibitionChange' }
         '404': { $ref: '#/components/responses/NotFound' }
         '500': { $ref: '#/components/responses/InternalError' }
+  /exhibitions/{id}/art-changes:
+    get:
+      summary: 最近 100 筆美術展欄位異動
+      operationId: listArtExhibitionChanges
+      parameters:
+        - { $ref: '#/components/parameters/ExhibitionId' }
+        - name: includeSample
+          in: query
+          schema: { type: boolean, default: false }
+      responses:
+        '200':
+          description: 美術展異動列表；一般博物館展覽回傳空陣列
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: '#/components/schemas/ArtExhibitionChange' }
+        '404': { $ref: '#/components/responses/NotFound' }
+        '500': { $ref: '#/components/responses/InternalError' }
 components:
   parameters:
     ExhibitionId:
@@ -305,13 +328,14 @@ components:
         floor: { type: string, nullable: true }
         relatedEvents:
           type: array
-          items:
-            type: object
-            required: [title, sourceUrl, eventType]
-            properties:
-              title: { type: string }
-              sourceUrl: { type: string, format: uri }
-              eventType: { type: string, enum: [lecture, guided_tour, workshop, other] }
+          items: { $ref: '#/components/schemas/ArtRelatedEvent' }
+    ArtRelatedEvent:
+      type: object
+      required: [title, sourceUrl, eventType]
+      properties:
+        title: { type: string }
+        sourceUrl: { type: string, format: uri }
+        eventType: { type: string, enum: [lecture, guided_tour, workshop, other] }
     ExhibitionChange:
       type: object
       required: [field, oldValue, newValue, detectedAt]
@@ -319,6 +343,20 @@ components:
         field: { type: string, enum: [title, venue, startDate, endDate, priceNote, sourceUrl, summary] }
         oldValue: { type: string, nullable: true }
         newValue: { type: string, nullable: true }
+        detectedAt: { type: string, format: date-time }
+    ArtChangeValue:
+      nullable: true
+      anyOf:
+        - { type: string }
+        - { type: array, items: { type: string } }
+        - { type: array, items: { $ref: '#/components/schemas/ArtRelatedEvent' } }
+    ArtExhibitionChange:
+      type: object
+      required: [field, oldValue, newValue, detectedAt]
+      properties:
+        field: { type: string, enum: [artistNames, curatorNames, exhibitionType, venueArea, floor, relatedEvents] }
+        oldValue: { $ref: '#/components/schemas/ArtChangeValue' }
+        newValue: { $ref: '#/components/schemas/ArtChangeValue' }
         detectedAt: { type: string, format: date-time }
     VisitStatus:
       type: object

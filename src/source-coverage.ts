@@ -14,7 +14,9 @@ export type CoverageResult = {
 
 // A count is only a warning signal: it cannot prove that a source list is complete.
 export function isSuspiciousDrop(baseline: number, current: number): boolean {
-  return baseline >= 4 && baseline - current >= 2 && current * 2 <= baseline;
+  if (baseline < 2 || current >= baseline) return false;
+  if (baseline < 4) return current * 2 <= baseline;
+  return baseline - current >= 2 && current * 2 <= baseline;
 }
 
 // Equal-size batches can also be incomplete when a parser starts selecting an

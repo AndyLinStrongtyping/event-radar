@@ -147,6 +147,10 @@ async function checkPublicApiContract() {
     assert.equal(artList.items[0].art.relatedEvents[0].eventType, 'workshop');
     const artDetail = await get(`/exhibitions/${artList.items[0].id}`);
     assert.deepEqual(artDetail.art.artistNames, ['乙藝術家']);
+    const artChanges = await get(`/exhibitions/${artDetail.id}/art-changes`);
+    assert.deepEqual(artChanges.items.map((change) => change.field), ['artistNames']);
+    assert.deepEqual(artChanges.items[0].oldValue, ['甲藝術家']);
+    assert.deepEqual(artChanges.items[0].newValue, ['乙藝術家']);
 
     const list = await get('/exhibitions?from=2026-01-01&to=2027-12-31&museum=chimei&limit=2');
     assert.equal(typeof list.total, 'number');
@@ -160,6 +164,8 @@ async function checkPublicApiContract() {
     const detail = await get(`/exhibitions/${list.items[0].id}`);
     assertExhibition(detail);
     assert.deepEqual(detail, list.items[0], '清單與詳情的 Exhibition 格式需一致');
+    const noArtChanges = await get(`/exhibitions/${detail.id}/art-changes`);
+    assert.deepEqual(noArtChanges.items, []);
     const changes = await get(`/exhibitions/${detail.id}/changes`);
     assert.ok(Array.isArray(changes.items));
     assert.ok(changes.items.length > 0, '測試資料須有可驗證的異動紀錄');
@@ -237,13 +243,13 @@ async function main() {
   assert.equal(ledger.rows[0].count, 16);
   assert.match(migrate(), /新套用 0 份/);
   const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
-  async function checkCoverage(keys, rawKeys = []) {
+  async function checkCoverage(keys, rawKeys = [], provider = 'ntm') {
     const run = await testDb.query(`INSERT INTO ingestion_runs(museum_id,provider,status)
-      VALUES ('ntm','ntm','running') RETURNING id`);
+      VALUES ('ntm',$1,'running') RETURNING id`, [provider]);
     const client = await testDb.connect();
     try {
       await client.query('BEGIN');
-      const coverage = await assessOfficialSourceCoverage(client, 'ntm', 'ntm', run.rows[0].id,
+      const coverage = await assessOfficialSourceCoverage(client, 'ntm', provider, run.rows[0].id,
         keys.map((sourceKey) => ({ sourceKey })),
         rawKeys.map((sourceKey) => ({ sourceKey })));
       await client.query('COMMIT');
@@ -283,6 +289,17 @@ async function main() {
       identityKeys: allKeys.slice(0, 5), baselineCount: 5,
       rowCount: 2, baselineRowCount: 5 },
     '原始紀錄仍完整但解析後可公開展覽驟減，也必須暫緩缺席判定');
+  const smallRawKeys = Array.from({ length: 12 }, (_, index) => `source-${index}`);
+  assert.equal((await checkCoverage(['a', 'b', 'c'], smallRawKeys, 'small-list')).status,
+    'baseline_created');
+  const smallCoverage = await checkCoverage(['a'], smallRawKeys, 'small-list');
+  assert.equal(smallCoverage.status, 'deferred_partial',
+    '來源卡片數不變時，三筆公開展剩一筆仍須人工核對');
+  assert.equal(smallCoverage.identityCount, 13);
+  assert.equal(smallCoverage.baselineRowCount, 3);
+  const smallBaseline = await testDb.query(`SELECT row_count FROM official_source_baselines
+    WHERE museum_id='ntm' AND provider='small-list'`);
+  assert.equal(smallBaseline.rows[0].row_count, 3, '小清單疑似縮水不得覆寫可信基準');
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const artUrl = 'https://event.culture.tw/mocweb/reg/NTMOFA/Detail.init.ctr?actId=60146';
   const artTitle = '測試藝術教育展';

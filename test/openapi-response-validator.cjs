@@ -40,12 +40,21 @@ function assertFormat(value, format, location) {
 
 function assertSchema(schema, value, location) {
   if (schema.$ref) return assertSchema(resolveRef(schema.$ref), value, location);
-  for (const keyword of ['oneOf', 'anyOf', 'not']) {
+  for (const keyword of ['oneOf', 'not']) {
     assert.ok(!Object.hasOwn(schema, keyword), `${location} 出現未支援的 OpenAPI ${keyword}`);
   }
   if (value === null) {
     assert.equal(schema.nullable, true, `${location} 不允許 null`);
     return;
+  }
+  if (schema.anyOf) {
+    let matches = 0;
+    for (const part of schema.anyOf) {
+      try { assertSchema(part, value, location); matches += 1; } catch (error) {
+        if (!(error instanceof assert.AssertionError)) throw error;
+      }
+    }
+    assert.ok(matches >= 1, `${location} 必須符合 anyOf 的其中一個分支`);
   }
   if (schema.allOf) schema.allOf.forEach((part) => assertSchema(part, value, location));
   if (schema.enum) {
@@ -86,6 +95,7 @@ function routeTemplate(path) {
   const pathname = new URL(path, 'http://127.0.0.1').pathname;
   if (spec.paths[pathname]) return pathname;
   if (/^\/exhibitions\/[^/]+\/changes$/.test(pathname)) return '/exhibitions/{id}/changes';
+  if (/^\/exhibitions\/[^/]+\/art-changes$/.test(pathname)) return '/exhibitions/{id}/art-changes';
   if (/^\/exhibitions\/[^/]+$/.test(pathname)) return '/exhibitions/{id}';
   assert.fail(`OpenAPI 沒有宣告 ${pathname}`);
 }

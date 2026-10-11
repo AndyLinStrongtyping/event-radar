@@ -14,6 +14,7 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 | GET | `/exhibitions` | 搜尋特展 |
 | GET | `/exhibitions/:id` | 特展詳情 |
 | GET | `/exhibitions/:id/changes` | 欄位異動紀錄（最近 100 筆） |
+| GET | `/exhibitions/:id/art-changes` | 美術展欄位異動紀錄（最近 100 筆） |
 
 另外 `GET /chimei-activities.json` 回傳 `{checkedAt, sourceUrl, items}`；每筆含 `id, title, dateText, type, sourceUrl`。`dateText` 是清理 HTML 後的館方時間原文，可能包含售票日，不可直接視為活動日期。頁面及 API 使用者應開啟 `sourceUrl` 核對最新場次與票務。
 
@@ -33,6 +34,6 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 
 `sourceStatus` 分為 `curated`（人工核對）、`open_data`（官方公開資料）、`official_page`（館方公開頁同步）與 `planned`（尚未接入）。`GET /exhibitions/:id/changes` 回傳 `{ "items": [{ "field": "endDate", "oldValue": "2026-12-06", "newValue": "2026-12-07", "detectedAt": "..." }] }`；沒有異動時為空陣列，不表示資料未曾被核對。
 
-`GET /museums` 另有 `venueType`（`museum`／`art_museum`）。`Exhibition.art` 對一般博物館是 `null`；已核對的國美館限期展回傳 `artistNames`、`curatorNames`、`exhibitionType`、`venueArea`、`floor` 與 `relatedEvents`。來源未明載人物名稱時是空陣列，不以介紹文章中的泛稱推測。相關活動只提供官方連結與類型，**不代表該場次仍可報名**。美術欄位的異動保存在 `art_exhibition_changes`；目前 `/exhibitions/:id/changes` 仍只查共通展覽欄位，尚未對外提供美術異動歷史。
+`GET /museums` 另有 `venueType`（`museum`／`art_museum`）。`Exhibition.art` 對一般博物館是 `null`；已核對的國美館限期展回傳 `artistNames`、`curatorNames`、`exhibitionType`、`venueArea`、`floor` 與 `relatedEvents`。來源未明載人物名稱時是空陣列，不以介紹文章中的泛稱推測。相關活動只提供官方連結與類型，**不代表該場次仍可報名**。`/exhibitions/:id/changes` 查共通展覽欄位；`/exhibitions/:id/art-changes` 查美術欄位，回傳同樣的 `items` 結構，其中 `oldValue`／`newValue` 依欄位為字串、字串陣列、相關活動物件陣列或 `null`。一般博物館展覽的美術異動列表為空；隱藏或模擬展覽沿用詳情端點的 404／`includeSample=true` 規則。
 
 CI 的 `npm run test:integration` 會建立隔離 PostgreSQL 資料庫、匯入測試展覽並啟動真正的 HTTP 服務，驗證以上端點的狀態碼、JSON 欄位與型別、日期／官方連結格式、清單與詳情一致性、空結果、異動紀錄及 400／404 錯誤格式。外部館方 API 的即時內容不作為 CI 的固定預期值；來源解析與無效資料隔離由固定樣本測試驗證，避免館方改資料或網路故障讓 CI 產生誤判。
