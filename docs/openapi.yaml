@@ -204,7 +204,7 @@ components:
         note: { type: string }
     Museum:
       type: object
-      required: [id, name, city, homepageUrl, sourceStatus, lastSuccessAt, lastOfficialSuccessAt, lastAttemptStatus, lastAttemptAt, coverageStatus, dataStatus, generalAdmission]
+      required: [id, name, city, homepageUrl, sourceStatus, lastSuccessAt, lastOfficialSuccessAt, lastAttemptStatus, lastAttemptAt, coverageStatus, pendingReviewCount, dataStatus, generalAdmission]
       properties:
         id: { type: string }
         name: { type: string }
@@ -216,6 +216,7 @@ components:
         lastAttemptStatus: { type: string, enum: [succeeded, failed], nullable: true }
         lastAttemptAt: { type: string, format: date-time, nullable: true }
         coverageStatus: { type: string, enum: [baseline_created, checked, deferred_partial], nullable: true }
+        pendingReviewCount: { type: integer, minimum: 0 }
         dataStatus: { type: string, enum: [manual, planned, never, untracked, failed, stale, recent] }
         generalAdmission:
           description: 未核對一般入館票時為 null

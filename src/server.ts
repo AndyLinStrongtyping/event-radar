@@ -111,13 +111,16 @@ const server = createServer(async (request, response) => {
         source_status AS "sourceStatus",last_success_at AS "lastSuccessAt",
         last_official_success_at AS "lastOfficialSuccessAt",
         latest.status AS "lastAttemptStatus",latest.created_at AS "lastAttemptAt",
-        coverage.coverage_status AS "coverageStatus"
+        coverage.coverage_status AS "coverageStatus",
+        COALESCE(pending.review_count,0)::int AS "pendingReviewCount"
         FROM museums m
         LEFT JOIN LATERAL (SELECT status,created_at FROM sync_attempts
           WHERE museum_id=m.id ORDER BY created_at DESC,id DESC LIMIT 1) latest ON true
         LEFT JOIN LATERAL (SELECT coverage_status FROM ingestion_runs
           WHERE museum_id=m.id AND coverage_status <> 'not_applicable'
           ORDER BY started_at DESC,id DESC LIMIT 1) coverage ON true
+        LEFT JOIN LATERAL (SELECT count(*)::int AS review_count FROM source_records
+          WHERE museum_id=m.id AND status='review') pending ON true
         ORDER BY name`);
       const now = new Date();
       json(response, 200, { items: result.rows.map((museum) => ({

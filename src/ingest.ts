@@ -335,7 +335,9 @@ async function main(): Promise<void> {
     if (counts.coverageStatus === 'deferred_partial') {
       process.stderr.write(`官方清單疑似不完整或項目大幅變動：${museum}/${provider}，缺席判定已暫緩；請核對來源。\n`);
     }
-    process.stdout.write(`${JSON.stringify(counts)}\n`);
+    // Full identity snapshots stay in ingestion_runs for review; routine CLI logs
+    // only need counts, so a large source cannot flood CI output.
+    process.stdout.write(`${JSON.stringify({ ...counts, sourceIdentityKeys: undefined })}\n`);
   } catch (error) {
     if (inTransaction) await client.query('ROLLBACK');
     if (runId) await client.query(`UPDATE ingestion_runs SET status='failed',finished_at=now(),

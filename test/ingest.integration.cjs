@@ -103,6 +103,9 @@ async function checkPublicApiContract() {
 
     const museums = await get('/museums');
     assert.ok(Array.isArray(museums.items) && museums.items.length > 0);
+    const pending = await testDb.query(`SELECT museum_id,count(*)::int AS count
+      FROM source_records WHERE status='review' GROUP BY museum_id`);
+    const pendingByMuseum = new Map(pending.rows.map((row) => [row.museum_id, row.count]));
     for (const museum of museums.items) {
       for (const field of ['id', 'name', 'city', 'homepageUrl', 'sourceStatus']) {
         assert.equal(typeof museum[field], 'string', `museum.${field} 必須是字串`);
@@ -114,6 +117,9 @@ async function checkPublicApiContract() {
       assert.ok(['manual', 'planned', 'never', 'untracked', 'failed', 'stale', 'recent'].includes(museum.dataStatus));
       assert.ok(museum.coverageStatus === null
         || ['baseline_created', 'checked', 'deferred_partial'].includes(museum.coverageStatus));
+      assert.ok(Number.isInteger(museum.pendingReviewCount) && museum.pendingReviewCount >= 0);
+      assert.equal(museum.pendingReviewCount, pendingByMuseum.get(museum.id) ?? 0,
+        `${museum.id} 的公開待審筆數須與資料庫一致`);
       assert.ok(museum.generalAdmission === null || typeof museum.generalAdmission === 'object');
     }
     assert.equal(museums.items.find((museum) => museum.id === 'chimei').dataStatus, 'manual');

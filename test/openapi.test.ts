@@ -42,7 +42,7 @@ test('OpenAPI 回應驗證能抓出 enum 與巢狀票務格式錯誤', () => {
     id: 'chimei', name: '奇美博物館', city: '臺南市', homepageUrl: 'https://www.chimeimuseum.org/',
     sourceStatus: 'curated', lastSuccessAt: null, lastOfficialSuccessAt: null,
     lastAttemptStatus: null, lastAttemptAt: null, coverageStatus: null,
-    dataStatus: 'manual', generalAdmission: null,
+    pendingReviewCount: 0, dataStatus: 'manual', generalAdmission: null,
   };
   assertOpenApiResponse('/museums', 200, { items: [museum] });
   const price = { label: '一般票', price: '以官網為準', infoUrl: 'https://www.chimeimuseum.org/',

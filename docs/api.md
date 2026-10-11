@@ -19,6 +19,8 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 
 每個館所另有 `coverageStatus`：`baseline_created`（第一次建立比較基準）、`checked`（未達筆數縮水或來源鍵大幅替換門檻）、`deferred_partial`（清單疑似不完整或項目大幅變動，需核對館方）或 `null`（尚無官方完整度判定）。它獨立於 `dataStatus`；「最近取得來源」不表示展覽清單完整。公開網站在 `deferred_partial` 時顯示警示。
 
+`pendingReviewCount` 是該館目前 `source_records.status='review'` 的筆數，不等於當期特展數；可能含歷史資料、缺展期或無法核對的來源列。網站會提示此數量，但這些資料不進公開搜尋。`dataStatus=recent` 只表示近期曾成功取得官方來源，兩者可以同時成立。
+
 400：參數錯誤；404：找不到資源；500：伺服器錯誤。`/health` 在啟動後資料庫暫時不可查時回 503／`NOT_READY`；啟動當下若無法連線則不監聽。v0.1 不開放公開寫入 API，匯入由 CLI 執行。
 
 `GET /exhibitions/:id` 同樣預設隱藏模擬資料；開發時可加 `?includeSample=true` 查看。
