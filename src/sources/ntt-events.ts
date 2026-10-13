@@ -20,11 +20,12 @@ function nttUrl(raw: string): URL {
   return url;
 }
 
-export function nttDetailUrls(listHtml: string, max = 5): string[] {
+export function nttDetailUrls(listHtml: string, max = 30): string[] {
+  if (!Number.isInteger(max) || max < 1 || max > 30) throw new Error('歌劇院清單上限無效');
   const urls = new Set<string>();
   for (const match of listHtml.matchAll(/<a\b[^>]*class="[^"]*img-link[^"]*"[^>]*href="([^"]+)"/gi)) {
     try { urls.add(nttUrl(match[1]).href); } catch { /* Other cards do not enter this source. */ }
-    if (urls.size >= max) break;
+    if (urls.size > max) throw new Error('歌劇院初始清單超過安全上限，停止匯入並檢查分頁');
   }
   if (!urls.size) throw new Error('歌劇院節目清單沒有可辨識詳情網址');
   return [...urls];

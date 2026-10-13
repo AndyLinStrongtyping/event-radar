@@ -20,6 +20,15 @@ test('歌劇院節目詳情轉成兩個獨立場次，不臆測售罄', () => {
   assert.throws(() => parseNttDetail(html.replace('2026/10/29','2026/02/30'),url), /日期無效/);
 });
 
+test('歌劇院初始清單不默默截成五筆，超過匯入上限則停止', () => {
+  const cards = Array.from({ length: 6 }, (_, index) =>
+    `<a class="img-link img-cover" href="/program/events/c-test${String(index).padStart(8, '0')}">節目</a>`).join('');
+  const urls = nttDetailUrls(cards);
+  assert.equal(urls.length, 6);
+  assert.throws(() => nttDetailUrls(cards, 5), /超過安全上限/);
+  assert.deepEqual(nttDetailUrls(cards + cards), urls, '同一清單的重複連結不重抓');
+});
+
 test('海生館每日節目只接受可核對的日期、場次數與地點', () => {
   const card = `<li><img src="/x.jpg"><ul class="my-card"><li><h3>大洋池餵食</h3></li>
     <li class="hide-obj"><span>時間：</span>每日2場，10:00、13:00</li>

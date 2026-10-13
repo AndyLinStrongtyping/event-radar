@@ -32,6 +32,7 @@ async function main(): Promise<void> {
   try {
     if (source === 'ntt') {
       let details: { url: string; html: string }[];
+      let coverage = '人工提供的歌劇院詳情或快照；不代表完整清單';
       if (snapshot) {
         const input = JSON.parse(await readFile(snapshot,'utf8')) as { checkedAt?: string; details?: { url: string; html: string }[] };
         if (!Array.isArray(input.details) || !input.details.length) throw new Error('歌劇院快照缺詳情');
@@ -42,13 +43,17 @@ async function main(): Promise<void> {
       else {
         const urls = nttDetailUrls(await officialHtml(nttListUrl,'www.npac-ntt.org'));
         details = [];
-        for (const url of urls) details.push({ url, html: await officialHtml(url,'www.npac-ntt.org') });
+        coverage = `官方初始清單 ${urls.length} 筆；MORE 後續內容尚未涵蓋`;
+        for (const url of urls) {
+          if (details.length) await new Promise((resolve) => setTimeout(resolve, 2_000));
+          details.push({ url, html: await officialHtml(url,'www.npac-ntt.org') });
+        }
       }
       const rows = details.map(({url,html}) => parseNttDetail(html,url));
       const scope = detail || (snapshot && details.length === 1) ? 'single_detail' : 'sampled_list';
       const counts = await importDomainEvents(pool,rows,scope,checkedAt);
       process.stdout.write(JSON.stringify({ source,scope,
-        accepted:rows.length,...counts,coverage:'僅官方首頁樣本；未處理 MORE 分頁或全站清單' })+'\n');
+        accepted:rows.length,...counts,coverage })+'\n');
     } else {
       const input = snapshot ? JSON.parse(await readFile(snapshot,'utf8')) as { html?: string; observedOn?: string; checkedAt?: string } : null;
       if (input && (!input.checkedAt || Number.isNaN(Date.parse(input.checkedAt)))) throw new Error('海生館快照缺核對時間');
