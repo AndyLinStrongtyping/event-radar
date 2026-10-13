@@ -2,6 +2,13 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { nttDetailUrls, parseNttDetail } from '../src/sources/ntt-events.ts';
 import { parseNmmbaProgrammes } from '../src/sources/nmmba-programmes.ts';
+import { severeDailyShrink } from '../src/domain-events.ts';
+
+test('海生館每日清單大幅縮水須隔離，但小幅自然變動可繼續核對', () => {
+  assert.equal(severeDailyShrink(9, 4), true);
+  assert.equal(severeDailyShrink(9, 5), false);
+  assert.equal(severeDailyShrink(3, 1), false, '少量基準不可輕易判為異常');
+});
 
 test('歌劇院節目詳情轉成兩個獨立場次，不臆測售罄', () => {
   const url = 'https://www.npac-ntt.org/program/events/c-tv0mE3YHxoF';

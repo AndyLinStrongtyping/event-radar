@@ -8,6 +8,10 @@ export type DomainScope = 'single_detail' | 'sampled_list' | 'daily_page';
 
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
+export function severeDailyShrink(previousCount: number, currentCount: number): boolean {
+  return previousCount >= 4 && currentCount < Math.ceil(previousCount / 2);
+}
+
 async function change(client: pg.PoolClient, id: string, field: string, oldValue: unknown, newValue: unknown) {
   if (JSON.stringify(oldValue) === JSON.stringify(newValue)) return false;
   await client.query(`INSERT INTO domain_event_changes(event_id,field_name,old_value,new_value)
@@ -38,6 +42,15 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
   try {
     await client.query('BEGIN'); transaction = true;
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`domain:${sourceId}`]);
+    if (scope === 'daily_page') {
+      const previous = await client.query<{ accepted_count: number }>(`SELECT accepted_count
+        FROM domain_source_runs WHERE source_id=$1 AND scope='daily_page' AND status='succeeded'
+        ORDER BY finished_at DESC,id DESC LIMIT 1`, [sourceId]);
+      const previousCount = previous.rows[0]?.accepted_count ?? 0;
+      if (severeDailyShrink(previousCount, rows.length)) {
+        throw new Error(`SOURCE_ANOMALY：海生館當日節目從 ${previousCount} 筆降至 ${rows.length} 筆，需人工核對`);
+      }
+    }
     const counts = { inserted: 0, updated: 0, unchanged: 0 };
     for (const row of rows) {
       const detail = row.domain === 'performance' ? normalizedSessions(row) : normalizedTimes(row);

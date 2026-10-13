@@ -29,7 +29,7 @@ paths:
     get:
       summary: 查詢海生館當日觀察到的每日節目表
       operationId: listMarineProgrammes
-      description: observedOn 是官網當日節目表日期；不得推定未來日期或特殊開館。
+      description: 只回傳最近一次成功匯入的節目；observedOn 是官網當日節目表日期，舊觀察紀錄不混入清單。資料不能推定未來日期或特殊開館。
       parameters:
         - { name: source, in: query, schema: { type: string } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }

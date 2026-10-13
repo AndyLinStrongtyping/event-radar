@@ -151,7 +151,10 @@ const server = createServer(async (request, response) => {
       const offset = numeric(url.searchParams.get('offset'), 0, 100000, 'offset');
       const sourceId = url.searchParams.get('source')?.trim() || null;
       if (sourceId && !/^[a-z0-9-]{1,40}$/.test(sourceId)) throw new Error('篩選參數無效');
-      const conditions = `d.domain=$1 AND ($2::text IS NULL OR d.source_id=$2)`;
+      const conditions = `d.domain=$1 AND ($2::text IS NULL OR d.source_id=$2)
+        AND ($1::text <> 'marine' OR d.source_checked_at = (
+          SELECT max(latest.source_checked_at) FROM domain_events latest
+          WHERE latest.domain='marine' AND latest.source_id=d.source_id))`;
       const [items, count] = await Promise.all([
         pool.query(`SELECT d.id,d.source_id AS "sourceId",d.source_key AS "sourceKey",
           d.domain,d.title,d.venue,d.source_url AS "sourceUrl",d.ticket_url AS "ticketUrl",

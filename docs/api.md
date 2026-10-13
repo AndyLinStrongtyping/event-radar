@@ -40,6 +40,6 @@ CI 的 `npm run test:integration` 會建立隔離 PostgreSQL 資料庫、匯入�
 
 ## Phase 3／4 節目資料
 
-`GET /performances?source=ntt` 回傳節目與 `sessions[]`，每場含 `startsAt`、`hall`、`ticketUrl`、可空的 `priceMin/priceMax` 和 `status`。目前只讀取臺中國家歌劇院官方清單首頁最多五筆詳情；`scheduled` 只表示館方列有場次，不表示尚有餘票。來源上消失的場次標為 `unknown`，不自動判定取消。票價因平日／假日等差異無法安全拆分時維持 `null`，保留原文 `priceNote`。
+`GET /performances?source=ntt` 回傳節目與 `sessions[]`，每場含 `startsAt`、`hall`、`ticketUrl`、可空的 `priceMin/priceMax` 和 `status`。手動同步讀取臺中國家歌劇院官網初始清單所有可辨識詳情，單批最多 30 筆，超出即停止；「MORE」後續節目仍未涵蓋。`scheduled` 只表示館方列有場次，不表示尚有餘票。來源上消失的場次標為 `unknown`，不自動判定取消。票價因平日／假日等差異無法安全拆分時維持 `null`，保留原文 `priceNote`。
 
-`GET /marine-programmes?source=nmmba` 回傳官網當日節目表的 `dailySchedule[]` 與 `observedOn`。`localTime` 是臺灣本地時刻；不得把昨日觀察推定為明日必有活動，也不可用節目表推定特殊日開館。兩條 API 均支援 `limit`（1–100）與 `offset`，來源時間由 `sourceCheckedAt` 回傳，詳見 [OpenAPI](openapi.yaml)。本機手動同步指令為 `npm run sync:domain -- --source ntt` 或 `--source nmmba`，未進入線上排程。
+`GET /marine-programmes?source=nmmba` 只回傳最近一次成功匯入的官網當日節目表，包含 `dailySchedule[]` 與 `observedOn`；較早觀察日的紀錄仍保留於資料庫供追查，但不混入此清單。若新清單從至少四筆的上次成功基準突然降到不足一半，匯入以 `SOURCE_ANOMALY` 失敗並保留上次成功資料，待人工核對。`localTime` 是臺灣本地時刻；不得把昨日觀察推定為明日必有活動，也不可用節目表推定特殊日開館。兩條 API 均支援 `limit`（1–100）與 `offset`，來源時間由 `sourceCheckedAt` 回傳，詳見 [OpenAPI](openapi.yaml)。本機手動同步指令為 `npm run sync:domain -- --source ntt` 或 `--source nmmba`，未進入線上排程。

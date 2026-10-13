@@ -790,6 +790,28 @@ async function main() {
   const domainChanges = await testDb.query(`SELECT field_name FROM domain_event_changes ORDER BY field_name`);
   assert.deepEqual(domainChanges.rows.map((row) => row.field_name), ['recurringSchedule','sessions']);
   await checkPublicApiContract();
+  const marineBatch = Array.from({ length: 5 }, (_, index) => ({
+    ...marineProgramme, sourceKey:`每日節目${index}|區${index}`,
+    title:`每日節目${index}`, venue:`區${index}`, observedOn:'2026-10-14',
+    times:[{localTime:'10:00',durationMinutes:15,venue:`區${index}`}],
+  }));
+  assert.deepEqual(await importDomainEvents(testDb,marineBatch,'daily_page','2026-10-14T02:00:00Z'),
+    {inserted:5,updated:0,unchanged:0});
+  await assert.rejects(importDomainEvents(testDb,[{...marineBatch[0],observedOn:'2026-10-15'}],
+    'daily_page','2026-10-15T02:00:00Z'), /SOURCE_ANOMALY/);
+  const anomalyRun = await testDb.query(`SELECT status,error_message FROM domain_source_runs
+    WHERE source_id='nmmba' AND error_message LIKE 'SOURCE_ANOMALY%'
+    ORDER BY finished_at DESC LIMIT 1`);
+  assert.equal(anomalyRun.rows[0].status,'failed');
+  assert.match(anomalyRun.rows[0].error_message,/SOURCE_ANOMALY/);
+  assert.equal((await get('/marine-programmes?source=nmmba')).total,5,
+    '異常縮水不應覆蓋上一份成功清單');
+  assert.deepEqual(await importDomainEvents(testDb,marineBatch.slice(0,4).map((row) => ({
+    ...row, observedOn:'2026-10-16',
+  })),'daily_page','2026-10-16T02:00:00Z'),{inserted:0,updated:0,unchanged:4});
+  const latestMarine = await get('/marine-programmes?source=nmmba');
+  assert.equal(latestMarine.total,4,'搜尋只顯示最近一次成功觀察到的節目');
+  assert.ok(latestMarine.items.every((item) => item.observedOn === '2026-10-16'));
   assert.equal(ingestMockNstm(nstmFullHtml).coverageStatus, 'checked',
     '官方完整清單恢復後應重新通過完整度檢查');
   nstmVisibility = await testDb.query("SELECT count(*)::int AS count FROM exhibitions WHERE museum_id='nstm' AND visible");
