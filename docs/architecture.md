@@ -1,8 +1,8 @@
 # Event Radar 架構：目前實作與目標方向
 
-最後核對：2026-10-12。這份文件供作品展示與開發取捨使用。**下方第一張圖以原有特展路徑為主；Phase 3／4 另有下述本機節目路徑。第二張是未來構想，不代表現有服務或已上線能力。** 特展搜尋與表演／海洋節目分流，一般市集、音樂節與講座不自動混入特展搜尋。
+最後核對：2026-10-14。這份文件供作品展示與開發取捨使用；新接手者可先讀[開發導覽](development-guide.md)。**下方第一張圖以原有特展路徑為主；Phase 3／4 另有下述本機節目路徑。第二張是未來構想，不代表現有服務或已上線能力。** 特展搜尋與表演／海洋節目分流，一般市集、音樂節與講座不自動混入特展搜尋。
 
-Phase 3／4 的本機手動 `sync:domain`：歌劇院官方詳情經 `ntt-events` 轉成節目與多個 `event_sessions`；海生館官網當日節目經 `nmmba-programmes` 轉成節目與 `recurring_schedules`。兩者寫入 `domain_events`，由 `domain_event_changes` 留下變更、`domain_source_runs` 留下匯入結果，再由 `/performances`、`/marine-programmes` 供 React 查詢。這條路徑**尚未接 Queue 或線上排程**；歌劇院只抽樣首頁，海生館只代表當日觀察，特殊開館仍需人工核對。
+Phase 3／4 的本機手動 `sync:domain`：歌劇院官方初始清單的可辨識詳情經 `ntt-events` 轉成節目與多個 `event_sessions`；海生館官網當日節目經 `nmmba-programmes` 轉成節目與 `recurring_schedules`。兩者寫入 `domain_events`，由 `domain_event_changes` 留下變更、`domain_source_runs` 留下匯入結果，再由 `/performances`、`/marine-programmes` 供 React 查詢。歌劇院單批上限 30 筆、MORE 後續清單未涵蓋；海生館大幅縮水批次會整批失敗，API 只顯示最近一次成功觀察到的節目。這條路徑**尚未接 Queue 或線上排程**；海生館只代表當日觀察，特殊開館仍需人工核對。新增資料庫整合案例待本機 PostgreSQL 恢復後驗證。
 
 ## 目前實作（本機 MVP）
 
@@ -57,6 +57,6 @@ flowchart LR
 
 ## 接下來的工程順序
 
-目前按[11 階段優先順序](future-roadmap.md#2026-10-11-優先順序取代下方舊版擴館部署順序)進行：Phase 1 的來源可靠性未結項保留追蹤，Phase 2 已有國美館本機資料及模型，下一階段再驗證表演多場次、海生館週期節目及日文來源。完成共通模型、測試和文件後才公開部署；production Queue、每週排程與告警在部署穩定後啟用，AWS 留到課程進度足夠時。
+目前按[11 階段優先順序](future-roadmap.md#2026-10-11-優先順序取代下方舊版擴館部署順序)進行：Phase 1 的來源可靠性未結項保留追蹤，Phase 2 已有國美館本機資料及模型，Phase 3／4 的歌劇院與海生館各有第一版本機路徑但尚未完整驗收；沖繩 Phase 5 依使用者指示暫停。完成共通模型、測試和文件後才公開部署；production Queue、每週排程與告警在部署穩定後啟用，AWS 留到課程進度足夠時。
 
 每完成一階段，都應更新這份文件的現況、測試證據與概念圖標示，避免把設計目標誤寫成工作經驗。

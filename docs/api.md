@@ -4,7 +4,7 @@
 
 Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "error": { "code": "...", "message": "..." } }`。[OpenAPI 3.0 規格](openapi.yaml)描述公開唯讀端點，可供文件工具匯入；`npm test` 會檢查語法、路由及引用。
 
-奇美「活動與節目」目前由本機人工快照提供靜態 `/chimei-activities.json` 給首頁顯示，另有**不公開的候選** `programme_events` 資料表。靜態快照已列入 OpenAPI 並由 CI 驗證回應格式，但它**不是正式活動搜尋 API**；目前沒有活動日期查詢、場次或取消狀態保證。下表六條 REST 路由與這一條快照路由分開。
+奇美「活動與節目」目前由本機人工快照提供靜態 `/chimei-activities.json` 給首頁顯示，另有**不公開的候選** `programme_events` 資料表。靜態快照已列入 OpenAPI 並由 CI 驗證回應格式，但它**不是正式活動搜尋 API**；目前沒有活動日期查詢、場次或取消狀態保證。下表公開唯讀 REST 路由與這一條快照路由分開。
 
 | Method | Path | 說明 |
 | --- | --- | --- |
@@ -43,3 +43,5 @@ CI 的 `npm run test:integration` 會建立隔離 PostgreSQL 資料庫、匯入�
 `GET /performances?source=ntt` 回傳節目與 `sessions[]`，每場含 `startsAt`、`hall`、`ticketUrl`、可空的 `priceMin/priceMax` 和 `status`。手動同步讀取臺中國家歌劇院官網初始清單所有可辨識詳情，單批最多 30 筆，超出即停止；「MORE」後續節目仍未涵蓋。`scheduled` 只表示館方列有場次，不表示尚有餘票。來源上消失的場次標為 `unknown`，不自動判定取消。票價因平日／假日等差異無法安全拆分時維持 `null`，保留原文 `priceNote`。
 
 `GET /marine-programmes?source=nmmba` 只回傳最近一次成功匯入的官網當日節目表，包含 `dailySchedule[]` 與 `observedOn`；較早觀察日的紀錄仍保留於資料庫供追查，但不混入此清單。若新清單從至少四筆的上次成功基準突然降到不足一半，匯入以 `SOURCE_ANOMALY` 失敗並保留上次成功資料，待人工核對。`localTime` 是臺灣本地時刻；不得把昨日觀察推定為明日必有活動，也不可用節目表推定特殊日開館。兩條 API 均支援 `limit`（1–100）與 `offset`，來源時間由 `sourceCheckedAt` 回傳，詳見 [OpenAPI](openapi.yaml)。本機手動同步指令為 `npm run sync:domain -- --source ntt` 或 `--source nmmba`，未進入線上排程。
+
+新接手者若需要先理解資料為何分成特展、表演與海洋節目，請從[開發導覽](development-guide.md)開始，再用本頁查語意、[OpenAPI](openapi.yaml)查機器可讀 schema。OpenAPI 只描述已公開的唯讀 HTTP 回應；匯入、待審、來源健康、Queue 與人工重播的操作請看[運作設計](operations.md)，不能從公開 API 規格推定已有線上排程或通知。

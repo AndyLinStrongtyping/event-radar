@@ -3,16 +3,24 @@ info:
   title: Event Radar 公開查詢 API
   version: 0.1.0
   description: |
-    本機版臺灣博物館特展查詢 API。資料可能滯後，展期與票價以館方公告為準。
-    公開 API 僅提供讀取；人工審核頁及匯入 CLI 不屬於本 API。
+    本機版 Event Radar 公開唯讀 API。限期特展、表演場次與海生館每日節目是不同資料路徑；
+    各來源可能有不同觀察日期與涵蓋範圍。資料可能滯後，展期、場次與票價以館方公告為準。
+    人工審核頁、匯入 CLI、Queue 操作及奇美未公開的候選資料表不屬於本 API。
+tags:
+  - { name: 特展, description: 已通過展期與來源驗證的公開展覽查詢 }
+  - { name: 場館與參觀, description: 館所、來源狀態與保守的開館判斷 }
+  - { name: 表演與海洋節目, description: 獨立於特展搜尋的多場次與當日觀察資料 }
+  - { name: 人工快照, description: 人工核對的靜態展示資料，不是即時活動 API }
+  - { name: 系統, description: 服務與資料庫就緒狀態 }
 servers:
   - url: http://127.0.0.1:3000
 paths:
   /performances:
     get:
+      tags: [表演與海洋節目]
       summary: 查詢已核對的表演節目與場次
       operationId: listPerformances
-      description: 歌劇院目前僅抽樣官方清單首頁；scheduled 表示有場次，不能據此推定仍有票。
+      description: 手動同步讀取歌劇院官網初始清單全部可辨識詳情（單批最多 30 筆）；MORE 後續內容尚未涵蓋。scheduled 只表示館方列有場次，不能據此推定仍有票。
       parameters:
         - { name: source, in: query, schema: { type: string } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
@@ -27,6 +35,7 @@ paths:
         '500': { $ref: '#/components/responses/InternalError' }
   /marine-programmes:
     get:
+      tags: [表演與海洋節目]
       summary: 查詢海生館當日觀察到的每日節目表
       operationId: listMarineProgrammes
       description: 只回傳最近一次成功匯入的節目；observedOn 是官網當日節目表日期，舊觀察紀錄不混入清單。資料不能推定未來日期或特殊開館。
@@ -44,6 +53,7 @@ paths:
         '500': { $ref: '#/components/responses/InternalError' }
   /chimei-activities.json:
     get:
+      tags: [人工快照]
       summary: 奇美活動人工核對快照（靜態檔，非即時搜尋 API）
       operationId: getChimeiActivitySnapshot
       description: |
@@ -73,6 +83,7 @@ paths:
                         sourceUrl: { type: string, format: uri }
   /health:
     get:
+      tags: [系統]
       summary: 檢查服務與資料庫就緒狀態
       operationId: getHealth
       responses:
@@ -89,8 +100,10 @@ paths:
         '503': { $ref: '#/components/responses/NotReady' }
   /museums:
     get:
+      tags: [場館與參觀]
       summary: 列出博物館、來源狀態與一般入館票資訊
       operationId: listMuseums
+      description: sourceStatus、dataStatus、coverageStatus 與 pendingReviewCount 各自描述來源類型、新鮮度、完整度與待審數；近期成功不表示清單完整。
       responses:
         '200':
           description: 博物館列表
@@ -106,8 +119,10 @@ paths:
         '500': { $ref: '#/components/responses/InternalError' }
   /visit-status:
     get:
+      tags: [場館與參觀]
       summary: 查指定日期的開館狀態或官方核對入口
       operationId: getVisitStatus
+      description: 無可靠逐日資料時回 unknown 並提供官方入口；不以展覽或節目日期推論當日開館。
       parameters:
         - name: museum
           in: query
@@ -127,6 +142,7 @@ paths:
         '500': { $ref: '#/components/responses/InternalError' }
   /exhibitions:
     get:
+      tags: [特展]
       summary: 搜尋特展
       operationId: listExhibitions
       description: |
@@ -174,6 +190,7 @@ paths:
         '500': { $ref: '#/components/responses/InternalError' }
   /exhibitions/{id}:
     get:
+      tags: [特展]
       summary: 特展詳情
       operationId: getExhibition
       parameters:
@@ -195,6 +212,7 @@ paths:
         '500': { $ref: '#/components/responses/InternalError' }
   /exhibitions/{id}/changes:
     get:
+      tags: [特展]
       summary: 最近 100 筆欄位異動
       operationId: listExhibitionChanges
       parameters:
@@ -218,6 +236,7 @@ paths:
         '500': { $ref: '#/components/responses/InternalError' }
   /exhibitions/{id}/art-changes:
     get:
+      tags: [特展]
       summary: 最近 100 筆美術展欄位異動
       operationId: listArtExhibitionChanges
       parameters:
@@ -278,6 +297,7 @@ components:
         offset: { type: integer, minimum: 0 }
     DomainEvent:
       type: object
+      description: 表演與海洋節目的共通回應；由 domain 決定 sessions 或 dailySchedule 哪一組有值，與限期特展模型分開。
       required: [id, sourceId, sourceKey, domain, title, venue, sourceUrl, ticketUrl, priceNote, sourceCheckedAt, observedOn, sessions, dailySchedule]
       properties:
         id: { type: string, format: uuid }
@@ -289,15 +309,17 @@ components:
         sourceUrl: { type: string, format: uri }
         ticketUrl: { type: string, format: uri, nullable: true }
         priceNote: { type: string, nullable: true }
-        sourceCheckedAt: { type: string, format: date-time }
-        observedOn: { type: string, format: date, nullable: true }
+        sourceCheckedAt: { type: string, format: date-time, description: 最近一次成功匯入此筆節目的核對時間，不保證館方未再變更 }
+        observedOn: { type: string, format: date, nullable: true, description: 海生館官網當日節目頁的觀察日期；表演為 null }
         sessions:
           type: array
           nullable: true
+          description: 表演場次；海洋節目為 null
           items: { $ref: '#/components/schemas/EventSession' }
         dailySchedule:
           type: array
           nullable: true
+          description: 海洋節目當次觀察到的每日時刻；表演為 null，且不能推定未來日期
           items: { $ref: '#/components/schemas/DailySchedule' }
     EventSession:
       type: object
@@ -308,7 +330,7 @@ components:
         ticketUrl: { type: string, format: uri, nullable: true }
         priceMin: { type: integer, minimum: 0, nullable: true }
         priceMax: { type: integer, minimum: 0, nullable: true }
-        status: { type: string, enum: [scheduled, sold_out, cancelled, postponed, unknown] }
+        status: { type: string, enum: [scheduled, sold_out, cancelled, postponed, unknown], description: scheduled 僅表示來源列有場次，不表示尚有餘票 }
     DailySchedule:
       type: object
       required: [localTime, durationMinutes, venue, timezone]
@@ -346,14 +368,14 @@ components:
         city: { type: string }
         venueType: { type: string, enum: [museum, art_museum] }
         homepageUrl: { type: string, format: uri }
-        sourceStatus: { type: string, enum: [curated, open_data, official_page, planned] }
+        sourceStatus: { type: string, enum: [curated, open_data, official_page, planned], description: 資料取得方式，與新鮮度及完整度分開 }
         lastSuccessAt: { type: string, format: date-time, nullable: true }
-        lastOfficialSuccessAt: { type: string, format: date-time, nullable: true }
+        lastOfficialSuccessAt: { type: string, format: date-time, nullable: true, description: 最後成功取得並匯入官方來源的時間；手動快照不刷新此值 }
         lastAttemptStatus: { type: string, enum: [succeeded, failed], nullable: true }
         lastAttemptAt: { type: string, format: date-time, nullable: true }
-        coverageStatus: { type: string, enum: [baseline_created, checked, deferred_partial], nullable: true }
-        pendingReviewCount: { type: integer, minimum: 0 }
-        dataStatus: { type: string, enum: [manual, planned, never, untracked, failed, stale, recent] }
+        coverageStatus: { type: string, enum: [baseline_created, checked, deferred_partial], nullable: true, description: 來源清單完整度檢查；recent 不表示 checked }
+        pendingReviewCount: { type: integer, minimum: 0, description: 待審來源列數，可能包含歷史資料，不是當期漏展數 }
+        dataStatus: { type: string, enum: [manual, planned, never, untracked, failed, stale, recent], description: 來源最近官方成功與嘗試情況，與 sourceStatus 分開 }
         generalAdmission:
           description: 未核對一般入館票時為 null
           type: object
@@ -379,7 +401,7 @@ components:
         lastSeenAt: { type: string, format: date-time }
         isSample: { type: boolean }
         exhibitionStatus: { type: string, enum: [ongoing, upcoming, ended] }
-        admissionStatus: { type: string, enum: [free, unknown] }
+        admissionStatus: { type: string, enum: [free, unknown], description: 僅來源明確標示免費才為 free；unknown 不等於收費 }
         art:
           description: 只有已核對的美術館展覽有資料，其餘為 null
           type: object
@@ -388,6 +410,7 @@ components:
             - { $ref: '#/components/schemas/ArtExhibitionDetails' }
         ticketing:
           type: object
+          description: exhibition 是該展票價；generalAdmission 是館所一般入場資訊，兩者不可互代
           required: [exhibition, generalAdmission]
           properties:
             exhibition:
@@ -447,7 +470,7 @@ components:
       properties:
         museumId: { type: string }
         date: { type: string, format: date }
-        status: { type: string, enum: [open, closed, unknown] }
+        status: { type: string, enum: [open, closed, unknown], description: unknown 表示缺少可可靠判定指定日期的官方資料 }
         message: { type: string }
         sourceUrl: { type: string, format: uri }
         newsUrl: { type: string, format: uri }
