@@ -10,18 +10,21 @@ const snapshot = process.argv.includes('--snapshot')
   ? process.argv[process.argv.indexOf('--snapshot') + 1] : null;
 const detail = process.argv.includes('--detail')
   ? process.argv[process.argv.indexOf('--detail') + 1] : null;
-const shrinkReviewNote = process.argv.includes('--review-shrink')
-  ? process.argv[process.argv.indexOf('--review-shrink') + 1] : null;
+const reviewFlag = process.argv.includes('--review-list-change') ? '--review-list-change'
+  : process.argv.includes('--review-shrink') ? '--review-shrink' : null;
+const listReviewNote = reviewFlag ? process.argv[process.argv.indexOf(reviewFlag) + 1] : null;
 
 async function main(): Promise<void> {
   if (!process.env.DATABASE_URL) throw new Error('需要 DATABASE_URL');
   if (!['ntt','nmmba'].includes(source)) throw new Error('用法：npm run sync:domain -- --source ntt|nmmba');
-  if (process.argv.includes('--review-shrink')
-    && (!shrinkReviewNote || shrinkReviewNote.startsWith('--'))) {
-    throw new Error('--review-shrink 需要具體的人工核對說明');
+  if (process.argv.includes('--review-list-change') && process.argv.includes('--review-shrink')) {
+    throw new Error('歌劇院清單覆核參數不可重複提供');
   }
-  if (shrinkReviewNote !== null && (source !== 'ntt' || snapshot || detail)) {
-    throw new Error('--review-shrink 只可用於歌劇院官方 place=1 清單同步');
+  if (reviewFlag && (!listReviewNote || listReviewNote.startsWith('--'))) {
+    throw new Error(`${reviewFlag} 需要具體的人工核對說明`);
+  }
+  if (reviewFlag && (source !== 'ntt' || snapshot || detail)) {
+    throw new Error(`${reviewFlag} 只可用於歌劇院官方 place=1 清單同步`);
   }
   let checkedAt = new Date().toISOString();
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric',
@@ -51,7 +54,7 @@ async function main(): Promise<void> {
       const scope = detail || (snapshot && details.length === 1) ? 'single_detail'
         : snapshot ? 'sampled_list' : 'ntt_place1_list';
       const counts = await importDomainEvents(pool,rows,scope,checkedAt,
-        shrinkReviewNote === null ? {} : { shrinkReviewNote });
+        listReviewNote === null ? {} : { listReviewNote });
       process.stdout.write(JSON.stringify({ source,scope,
         accepted:rows.length,...counts,coverage })+'\n');
     } else {

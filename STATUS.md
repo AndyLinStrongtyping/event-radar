@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-14 歌劇院清單來源鍵異常保護：第 019 migration 為成功／失敗的官方 `place=1` 批次保存來源鍵。前後清單至少各 10 筆時，若重疊來源鍵少於較小清單的一半，即使總筆數相同也以 `SOURCE_ANOMALY` 整批拒收；人工核對後可用 `--review-list-change` 留原因放行（原 `--review-shrink` 仍可用）。隔離 PostgreSQL 測試涵蓋同筆數大量換鍵、縮水及覆核；67 項單元、型別與 React build 通過。本機第 019 migration 已套用，再次真實同步 20 筆全部未變並保存新鍵基準。這只建立基準，未證明跨週穩定，見 [ER-66](docs/technical-decisions.md)。
+
 2026-10-14 歌劇院官方清單縮水保護：第 018 migration 將 `ntt_place1_list` 與人工抽樣分開，避免混用基準。已有至少 10 筆成功基準時，若新清單少於一半，整批以 `SOURCE_ANOMALY` 拒收；人工核對確屬正常變動可用 `--review-shrink` 留 20–500 字說明放行，`domain_source_runs.review_note` 保存理由。隔離 PostgreSQL 整合測試涵蓋拒收、保留原資料、抽樣不污染基準及覆核放行；66 項單元、型別與 React build 通過。本機 migration 新套用 1 份，真實 `place=1` 清單同步 20 筆（更新 1、未變 19），建立新範圍的首個基準。首次成功不代表跨週穩定或所有節目覆蓋，見 [ER-65](docs/technical-decisions.md)。
 
 2026-10-14 歌劇院清單覆蓋核對：官網「MORE」目前只展開已在同一 HTML 的隱藏卡片，沒有額外分頁請求；來源 adapter 原本已掃過這些卡片，現加入 MORE 行為變更即停止匯入的保護及測試。再次真實手動同步接受官方 `place=1` 清單 20 筆（新增 1、未變 19），單批仍上限 30 筆。這只代表該篩選頁當次的完整 HTML，未證明歌劇院所有類型或跨週穩定；逐場票務狀態仍待查。見 [ER-64](docs/technical-decisions.md)。

@@ -10,7 +10,7 @@
 
 `sync:domain` 的官方 HTML 請求每次逾時 15 秒，只對逾時／網路錯誤與 HTTP 5xx 最多再試兩次，間隔 2 秒、8 秒；404、429、非館方網址／回應主機、解析失敗或資料過大立即失敗。歌劇院不同詳情之間仍另有兩秒間隔。失敗訊息包含官方失敗網址與嘗試次數，便於人工核對；重試耗盡仍不寫入不完整批次。
 
-歌劇院官方 `place=1` 清單另記為 `ntt_place1_list`，不和 `--snapshot`／`--detail` 的抽樣互相比筆數。前次成功至少 10 筆、這次不足一半時會以 `SOURCE_ANOMALY` 整批停止，原有節目不被改寫。先開啟[館方清單](https://www.npac-ntt.org/program/events?place=1)確認是正常換季、活動落幕或來源異常；若確認可接受，執行 `npm run sync:domain -- --source ntt --review-shrink "已核對館方清單與節目日期，確認節目自然落幕，清單減少屬正常變動。"`。說明須 20–500 字，會記入 `domain_source_runs.review_note`；只在實際觸發縮水時可使用，不要把機密資訊寫入說明。這是人工覆核，不代表缺席節目自動取消，也不會刪除舊資料。
+歌劇院官方 `place=1` 清單另記為 `ntt_place1_list`，不和 `--snapshot`／`--detail` 的抽樣互相比。前次成功至少 10 筆、這次不足一半，或前後清單至少各 10 筆且重疊來源鍵少於較小清單的一半時，會以 `SOURCE_ANOMALY` 整批停止，原有節目不被改寫。第 019 migration 起，官方批次的來源鍵存於 `domain_source_runs.identity_keys`；舊批次沒有鍵時，必須先成功同步一次才能建立比對基準。先開啟[館方清單](https://www.npac-ntt.org/program/events?place=1)核對換季、活動落幕與詳情連結；若確認可接受，執行 `npm run sync:domain -- --source ntt --review-list-change "已核對館方清單及逐筆詳情，確認節目與連結變動屬正常換季。"`。原 `--review-shrink` 參數仍可使用。說明須 20–500 字，記入 `domain_source_runs.review_note`；只有觸發異常時可用，不要寫入機密資訊。人工覆核不代表缺席節目自動取消，也不會刪除舊資料。
 
 本機執行整合測試前，先以 `docker compose port db 5432` 查實際映射埠，確認 `.env` 的 `DATABASE_URL` 使用同一埠；測試腳本會建立獨立 `event_radar_it_*` 資料庫，最後刪除該測試庫，不使用或清空一般 `event_radar` 資料庫。
 
@@ -19,7 +19,7 @@
 `.github/workflows/weekly-sync.yml` 已備妥，但**尚未啟用**。預設所有同步工作與奇美每週檢查都由 `EVENT_RADAR_SYNC_ENABLED` 閘門關閉；推送程式碼只執行 CI 驗證，不會連接外部資料庫。啟用條件：
 
 1. 專案放到獨立 GitHub repo 的預設分支。
-2. 建立可從 GitHub Actions 連線的 PostgreSQL；**空白庫**執行 `npm run migrate` 即可。既有且已有 migration 帳本的資料庫也直接執行此命令，會套用尚未執行的版本（目前至 018）。若沿用早期手動建表、完全沒有帳本的舊庫，先備份並核對所有 migration 都已套用，再執行一次 `npm run migrate -- --baseline-existing`；結構缺漏會拒絕，不能用基線命令跳過真正缺少的 migration。
+2. 建立可從 GitHub Actions 連線的 PostgreSQL；**空白庫**執行 `npm run migrate` 即可。既有且已有 migration 帳本的資料庫也直接執行此命令，會套用尚未執行的版本（目前至 019）。若沿用早期手動建表、完全沒有帳本的舊庫，先備份並核對所有 migration 都已套用，再執行一次 `npm run migrate -- --baseline-existing`；結構缺漏會拒絕，不能用基線命令跳過真正缺少的 migration。
 3. Repository secrets 設 `DATABASE_URL` 與 `NMNS_API_KEY`。後者只在決定啟用線上同步時設定，切勿寫入程式碼、文件或 workflow 日誌；`NMNS_OPEN_DATA_URL` 可作展覽匯入的無金鑰備援，不能提供逐日開放時間。
 4. Repository variable 設 `EVENT_RADAR_SYNC_ENABLED=true`，先手動執行一次並確認 `ingestion_runs` 與 `/health`，才依排程運作。
 

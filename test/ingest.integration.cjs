@@ -252,16 +252,16 @@ async function main() {
       cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href }, encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-  assert.match(migrate(), /新套用 18 份/, '空白資料庫應由單一命令建立');
+  assert.match(migrate(), /新套用 19 份/, '空白資料庫應由單一命令建立');
   assert.match(migrate(), /新套用 0 份/, '重跑不得重建表或重複寫入');
   let ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 18);
+  assert.equal(ledger.rows[0].count, 19);
   // 模擬舊版手動執行所有 migration 的資料庫；只有明確指定時才建立帳本。
   await testDb.query('DROP TABLE schema_migrations');
   assert.throws(() => migrate(), /舊版資料庫且沒有 migration 帳本/);
   assert.match(migrate('--baseline-existing'), /新套用 0 份/);
   ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 18);
+  assert.equal(ledger.rows[0].count, 19);
   assert.match(migrate(), /新套用 0 份/);
   const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
   async function checkCoverage(keys, rawKeys = [], provider = 'ntm') {
@@ -823,28 +823,44 @@ async function main() {
       {inserted:19,updated:0,unchanged:0});
     assert.deepEqual(await importDomainEvents(testDb,expandedPerformances,'ntt_place1_list','2026-10-17T12:00:00Z'),
       {inserted:0,updated:0,unchanged:19});
+    const initialKeys = await testDb.query(`SELECT identity_keys FROM domain_source_runs
+      WHERE source_id='ntt' AND scope='ntt_place1_list' AND status='succeeded'
+      ORDER BY finished_at DESC,id DESC LIMIT 1`);
+    assert.equal(initialKeys.rows[0].identity_keys.length,19);
     assert.deepEqual(await importDomainEvents(testDb,expandedPerformances.slice(0,1),'sampled_list',
       '2026-10-18T12:00:00Z'),{inserted:0,updated:0,unchanged:1},
     '人工抽樣不得影響官方清單基準');
-    await assert.rejects(importDomainEvents(testDb,expandedPerformances.slice(0,9),
-      'ntt_place1_list','2026-10-19T12:00:00Z'),/SOURCE_ANOMALY/);
+    const mostlyReplaced = expandedPerformances.map((row,index) => index < 10 ? {
+      ...row, sourceKey:`c-replaced-${String(index).padStart(2,'0')}`,
+      sourceUrl:`https://www.npac-ntt.org/program/events/c-replaced-${String(index).padStart(2,'0')}`,
+    } : row);
+    await assert.rejects(importDomainEvents(testDb,mostlyReplaced,
+      'ntt_place1_list','2026-10-19T12:00:00Z'),/SOURCE_ANOMALY.*來源鍵大幅變動/);
+    assert.equal((await get('/performances?source=ntt&limit=100')).total,20,
+      '同筆數大量換鍵的異常批次不可修改原有節目');
+    const replacementReview = '已對照歌劇院官方節目清單與詳情，確認換季後的新節目連結和日期。';
+    assert.deepEqual(await importDomainEvents(testDb,mostlyReplaced,
+      'ntt_place1_list','2026-10-19T12:00:00Z',{listReviewNote:replacementReview}),
+    {inserted:10,updated:0,unchanged:9});
+    await assert.rejects(importDomainEvents(testDb,mostlyReplaced.slice(0,9),
+      'ntt_place1_list','2026-10-20T12:00:00Z'),/SOURCE_ANOMALY.*降至 9 筆/);
     const nttAnomaly = await testDb.query(`SELECT status,error_message FROM domain_source_runs
       WHERE source_id='ntt' AND scope='ntt_place1_list' AND status='failed'
       ORDER BY finished_at DESC LIMIT 1`);
     assert.match(nttAnomaly.rows[0].error_message,/SOURCE_ANOMALY/);
-    assert.equal((await get('/performances?source=ntt&limit=100')).total,20,
+    assert.equal((await get('/performances?source=ntt&limit=100')).total,30,
       '異常批次不可修改原有節目');
     const reviewNote = '已對照歌劇院官方 place=1 清單，季末節目自然落幕，確認目前只剩九筆。';
-    assert.deepEqual(await importDomainEvents(testDb,expandedPerformances.slice(0,9),
-      'ntt_place1_list','2026-10-19T12:00:00Z',{shrinkReviewNote:reviewNote}),
+    assert.deepEqual(await importDomainEvents(testDb,mostlyReplaced.slice(0,9),
+      'ntt_place1_list','2026-10-20T12:00:00Z',{listReviewNote:reviewNote}),
     {inserted:0,updated:0,unchanged:9});
     const reviewed = await testDb.query(`SELECT review_note FROM domain_source_runs
       WHERE source_id='ntt' AND scope='ntt_place1_list' AND status='succeeded'
       ORDER BY finished_at DESC LIMIT 1`);
     assert.equal(reviewed.rows[0].review_note,reviewNote);
     const expandedList = await get('/performances?source=ntt&limit=100');
-    assert.equal(expandedList.total,20,'公開 API 應包含整批 19 筆與先前單筆資料');
-    assert.equal(expandedList.items.length,20);
+    assert.equal(expandedList.total,30,'缺席節目不應自動刪除或誤判取消');
+    assert.equal(expandedList.items.length,30);
   });
   assert.equal(ingestMockNstm(nstmFullHtml).coverageStatus, 'checked',
     '官方完整清單恢復後應重新通過完整度檢查');

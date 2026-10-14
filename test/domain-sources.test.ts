@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { nttDetailUrls, parseNttDetail } from '../src/sources/ntt-events.ts';
 import { parseNmmbaProgrammes } from '../src/sources/nmmba-programmes.ts';
-import { severeDailyShrink, severeOfficialListShrink } from '../src/domain-events.ts';
+import { severeDailyShrink, severeOfficialListShrink, severeOfficialIdentityChange } from '../src/domain-events.ts';
 
 test('海生館每日清單大幅縮水須隔離，但小幅自然變動可繼續核對', () => {
   assert.equal(severeDailyShrink(9, 4), true);
@@ -14,6 +14,13 @@ test('歌劇院官方清單只在已有足夠基準且突然少於一半時要�
   assert.equal(severeOfficialListShrink(20, 9), true);
   assert.equal(severeOfficialListShrink(20, 10), false);
   assert.equal(severeOfficialListShrink(9, 1), false, '少量基準不適合用比例判定');
+});
+
+test('歌劇院官方清單同筆數但來源鍵多數更換時要求覆核', () => {
+  const prior = Array.from({ length: 20 }, (_, index) => `event-${index}`);
+  assert.equal(severeOfficialIdentityChange(prior, [...prior.slice(0,9), ...prior.slice(10).map((key) => `new-${key}`)]), true);
+  assert.equal(severeOfficialIdentityChange(prior, [...prior.slice(0,10), ...prior.slice(10).map((key) => `new-${key}`)]), false);
+  assert.equal(severeOfficialIdentityChange(prior.slice(0,9), Array.from({ length: 9 }, (_, index) => `other-${index}`)), false);
 });
 
 test('歌劇院節目詳情轉成兩個獨立場次，不臆測售罄', () => {
