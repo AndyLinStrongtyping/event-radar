@@ -10,10 +10,19 @@ const snapshot = process.argv.includes('--snapshot')
   ? process.argv[process.argv.indexOf('--snapshot') + 1] : null;
 const detail = process.argv.includes('--detail')
   ? process.argv[process.argv.indexOf('--detail') + 1] : null;
+const shrinkReviewNote = process.argv.includes('--review-shrink')
+  ? process.argv[process.argv.indexOf('--review-shrink') + 1] : null;
 
 async function main(): Promise<void> {
   if (!process.env.DATABASE_URL) throw new Error('需要 DATABASE_URL');
   if (!['ntt','nmmba'].includes(source)) throw new Error('用法：npm run sync:domain -- --source ntt|nmmba');
+  if (process.argv.includes('--review-shrink')
+    && (!shrinkReviewNote || shrinkReviewNote.startsWith('--'))) {
+    throw new Error('--review-shrink 需要具體的人工核對說明');
+  }
+  if (shrinkReviewNote !== null && (source !== 'ntt' || snapshot || detail)) {
+    throw new Error('--review-shrink 只可用於歌劇院官方 place=1 清單同步');
+  }
   let checkedAt = new Date().toISOString();
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric',
     month: '2-digit', day: '2-digit' }).format(new Date());
@@ -39,8 +48,10 @@ async function main(): Promise<void> {
         }
       }
       const rows = details.map(({url,html}) => parseNttDetail(html,url));
-      const scope = detail || (snapshot && details.length === 1) ? 'single_detail' : 'sampled_list';
-      const counts = await importDomainEvents(pool,rows,scope,checkedAt);
+      const scope = detail || (snapshot && details.length === 1) ? 'single_detail'
+        : snapshot ? 'sampled_list' : 'ntt_place1_list';
+      const counts = await importDomainEvents(pool,rows,scope,checkedAt,
+        shrinkReviewNote === null ? {} : { shrinkReviewNote });
       process.stdout.write(JSON.stringify({ source,scope,
         accepted:rows.length,...counts,coverage })+'\n');
     } else {

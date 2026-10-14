@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-14 歌劇院官方清單縮水保護：第 018 migration 將 `ntt_place1_list` 與人工抽樣分開，避免混用基準。已有至少 10 筆成功基準時，若新清單少於一半，整批以 `SOURCE_ANOMALY` 拒收；人工核對確屬正常變動可用 `--review-shrink` 留 20–500 字說明放行，`domain_source_runs.review_note` 保存理由。隔離 PostgreSQL 整合測試涵蓋拒收、保留原資料、抽樣不污染基準及覆核放行；66 項單元、型別與 React build 通過。本機 migration 新套用 1 份，真實 `place=1` 清單同步 20 筆（更新 1、未變 19），建立新範圍的首個基準。首次成功不代表跨週穩定或所有節目覆蓋，見 [ER-65](docs/technical-decisions.md)。
+
 2026-10-14 歌劇院清單覆蓋核對：官網「MORE」目前只展開已在同一 HTML 的隱藏卡片，沒有額外分頁請求；來源 adapter 原本已掃過這些卡片，現加入 MORE 行為變更即停止匯入的保護及測試。再次真實手動同步接受官方 `place=1` 清單 20 筆（新增 1、未變 19），單批仍上限 30 筆。這只代表該篩選頁當次的完整 HTML，未證明歌劇院所有類型或跨週穩定；逐場票務狀態仍待查。見 [ER-64](docs/technical-decisions.md)。
 
 2026-10-14 Phase 3／4 可靠性續作：修正整合測試在 HTTP 測試伺服器關閉後才使用查詢函式的作用域錯誤；隔離 PostgreSQL 測試現已通過，包含海生館 `SOURCE_ANOMALY` 舊批次保留／新批次公開清單，以及歌劇院 19 筆**合成測試資料**的批次冪等。歌劇院真實手動同步首次因官方詳情逾時停止；新增僅對逾時／網路與 HTTP 5xx 的兩次有限退避重試、保留失敗網址後再執行成功：官網初始清單接受 19 筆（新增 14、未變 5），本機 `/performances?source=ntt` 回傳 19 筆。64 項單元測試、型別檢查與 React build 通過。**MORE 分頁、跨週來源穩定、逐場票務、特殊開館及公開部署仍未完成**。見[ER-62／63](docs/technical-decisions.md)。

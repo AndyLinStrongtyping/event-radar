@@ -4,12 +4,16 @@ import type { PerformanceEvent } from './sources/ntt-events.ts';
 import type { MarineProgramme } from './sources/nmmba-programmes.ts';
 
 export type DomainDraft = PerformanceEvent | MarineProgramme;
-export type DomainScope = 'single_detail' | 'sampled_list' | 'daily_page';
+export type DomainScope = 'single_detail' | 'sampled_list' | 'daily_page' | 'ntt_place1_list';
 
 const hash = (value: unknown) => createHash('sha256').update(JSON.stringify(value)).digest('hex');
 
 export function severeDailyShrink(previousCount: number, currentCount: number): boolean {
   return previousCount >= 4 && currentCount < Math.ceil(previousCount / 2);
+}
+
+export function severeOfficialListShrink(previousCount: number, currentCount: number): boolean {
+  return previousCount >= 10 && currentCount < Math.ceil(previousCount / 2);
 }
 
 async function change(client: pg.PoolClient, id: string, field: string, oldValue: unknown, newValue: unknown) {
@@ -28,13 +32,17 @@ function normalizedTimes(row: MarineProgramme) {
 }
 
 export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], scope: DomainScope,
-  checkedAt: string): Promise<{ inserted: number; updated: number; unchanged: number }> {
+  checkedAt: string, options: { shrinkReviewNote?: string } = {}): Promise<{ inserted: number; updated: number; unchanged: number }> {
   if (!rows.length || rows.length > 30 || Number.isNaN(Date.parse(checkedAt))) throw new Error('活動批次、筆數或核對時間無效');
   const sourceId = rows[0].sourceId;
   if (rows.some((row) => row.sourceId !== sourceId)
     || new Set(rows.map((row) => row.sourceKey)).size !== rows.length) throw new Error('活動來源混雜或來源鍵重複');
   if ((sourceId === 'ntt' && scope === 'daily_page')
     || (sourceId === 'nmmba' && scope !== 'daily_page')) throw new Error('活動來源範圍不符');
+  if (options.shrinkReviewNote !== undefined && (scope !== 'ntt_place1_list'
+    || options.shrinkReviewNote.trim().length < 20 || options.shrinkReviewNote.trim().length > 500)) {
+    throw new Error('歌劇院清單縮水覆核說明須為 20–500 字，且只適用官方 place=1 清單');
+  }
   const run = await pool.query<{ id: string }>(`INSERT INTO domain_source_runs(source_id,scope,status)
     VALUES ($1,$2,'running') RETURNING id`, [sourceId, scope]);
   const client = await pool.connect();
@@ -42,6 +50,7 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
   try {
     await client.query('BEGIN'); transaction = true;
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`domain:${sourceId}`]);
+    let reviewedShrink = false;
     if (scope === 'daily_page') {
       const previous = await client.query<{ accepted_count: number }>(`SELECT accepted_count
         FROM domain_source_runs WHERE source_id=$1 AND scope='daily_page' AND status='succeeded'
@@ -51,6 +60,19 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
         throw new Error(`SOURCE_ANOMALY：海生館當日節目從 ${previousCount} 筆降至 ${rows.length} 筆，需人工核對`);
       }
     }
+    if (scope === 'ntt_place1_list') {
+      const previous = await client.query<{ accepted_count: number }>(`SELECT accepted_count
+        FROM domain_source_runs WHERE source_id='ntt' AND scope='ntt_place1_list' AND status='succeeded'
+        ORDER BY finished_at DESC,id DESC LIMIT 1`);
+      const previousCount = previous.rows[0]?.accepted_count ?? 0;
+      if (severeOfficialListShrink(previousCount, rows.length)) {
+        if (!options.shrinkReviewNote) {
+          throw new Error(`SOURCE_ANOMALY：歌劇院 place=1 清單從 ${previousCount} 筆降至 ${rows.length} 筆，需核對館方頁並提供覆核說明`);
+        }
+        reviewedShrink = true;
+      }
+    }
+    if (options.shrinkReviewNote && !reviewedShrink) throw new Error('歌劇院清單未達縮水覆核條件，拒絕無效覆核說明');
     const counts = { inserted: 0, updated: 0, unchanged: 0 };
     for (const row of rows) {
       const detail = row.domain === 'performance' ? normalizedSessions(row) : normalizedTimes(row);
@@ -125,7 +147,8 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
       }
     }
     await client.query(`UPDATE domain_source_runs SET status='succeeded',fetched_count=$2,
-      accepted_count=$2,finished_at=now() WHERE id=$1`,[run.rows[0].id,rows.length]);
+      accepted_count=$2,review_note=$3,finished_at=now() WHERE id=$1`,
+    [run.rows[0].id,rows.length,reviewedShrink ? options.shrinkReviewNote!.trim() : null]);
     await client.query('COMMIT'); transaction=false;
     return counts;
   } catch (error) {

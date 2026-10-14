@@ -4,6 +4,8 @@
 
 Phase 3／4 的本機手動 `sync:domain`：歌劇院官方 `place=1` 清單 HTML 的可辨識詳情（含 MORE 預藏卡片）經 `ntt-events` 轉成節目與多個 `event_sessions`；海生館官網當日節目經 `nmmba-programmes` 轉成節目與 `recurring_schedules`。兩者寫入 `domain_events`，由 `domain_event_changes` 留下變更、`domain_source_runs` 留下匯入結果，再由 `/performances`、`/marine-programmes` 供 React 查詢。歌劇院單批上限 30 筆；若 MORE 不再只展開同頁卡片便停止匯入。海生館大幅縮水批次會整批失敗，API 只顯示最近一次成功觀察到的節目。縮水保護與 19 筆合成歌劇院批次的隔離資料庫整合測試已於 2026-10-14 通過；當日真實手動同步兩次，第二次接受該篩選清單 20 筆（新增 1、未變 19）。這條路徑**尚未接 Queue 或線上排程**；海生館只代表當日觀察，特殊開館仍需人工核對。
 
+第 018 migration 起，歌劇院官方 `place=1` 清單使用獨立 `ntt_place1_list` 範圍；人工詳情與快照不影響官方筆數基準。成功基準至少 10 筆而新批次少於一半時，交易回滾並記錄失敗；人工核對後可附說明放行，理由寫入 `domain_source_runs.review_note`。舊節目不因清單缺席自動刪除或判定取消。
+
 ## 目前實作（本機 MVP）
 
 ```mermaid
