@@ -32,7 +32,7 @@ async function main(): Promise<void> {
       else {
         const urls = nttDetailUrls(await fetchOfficialHtml(nttListUrl,'www.npac-ntt.org'));
         details = [];
-        coverage = `官方初始清單 ${urls.length} 筆；MORE 後續內容尚未涵蓋`;
+        coverage = `官方清單 HTML ${urls.length} 筆（含 MORE 預藏卡片）；僅限 place=1 篩選結果`;
         for (const url of urls) {
           if (details.length) await new Promise((resolve) => setTimeout(resolve, 2_000));
           details.push({ url, html: await fetchOfficialHtml(url,'www.npac-ntt.org') });

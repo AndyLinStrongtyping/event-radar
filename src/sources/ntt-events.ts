@@ -22,10 +22,18 @@ function nttUrl(raw: string): URL {
 
 export function nttDetailUrls(listHtml: string, max = 30): string[] {
   if (!Number.isInteger(max) || max < 1 || max > 30) throw new Error('歌劇院清單上限無效');
+  // The official MORE button currently reveals cards already present in the HTML.
+  // Stop if that behavior changes; otherwise a partial list could look complete.
+  if (/<button\b[^>]*\bid=["']btn-more["']/i.test(listHtml)
+    && !(/\$\(['"]#btn-more['"]\)\.on\(['"]click['"]/i.test(listHtml)
+      && /#glch\s*>\s*div\[class\*=['"]hide['"]\]/i.test(listHtml)
+      && /\.removeClass\(['"]hide['"]\)/i.test(listHtml))) {
+    throw new Error('歌劇院 MORE 載入方式已變，停止匯入並核對清單覆蓋');
+  }
   const urls = new Set<string>();
   for (const match of listHtml.matchAll(/<a\b[^>]*class="[^"]*img-link[^"]*"[^>]*href="([^"]+)"/gi)) {
     try { urls.add(nttUrl(match[1]).href); } catch { /* Other cards do not enter this source. */ }
-    if (urls.size > max) throw new Error('歌劇院初始清單超過安全上限，停止匯入並檢查分頁');
+    if (urls.size > max) throw new Error('歌劇院清單超過安全上限，停止匯入並檢查批次設計');
   }
   if (!urls.size) throw new Error('歌劇院節目清單沒有可辨識詳情網址');
   return [...urls];

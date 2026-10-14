@@ -20,7 +20,7 @@ paths:
       tags: [表演與海洋節目]
       summary: 查詢已核對的表演節目與場次
       operationId: listPerformances
-      description: 手動同步讀取歌劇院官網初始清單全部可辨識詳情（單批最多 30 筆）；MORE 後續內容尚未涵蓋。scheduled 只表示館方列有場次，不能據此推定仍有票。
+      description: 手動同步讀取歌劇院官網 place=1 清單 HTML 全部可辨識詳情，含 MORE 預藏卡片；單批最多 30 筆，按鈕行為改變便停止。未涵蓋其他篩選條件；scheduled 只表示館方列有場次，不能據此推定仍有票。
       parameters:
         - { name: source, in: query, schema: { type: string } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }

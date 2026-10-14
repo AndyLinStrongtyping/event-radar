@@ -36,6 +36,21 @@ test('歌劇院初始清單不默默截成五筆，超過匯入上限則停止',
   assert.deepEqual(nttDetailUrls(cards + cards), urls, '同一清單的重複連結不重抓');
 });
 
+test('歌劇院 MORE 預藏卡片一併擷取，載入行為改變時停止匯入', () => {
+  const html = `<div id="glch"><div class="col-md-4"><a class="img-link img-cover"
+    href="/program/events/c-test00000001">A</a></div><div class="col-md-4 hide" hidden>
+    <a class="img-link img-cover" href="/program/events/c-test00000002">B</a></div></div>
+    <button id="btn-more">MORE</button><script>
+    $('#btn-more').on('click', function() {
+      $("#glch > div[class*='hide']").each(function() {
+        $(this).removeClass('hide'); $(this)[0].hidden = false;
+      });
+    });</script>`;
+  assert.equal(nttDetailUrls(html).length, 2);
+  assert.throws(() => nttDetailUrls(html.replace(".removeClass('hide')", '.loadMore()')),
+    /MORE 載入方式已變/);
+});
+
 test('海生館每日節目只接受可核對的日期、場次數與地點', () => {
   const card = `<li><img src="/x.jpg"><ul class="my-card"><li><h3>大洋池餵食</h3></li>
     <li class="hide-obj"><span>時間：</span>每日2場，10:00、13:00</li>

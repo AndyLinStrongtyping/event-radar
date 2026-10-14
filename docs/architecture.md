@@ -2,7 +2,7 @@
 
 最後核對：2026-10-14。這份文件供作品展示與開發取捨使用；新接手者可先讀[開發導覽](development-guide.md)。**下方第一張圖以原有特展路徑為主；Phase 3／4 另有下述本機節目路徑。第二張是未來構想，不代表現有服務或已上線能力。** 特展搜尋與表演／海洋節目分流，一般市集、音樂節與講座不自動混入特展搜尋。
 
-Phase 3／4 的本機手動 `sync:domain`：歌劇院官方初始清單的可辨識詳情經 `ntt-events` 轉成節目與多個 `event_sessions`；海生館官網當日節目經 `nmmba-programmes` 轉成節目與 `recurring_schedules`。兩者寫入 `domain_events`，由 `domain_event_changes` 留下變更、`domain_source_runs` 留下匯入結果，再由 `/performances`、`/marine-programmes` 供 React 查詢。歌劇院單批上限 30 筆、MORE 後續清單未涵蓋；海生館大幅縮水批次會整批失敗，API 只顯示最近一次成功觀察到的節目。縮水保護與 19 筆合成歌劇院批次的隔離資料庫整合測試已於 2026-10-14 通過；當日真實手動同步另接受官網初始清單 19 筆，本機 API 回傳 19 筆。這條路徑**尚未接 Queue 或線上排程**；海生館只代表當日觀察，特殊開館仍需人工核對。
+Phase 3／4 的本機手動 `sync:domain`：歌劇院官方 `place=1` 清單 HTML 的可辨識詳情（含 MORE 預藏卡片）經 `ntt-events` 轉成節目與多個 `event_sessions`；海生館官網當日節目經 `nmmba-programmes` 轉成節目與 `recurring_schedules`。兩者寫入 `domain_events`，由 `domain_event_changes` 留下變更、`domain_source_runs` 留下匯入結果，再由 `/performances`、`/marine-programmes` 供 React 查詢。歌劇院單批上限 30 筆；若 MORE 不再只展開同頁卡片便停止匯入。海生館大幅縮水批次會整批失敗，API 只顯示最近一次成功觀察到的節目。縮水保護與 19 筆合成歌劇院批次的隔離資料庫整合測試已於 2026-10-14 通過；當日真實手動同步兩次，第二次接受該篩選清單 20 筆（新增 1、未變 19）。這條路徑**尚未接 Queue 或線上排程**；海生館只代表當日觀察，特殊開館仍需人工核對。
 
 ## 目前實作（本機 MVP）
 
