@@ -24,7 +24,7 @@
 
 `sourceStatus` 說明資料取得方式，`dataStatus` 說明最近官方取得及嘗試情況，`coverageStatus` 說明清單完整度是否可相信；這三個欄位**不能互相替代**。`pendingReviewCount` 是待人工核對的來源列數，不是漏掉的當期展覽數。展覽通過完整日期與來源驗證才進公開搜尋；無法核對的列保留在待審，不猜展期。詳細定義見 [API 說明](api.md)及[來源完整度決策](technical-decisions.md)。
 
-表演與海洋節目是另外的 Domain：表演可以有多個有時區的 `sessions`，海洋節目是帶 `observedOn` 的本地每日時段。海洋 API 只顯示最近一次成功匯入的批次；若新清單相對前次大幅縮水，匯入記為 `SOURCE_ANOMALY` 並保留前次資料。即使最近批次成功，`observedOn` 不是今天時，前端仍提醒先查館方。這套保護目前有單元測試，新增資料庫整合案例尚待本機 PostgreSQL 恢復後實跑。
+表演與海洋節目是另外的 Domain：表演可以有多個有時區的 `sessions`，海洋節目是帶 `observedOn` 的本地每日時段。海洋 API 只顯示最近一次成功匯入的批次；若新清單相對前次大幅縮水，匯入記為 `SOURCE_ANOMALY` 並保留前次資料。即使最近批次成功，`observedOn` 不是今天時，前端仍提醒先查館方。這套保護的單元測試與隔離 PostgreSQL／真實 HTTP 整合案例已通過；未驗證官網跨週穩定或特殊日開館。
 
 ## 從修改到驗證
 
