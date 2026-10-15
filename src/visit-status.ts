@@ -1,4 +1,5 @@
 import { fetchNmnsApi } from './nmns-api.ts';
+import type pg from 'pg';
 
 export type VisitStatus = {
   museumId: string;
@@ -45,7 +46,7 @@ export function parseNmnsHours(payload: unknown, date: string): { status: 'open'
 }
 
 export async function visitStatus(museumId: string, date: string,
-  now = new Date()): Promise<VisitStatus> {
+  now = new Date(), pool?: pg.Pool): Promise<VisitStatus> {
   if (!links[museumId] || !validVisitDate(date)) throw new Error('館所或日期無效');
   const base: VisitStatus = { museumId, date, status: 'unknown',
     message: '平常開放時間已整理在博物館介紹；國定假日、節慶或臨時異動請以館方當日公告為準。', sourceUrl: links[museumId] };
@@ -54,9 +55,28 @@ export async function visitStatus(museumId: string, date: string,
       message: '奇美博物館平常週三休館，但有特別開放場次；請查看館方全年行事曆，勿只依星期判斷。',
       newsUrl: 'https://www.chimeimuseum.org/news/5fd2eee2256ee' };
   }
-  if (museumId === 'nmmba') return { ...base,
-    message: '海生館開館時間依月份及特殊日期調整；目前無逐日可驗證的特殊開館資料，請以館方服務及票價頁與最新公告為準。',
-    newsUrl: 'https://www.nmmba.gov.tw/' };
+  if (museumId === 'nmmba') {
+    if (pool) {
+      const result = await pool.query<{ status:'open'|'closed'; opensAt:string|null;
+        closesAt:string|null; evidenceUrl:string; reviewedAt:string }>(`
+        SELECT status,to_char(opens_at,'HH24:MI') AS "opensAt",
+          to_char(closes_at,'HH24:MI') AS "closesAt",evidence_url AS "evidenceUrl",
+          reviewed_at AS "reviewedAt" FROM museum_opening_exceptions
+        WHERE museum_id='nmmba' AND visit_date=$1::date`,[date]);
+      if (result.rowCount === 1) {
+        const exception = result.rows[0];
+        return { ...base,status:exception.status,
+          message: exception.status === 'closed'
+            ? '海生館官方指定日期公告經人工核對：這天休館。出發前請再查館方最新公告。'
+            : `海生館官方指定日期公告經人工核對：${exception.opensAt}–${exception.closesAt} 開館。出發前請再查館方最新公告。`,
+          sourceUrl:exception.evidenceUrl,checkedAt:exception.reviewedAt,
+          newsUrl:'https://www.nmmba.gov.tw/' };
+      }
+    }
+    return { ...base,
+      message: '海生館官網在 2026-10-15 核對時標示平常 09:00–17:00、週二例行休館；假期、天候及臨時異動可能例外。本日期尚無逐日核對的特殊開館公告，請以館方當日資訊為準。',
+      newsUrl: 'https://www.nmmba.gov.tw/' };
+  }
   if (museumId !== 'nmns' || !process.env.NMNS_API_KEY) return base;
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric',
     month: '2-digit', day: '2-digit' }).format(now);

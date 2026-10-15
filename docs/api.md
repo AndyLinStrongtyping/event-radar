@@ -32,7 +32,7 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 
 `GET /exhibitions/:id` 同樣預設隱藏模擬資料；開發時可加 `?includeSample=true` 查看。
 
-`GET /visit-status?museum=nmns&date=2026-10-05` 回傳 `museumId,date,status,message,sourceUrl`，若成功核對科博館 API 另有 `checkedAt`。`status` 為 `open`、`closed` 或 `unknown`；科博館僅在金鑰可用且日期落於 API 未來一週資料內才宣稱開／休館。奇美週三可能特別開放，因此回 `unknown` 並提供 `newsUrl` 查看臨時公告。海生館提供官方服務與票價頁核對季節及特殊開館，逐日狀態仍是 `unknown`。其他館目前也只有官方入口與 `unknown`，不將特展或節目日期推論為開館日。
+`GET /visit-status?museum=nmns&date=2026-10-05` 回傳 `museumId,date,status,message,sourceUrl`，核對資料另有 `checkedAt`。`status` 為 `open`、`closed` 或 `unknown`；科博館僅在金鑰可用且日期落於 API 未來一週資料內才宣稱開／休館。奇美週三可能特別開放，因此回 `unknown` 並提供 `newsUrl` 查看臨時公告。海生館只有指定日期已依官方詳情或公告人工覆核時才回 `open`／`closed`、官方證據 `sourceUrl` 與核對時間；其他日期仍是 `unknown`，服務頁的平常時間與週二規則不能推定特殊假期。其他館目前也只有官方入口與 `unknown`，不將特展或節目日期推論為開館日。
 
 `sourceStatus` 分為 `curated`（人工核對）、`open_data`（官方公開資料）、`official_page`（館方公開頁同步）與 `planned`（尚未接入）。`GET /exhibitions/:id/changes` 回傳 `{ "items": [{ "field": "endDate", "oldValue": "2026-12-06", "newValue": "2026-12-07", "detectedAt": "..." }] }`；沒有異動時為空陣列，不表示資料未曾被核對。
 

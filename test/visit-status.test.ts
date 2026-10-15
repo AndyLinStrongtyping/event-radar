@@ -32,7 +32,8 @@ test('國美館僅提供官方時間入口，不推測特定日開館', async ()
 test('海生館特殊開館需回官方服務頁核對', async () => {
   const result = await visitStatus('nmmba', '2026-10-13');
   assert.equal(result.status, 'unknown');
-  assert.match(result.message, /特殊日期/);
+  assert.match(result.message, /09:00–17:00/);
+  assert.match(result.message, /本日期尚無逐日核對/);
   assert.match(result.sourceUrl, /nmmba\.gov\.tw\/cp\.aspx/);
 });
 

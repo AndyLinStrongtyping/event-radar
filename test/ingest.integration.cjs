@@ -813,7 +813,39 @@ async function main() {
   const domainChanges = await testDb.query(`SELECT field_name FROM domain_event_changes ORDER BY field_name`);
   assert.deepEqual(domainChanges.rows.map((row) => row.field_name),
     ['recurringSchedule','sessionStatus','sessionStatus','sessions']);
+  const { reviewNmmbaOpening } = await import('../src/marine-opening-review.ts');
+  const openingReview = {date:'2026-10-20',status:'open',opensAt:'09:00',closesAt:'18:00',
+    evidenceUrl:'https://www.nmmba.gov.tw/News_Content.aspx?n=official&s=notice',
+    reviewer:'integration-operator',note:'已逐字核對此測試日期的海生館官方特殊開館公告與開閉館時間。'};
+  assert.equal((await reviewNmmbaOpening(testDb,openingReview)).changed,true);
+  assert.equal((await reviewNmmbaOpening(testDb,openingReview)).changed,false);
+  assert.equal((await reviewNmmbaOpening(testDb,{...openingReview,date:'2026-10-22',
+    status:'closed',opensAt:undefined,closesAt:undefined})).changed,true);
+  await assert.rejects(reviewNmmbaOpening(testDb,{...openingReview,
+    evidenceUrl:'https://example.org/News_Content.aspx'}),/海生館官方/);
+  await assert.rejects(reviewNmmbaOpening(testDb,{...openingReview,
+    date:'2026-02-30'}),/日期無效/);
+  assert.equal((await testDb.query('SELECT count(*)::int AS count FROM museum_opening_exception_changes'))
+    .rows[0].count,2,'相同核對不得重複留異動');
   await checkPublicApiContract(async (get) => {
+    const specialOpening = await get('/visit-status?museum=nmmba&date=2026-10-20');
+    assert.equal(specialOpening.status,'open');
+    assert.match(specialOpening.message,/09:00–18:00/);
+    assert.equal(specialOpening.sourceUrl,openingReview.evidenceUrl);
+    assert.ok(specialOpening.checkedAt);
+    const specialClosure = await get('/visit-status?museum=nmmba&date=2026-10-22');
+    assert.equal(specialClosure.status,'closed');
+    assert.equal(specialClosure.sourceUrl,openingReview.evidenceUrl);
+    const unverifiedOpening = await get('/visit-status?museum=nmmba&date=2026-10-21');
+    assert.equal(unverifiedOpening.status,'unknown',
+      '平常週二與假期文字不可推定指定日期的實際開館狀態');
+    assert.equal((await reviewNmmbaOpening(testDb,{...openingReview,status:'closed',
+      opensAt:undefined,closesAt:undefined,
+      note:'已核對海生館官方更新公告，此測試日期改為休館並保留前次開館結論。'})).changed,true);
+    assert.equal((await get('/visit-status?museum=nmmba&date=2026-10-20')).status,'closed');
+    assert.equal((await testDb.query(`SELECT count(*)::int AS count
+      FROM museum_opening_exception_changes WHERE museum_id='nmmba' AND visit_date='2026-10-20'`))
+      .rows[0].count,2,'官方公告改變時應留下前後兩次人工結論');
     const reviewedPerformance = (await get('/performances?source=ntt&period=all&limit=100'))
       .items.find((item) => item.sourceKey === performance.sourceKey);
     assert.equal(reviewedPerformance.sessions.find((session) => session.status === 'postponed')

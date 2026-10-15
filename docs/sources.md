@@ -78,6 +78,10 @@
 
 首頁十一張圖鑑卡片的對外署名與授權連結也列在 [`web/photo-credits.html`](../web/photo-credits.html)，從圖鑑區可直接開啟。歌劇院場館頁另依[官方場域空間](https://www.npac-ntt.org/about/architecture/venue)、[開館與交通](https://www.npac-ntt.org/visit/transportation)及[導覽服務](https://www.npac-ntt.org/visit/tour/introduction)整理，不把表演場館稱為常設展。館舍照片未作檔案修圖；網頁以 `object-fit` 裁切並套用輕微色調。
 
+## 2026-10-15 海生館開館時間來源核對
+
+[館方服務及票價頁](https://www.nmmba.gov.tw/cp.aspx?n=A6476B49BA86BBD5&s=B3CCAAE6060F5DB7)目前寫全年平常 09:00–17:00、週二例行休館，國定假日、連續假期、寒暑假與天候有例外；舊導覽分月時間已依 10/15 官網修正。這段概括文字不等於完整逐日行事曆，`visit-status` 只有在指定日期的官方公告經人工覆核後才提供確定的開／休館結論。[當日節目表](https://www.nmmba.gov.tw/ActiveShow_D_Cus.aspx?n=33D045D1594ED637&sms=00C15C8CDECA96C3)同日 9 筆活動，仍不可用來推定明日開館或時段。
+
 ## 交通規劃的依據與界線
 
 第二階段新增的目的地與交通說明依[故宮北院官方交通資訊](https://www.npm.gov.tw/Articles.aspx?l=1&sno=03009216)及[海生館官方交通資訊](https://www.nmmba.gov.tw/cp.aspx?n=F88AE745629C8209&s=70BFA54CEA821391)核對，沿用既有地圖路線入口。

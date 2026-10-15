@@ -205,8 +205,11 @@ const server = createServer(async (request, response) => {
         json(response, 400, { error: { code: 'BAD_REQUEST', message: '館所或日期無效' } });
         return;
       }
-      try { json(response, 200, await visitStatus(museum, requestedDate)); }
-      catch { json(response, 400, { error: { code: 'BAD_REQUEST', message: '館所或日期無效' } }); }
+      try { json(response, 200, await visitStatus(museum, requestedDate, new Date(), pool)); }
+      catch (error) {
+        if (!(error instanceof Error) || error.message !== '館所或日期無效') throw error;
+        json(response, 400, { error: { code: 'BAD_REQUEST', message: error.message } });
+      }
       return;
     }
     if (url.pathname === '/exhibitions') {

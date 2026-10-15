@@ -8,7 +8,7 @@
 2. [本頁](development-guide.md)與[目前架構](architecture.md#目前實作本機-mvp)：資料如何進入、分流與被查詢。
 3. [API 說明](api.md)和 [OpenAPI 3.0](openapi.yaml)：公開唯讀端點的語意、參數、回應與錯誤。
 4. [來源盤點](sources.md)及[技術決策](technical-decisions.md)：每館證據、資料品質規則與取捨。
-5. [運作設計](operations.md)與[Phase 3 階段紀錄](stage-2026-10-15-phase3.md)：歌劇院場次核對、手動同步、測試證據及未完成事項。
+5. [運作設計](operations.md)、[Phase 3](stage-2026-10-15-phase3.md)與[Phase 4](stage-2026-10-15-phase4.md)階段紀錄：逐場／逐日核對、手動同步、測試證據及未完成事項。
 
 ## 三條資料路徑
 
