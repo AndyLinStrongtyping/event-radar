@@ -145,7 +145,7 @@ async function checkPublicApiContract(afterChecks) {
     assert.equal(museums.items.find((museum) => museum.id === 'nstm').coverageStatus, 'deferred_partial');
     assert.equal(museums.items.find((museum) => museum.id === 'ntmofa').venueType, 'art_museum');
 
-    const performances = await get('/performances?source=ntt');
+    const performances = await get('/performances?source=ntt&period=all');
     assert.equal(performances.total, 1);
     assert.equal(performances.items[0].domain, 'performance');
     assert.equal(performances.items[0].sessions.length, 2);
@@ -836,7 +836,7 @@ async function main() {
     } : row);
     await assert.rejects(importDomainEvents(testDb,mostlyReplaced,
       'ntt_place1_list','2026-10-19T12:00:00Z'),/SOURCE_ANOMALY.*來源鍵大幅變動/);
-    assert.equal((await get('/performances?source=ntt&limit=100')).total,20,
+    assert.equal((await get('/performances?source=ntt&period=all&limit=100')).total,20,
       '同筆數大量換鍵的異常批次不可修改原有節目');
     const replacementReview = '已對照歌劇院官方節目清單與詳情，確認換季後的新節目連結和日期。';
     assert.deepEqual(await importDomainEvents(testDb,mostlyReplaced,
@@ -848,7 +848,7 @@ async function main() {
       WHERE source_id='ntt' AND scope='ntt_place1_list' AND status='failed'
       ORDER BY finished_at DESC LIMIT 1`);
     assert.match(nttAnomaly.rows[0].error_message,/SOURCE_ANOMALY/);
-    assert.equal((await get('/performances?source=ntt&limit=100')).total,30,
+    assert.equal((await get('/performances?source=ntt&period=all&limit=100')).total,30,
       '異常批次不可修改原有節目');
     const reviewNote = '已對照歌劇院官方 place=1 清單，季末節目自然落幕，確認目前只剩九筆。';
     assert.deepEqual(await importDomainEvents(testDb,mostlyReplaced.slice(0,9),
@@ -858,9 +858,34 @@ async function main() {
       WHERE source_id='ntt' AND scope='ntt_place1_list' AND status='succeeded'
       ORDER BY finished_at DESC LIMIT 1`);
     assert.equal(reviewed.rows[0].review_note,reviewNote);
-    const expandedList = await get('/performances?source=ntt&limit=100');
+    const expandedList = await get('/performances?source=ntt&period=all&limit=100');
     assert.equal(expandedList.total,30,'缺席節目不應自動刪除或誤判取消');
     assert.equal(expandedList.items.length,30);
+    const relativeStart = (days) => new Date(Date.now() + days * 86400000).toISOString();
+    const temporalSession = (days, status = 'scheduled') => ({
+      ...firstSession, sessionKey: relativeStart(days), startsAt: relativeStart(days), status,
+    });
+    const temporalEvents = [
+      { ...performance, sourceId:'ntt-temporal', sourceKey:'past', title:'已過場次',
+        sessions:[temporalSession(-2)] },
+      { ...performance, sourceId:'ntt-temporal', sourceKey:'mixed', title:'仍有未來場次',
+        sessions:[temporalSession(-1),temporalSession(2)] },
+      { ...performance, sourceId:'ntt-temporal', sourceKey:'later', title:'較晚的場次',
+        sessions:[temporalSession(5)] },
+      { ...performance, sourceId:'ntt-temporal', sourceKey:'unverified', title:'來源已不再列出的場次',
+        sessions:[temporalSession(3,'unknown')] },
+    ];
+    assert.deepEqual(await importDomainEvents(testDb,temporalEvents,'sampled_list',new Date().toISOString()),
+      {inserted:4,updated:0,unchanged:0});
+    const upcoming = await get('/performances?source=ntt-temporal&limit=1');
+    assert.equal(upcoming.total,2,'總數須在分頁前排除已過期與未核對場次');
+    assert.equal(upcoming.items[0].title,'仍有未來場次','依最早未來場次排序');
+    assert.equal(upcoming.items[0].sessions.length,1,'同節目已過場次不混入未來列表');
+    assert.equal((await get('/performances?source=ntt-temporal&offset=1')).items[0].title,'較晚的場次');
+    assert.equal((await get('/performances?source=ntt-temporal&period=all')).total,4,
+      '完整紀錄仍可查閱');
+    assert.equal((await get('/performances?period=invalid',400)).error.code,'BAD_REQUEST');
+    assert.equal((await get('/marine-programmes?period=upcoming',400)).error.code,'BAD_REQUEST');
   });
   assert.equal(ingestMockNstm(nstmFullHtml).coverageStatus, 'checked',
     '官方完整清單恢復後應重新通過完整度檢查');

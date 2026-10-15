@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-15 表演清單時態修正：`/performances` 預設只回傳尚未開始且狀態為 `scheduled`／`sold_out` 的場次，同節目已過場次不混列；`total`、排序與分頁依篩選後結果計算，`period=all` 可查保留的完整紀錄。React 表演區同步說明這不是即時票務，完整邊界見 [ER-67](docs/technical-decisions.md)。67 項單元、型別檢查及 React build 通過；隔離 PostgreSQL 整合案例已寫入但本機 Docker Engine 未啟動，**尚未驗證通過**，須在可用的資料庫環境重跑 `npm run test:integration`。此改動不處理整個節目從來源清單消失的判定，亦未開啟線上排程。
+
 2026-10-14 歌劇院清單來源鍵異常保護：第 019 migration 為成功／失敗的官方 `place=1` 批次保存來源鍵。前後清單至少各 10 筆時，若重疊來源鍵少於較小清單的一半，即使總筆數相同也以 `SOURCE_ANOMALY` 整批拒收；人工核對後可用 `--review-list-change` 留原因放行（原 `--review-shrink` 仍可用）。隔離 PostgreSQL 測試涵蓋同筆數大量換鍵、縮水及覆核；67 項單元、型別與 React build 通過。本機第 019 migration 已套用，再次真實同步 20 筆全部未變並保存新鍵基準。這只建立基準，未證明跨週穩定，見 [ER-66](docs/technical-decisions.md)。
 
 2026-10-14 歌劇院官方清單縮水保護：第 018 migration 將 `ntt_place1_list` 與人工抽樣分開，避免混用基準。已有至少 10 筆成功基準時，若新清單少於一半，整批以 `SOURCE_ANOMALY` 拒收；人工核對確屬正常變動可用 `--review-shrink` 留 20–500 字說明放行，`domain_source_runs.review_note` 保存理由。隔離 PostgreSQL 整合測試涵蓋拒收、保留原資料、抽樣不污染基準及覆核放行；66 項單元、型別與 React build 通過。本機 migration 新套用 1 份，真實 `place=1` 清單同步 20 筆（更新 1、未變 19），建立新範圍的首個基準。首次成功不代表跨週穩定或所有節目覆蓋，見 [ER-65](docs/technical-decisions.md)。

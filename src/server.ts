@@ -151,7 +151,15 @@ const server = createServer(async (request, response) => {
       const offset = numeric(url.searchParams.get('offset'), 0, 100000, 'offset');
       const sourceId = url.searchParams.get('source')?.trim() || null;
       if (sourceId && !/^[a-z0-9-]{1,40}$/.test(sourceId)) throw new Error('篩選參數無效');
+      const period = domain === 'performance' ? url.searchParams.get('period') ?? 'upcoming' : 'all';
+      if (!['upcoming', 'all'].includes(period) || (domain === 'marine' && url.searchParams.has('period'))) {
+        throw new Error('period 參數無效');
+      }
+      const cutoff = new Date().toISOString();
+      const eligibleSession = `s.starts_at >= $4::timestamptz AND s.status IN ('scheduled','sold_out')`;
       const conditions = `d.domain=$1 AND ($2::text IS NULL OR d.source_id=$2)
+        AND ($3::text='all' OR EXISTS (SELECT 1 FROM event_sessions s
+          WHERE s.event_id=d.id AND ${eligibleSession}))
         AND ($1::text <> 'marine' OR d.source_checked_at = (
           SELECT max(latest.source_checked_at) FROM domain_events latest
           WHERE latest.domain='marine' AND latest.source_id=d.source_id))`;
@@ -164,7 +172,8 @@ const server = createServer(async (request, response) => {
             COALESCE((SELECT jsonb_agg(jsonb_build_object('startsAt',s.starts_at,
               'hall',s.hall,'ticketUrl',s.ticket_url,'priceMin',s.price_min,
               'priceMax',s.price_max,'status',s.status) ORDER BY s.starts_at)
-              FROM event_sessions s WHERE s.event_id=d.id),'[]'::jsonb)
+              FROM event_sessions s WHERE s.event_id=d.id
+                AND ($3::text='all' OR (${eligibleSession}))),'[]'::jsonb)
             ELSE NULL END AS sessions,
           CASE WHEN d.domain='marine' THEN
             COALESCE((SELECT jsonb_agg(jsonb_build_object('localTime',to_char(r.local_time,'HH24:MI'),
@@ -172,8 +181,11 @@ const server = createServer(async (request, response) => {
               ORDER BY r.local_time) FROM recurring_schedules r WHERE r.event_id=d.id),'[]'::jsonb)
             ELSE NULL END AS "dailySchedule"
           FROM domain_events d WHERE ${conditions}
-          ORDER BY d.source_checked_at DESC,d.id LIMIT $3 OFFSET $4`,[domain,sourceId,limit,offset]),
-        pool.query(`SELECT count(*)::int AS total FROM domain_events d WHERE ${conditions}`,[domain,sourceId]),
+          ORDER BY CASE WHEN $3::text='upcoming' THEN (SELECT min(s.starts_at)
+            FROM event_sessions s WHERE s.event_id=d.id AND ${eligibleSession}) END ASC NULLS LAST,
+            d.source_checked_at DESC,d.id LIMIT $5 OFFSET $6`,[domain,sourceId,period,cutoff,limit,offset]),
+        pool.query(`SELECT count(*)::int AS total FROM domain_events d WHERE ${conditions}`,
+          [domain,sourceId,period,cutoff]),
       ]);
       json(response,200,{items:items.rows,total:count.rows[0].total,limit,offset});
       return;

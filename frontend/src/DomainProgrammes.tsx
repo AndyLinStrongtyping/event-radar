@@ -43,14 +43,14 @@ function Performances() {
     <div className="section-kicker"><span>06</span> PERFORMANCE FIELD NOTES</div>
     <div className="intro-heading"><h2 id="performances-title">舞臺上的故事，<em>從場次開始。</em></h2>
       <p>同一節目可能演出不只一次。從臺中國家歌劇院的場次與廳，找到想看的時間。</p></div>
-    <p className="domain-caveat">目前只取館方清單首頁的少量節目詳情，並非完整節目表。列有場次不代表仍有票；購票、取消與改期請以<a href={nttSource} target="_blank" rel="noopener noreferrer">歌劇院官方節目頁 ↗</a>為準。</p>
+    <p className="domain-caveat">這裡只列出資料庫中尚未開始、且未標為待核對的場次，按時間先後排列；不是即時或完整節目表。列有場次不代表仍有票；購票、取消與改期請以<a href={nttSource} target="_blank" rel="noopener noreferrer">歌劇院官方節目頁 ↗</a>為準。</p>
     {error ? <p className="domain-message">節目暫時無法載入，請查看館方網站。</p>
       : !data ? <p className="domain-message" role="status">正在翻閱演出檔案…</p>
-      : data.total === 0 ? <p className="domain-message">目前尚無可核對的演出資料。</p>
+      : data.total === 0 ? <p className="domain-message">目前沒有可核對的未來場次，請查看館方節目頁。</p>
       : <div className="domain-grid">{data.items.map((item) => <article className="domain-card" key={item.id}>
         <span>PERFORMANCE / 台中</span><h3>{item.title}</h3>
         {item.sessions?.length ? <ul>{item.sessions.map((session) => <li key={session.startsAt}>
-          <b>{dateTime(session.startsAt)}</b><small>{session.hall ? ` · ${session.hall}` : ''} · {session.status === 'unknown' ? '狀態待核對' : '館方列有場次'}</small>
+          <b>{dateTime(session.startsAt)}</b><small>{session.hall ? ` · ${session.hall}` : ''} · {session.status === 'sold_out' ? '資料標為售罄' : '館方列有場次'}</small>
         </li>)}</ul> : null}
         {item.priceNote && <p>{item.priceNote}</p>}
         <small>資料核對：{dateTime(item.sourceCheckedAt)}</small>
