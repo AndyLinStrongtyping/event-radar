@@ -50,7 +50,13 @@ async function main(): Promise<void> {
           details.push({ url, html: await fetchOfficialHtml(url,'www.npac-ntt.org') });
         }
       }
-      const rows = details.map(({url,html}) => parseNttDetail(html,url));
+      const rows = details.map(({url,html}) => {
+        try { return parseNttDetail(html,url); }
+        catch (error) {
+          throw new Error(`歌劇院詳情 ${url} 需核對：${error instanceof Error ? error.message : String(error)}`,
+            { cause: error });
+        }
+      });
       const scope = detail || (snapshot && details.length === 1) ? 'single_detail'
         : snapshot ? 'sampled_list' : 'ntt_place1_list';
       const counts = await importDomainEvents(pool,rows,scope,checkedAt,

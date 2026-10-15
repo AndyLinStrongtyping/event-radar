@@ -52,7 +52,16 @@ export function parseNttDetail(html: string, rawUrl: string): PerformanceEvent {
   const url = nttUrl(rawUrl);
   const title = plain(html.match(/<input\b[^>]*id="txtSubject"[^>]*value="([^"]+)"/i)?.[1] ?? '');
   if (!title || title.length > 240) throw new Error('歌劇院詳情缺少可核對標題');
-  if (/取消(?:演出|節目)|延期|異動公告/.test(title)) throw new Error('歌劇院異動公告須逐場人工核對');
+  if (/(?:取消|延期)(?:演出|節目|活動|場次)|(?:演出|節目|活動|場次)(?:取消|延期)|延期|異動公告/.test(title)) {
+    throw new Error('歌劇院異動公告須逐場人工核對');
+  }
+  // The official page can leave its title and session list unchanged while a
+  // callout inside the introduction announces changes to only some sessions.
+  const introduction = html.match(/<section\b[^>]*\bid="SortIntroduction"[^>]*>([\s\S]*?)<\/section>/i)?.[1] ?? '';
+  const notice = plain(introduction.match(/<div\b[^>]*class="[^"]*\bcallout\b[^"]*"[^>]*>([\s\S]*?)<\/div>/i)?.[1] ?? '');
+  if (/(?:演出異動公告|場次異動|(?:取消|延期)(?:演出|場次|活動|節目)|(?:演出|場次|活動|節目)(?:取消|延期))/.test(notice)) {
+    throw new Error('歌劇院內文異動公告須逐場人工核對');
+  }
   const hall = plain(html.match(/<div\b[^>]*class="post-place"[^>]*>([\s\S]*?)<\/div>/i)?.[1] ?? '') || null;
   const timeBlock = html.match(/<div\b[^>]*class="event-time"[^>]*>([\s\S]*?)<\/div>/i)?.[1] ?? '';
   const ticketRaw = html.match(/<a\b[^>]*class="[^"]*btn-buy-ticket[^"]*"[^>]*href="([^"]+)"/i)?.[1];
