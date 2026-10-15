@@ -898,6 +898,34 @@ async function main() {
     assert.equal((await testDb.query(`SELECT count(*)::int AS total FROM marine_daily_observations
       WHERE observed_on='2026-10-12'`)).rows[0].total,1,
     '同日同內容重跑只刷新觀察時間，不新增版本');
+    const rotatedMarine = revisedBatch.map((row,index) => ({...row,
+      sourceKey:`特殊日節目${index}|新展區${index}`,title:`特殊日節目${index}`,
+      venue:`新展區${index}`,observedOn:'2026-10-17'}));
+    await assert.rejects(importDomainEvents(testDb,rotatedMarine,'daily_page','2026-10-17T02:00:00Z'),
+      /SOURCE_ANOMALY.*來源鍵/,'同筆數但多數節目換掉不可直接接受');
+    const marineReview = { note:'已逐項核對海生館官方當日節目表，確認特殊日節目更換及展區資料無誤。',
+      evidenceUrl:marineProgramme.sourceUrl,reviewer:'integration-operator' };
+    await assert.rejects(importDomainEvents(testDb,rotatedMarine,'daily_page',
+      '2026-10-17T02:00:00Z',{marineReview:{...marineReview,evidenceUrl:'https://example.org/'}}),
+    /官方 HTTPS 佐證/);
+    assert.deepEqual(await importDomainEvents(testDb,rotatedMarine,'daily_page',
+      '2026-10-17T02:00:00Z',{marineReview}),{inserted:4,updated:0,unchanged:0});
+    const reviewedMarine = await testDb.query(`SELECT review_note,review_evidence_url,reviewer,
+      identity_keys FROM domain_source_runs WHERE source_id='nmmba' AND status='succeeded'
+      ORDER BY finished_at DESC,id DESC LIMIT 1`);
+    assert.equal(reviewedMarine.rows[0].review_note,marineReview.note);
+    assert.equal(reviewedMarine.rows[0].review_evidence_url,marineReview.evidenceUrl);
+    assert.equal(reviewedMarine.rows[0].reviewer,marineReview.reviewer);
+    assert.equal(reviewedMarine.rows[0].identity_keys.length,4);
+    await assert.rejects(importDomainEvents(testDb,rotatedMarine,'daily_page',
+      '2026-10-17T03:00:00Z',{marineReview}),/未達異常覆核條件/);
+    const shortenedMarine = [{...rotatedMarine[0],observedOn:'2026-10-18'}];
+    await assert.rejects(importDomainEvents(testDb,shortenedMarine,'daily_page',
+      '2026-10-18T02:00:00Z'),/SOURCE_ANOMALY.*降至/);
+    assert.deepEqual(await importDomainEvents(testDb,shortenedMarine,'daily_page',
+      '2026-10-18T02:00:00Z',{marineReview}),{inserted:0,updated:0,unchanged:1});
+    assert.equal((await get('/marine-programmes?date=2026-10-18')).total,1,
+      '經官方證據覆核的正常縮水應保留當日完整快照');
     const expandedPerformances = Array.from({ length: 19 }, (_, index) => {
       const sourceKey = `c-integration-${String(index + 1).padStart(2, '0')}`;
       return { ...performance, sourceKey, title: `擴量驗證節目 ${index + 1}`,

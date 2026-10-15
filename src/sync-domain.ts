@@ -13,6 +13,10 @@ const detail = process.argv.includes('--detail')
 const reviewFlag = process.argv.includes('--review-list-change') ? '--review-list-change'
   : process.argv.includes('--review-shrink') ? '--review-shrink' : null;
 const listReviewNote = reviewFlag ? process.argv[process.argv.indexOf(reviewFlag) + 1] : null;
+const marineReviewFlags = ['--review-daily-change','--review-evidence','--reviewer'];
+const marineReviewPresent = marineReviewFlags.some((flag) => process.argv.includes(flag));
+const marineReviewValues = marineReviewFlags.map((flag) => process.argv.includes(flag)
+  ? process.argv[process.argv.indexOf(flag) + 1] : null);
 
 async function main(): Promise<void> {
   if (!process.env.DATABASE_URL) throw new Error('需要 DATABASE_URL');
@@ -25,6 +29,10 @@ async function main(): Promise<void> {
   }
   if (reviewFlag && (source !== 'ntt' || snapshot || detail)) {
     throw new Error(`${reviewFlag} 只可用於歌劇院官方 place=1 清單同步`);
+  }
+  if (marineReviewPresent && (source !== 'nmmba' || snapshot || detail || reviewFlag
+    || marineReviewValues.some((value) => !value || value.startsWith('--')))) {
+    throw new Error('海生館官方當日頁覆核須同時提供 --review-daily-change 說明、--review-evidence 官方網址與 --reviewer 核對者；不可用於快照');
   }
   let checkedAt = new Date().toISOString();
   const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Taipei', year: 'numeric',
@@ -70,7 +78,9 @@ async function main(): Promise<void> {
       const html = input?.html ?? await fetchOfficialHtml(nmmbaProgrammeUrl,'www.nmmba.gov.tw');
       const observedOn = input?.observedOn ?? today;
       const rows = parseNmmbaProgrammes(html,observedOn);
-      const counts = await importDomainEvents(pool,rows,'daily_page',checkedAt);
+      const counts = await importDomainEvents(pool,rows,'daily_page',checkedAt,
+        marineReviewPresent ? { marineReview: { note:marineReviewValues[0]!,
+          evidenceUrl:marineReviewValues[1]!,reviewer:marineReviewValues[2]! } } : {});
       process.stdout.write(JSON.stringify({ source,scope:'daily_page',accepted:rows.length,...counts,
         observedOn,coverage:'僅當日官網節目表；未推定未來日期或特殊開館' })+'\n');
     }

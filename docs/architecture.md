@@ -14,6 +14,8 @@ Phase 3／4 的本機手動 `sync:domain`：歌劇院官方 `place=1` 清單 HTM
 
 第 023 migration 再將海生館**成功匯入的完整當日節目清單**按觀察日及內容雜湊存入 `marine_daily_observations`，與最新 `domain_events` 更新共用交易。這是由正規化節目組成的歷史快照，並非原始網站鏡像；失敗或 `SOURCE_ANOMALY` 不寫入。無 `date` 的 `/marine-programmes` 仍查最新清單，帶 `date` 查該日最後成功版本，`/marine-observation-days` 列可查日期。舊日期不回填，且不得由每日節目推定未來時段或開館。
 
+第 024 migration 擴充海生館官方每日清單的來源鍵基準與人工覆核證據。來源鍵大量更換或筆數大幅縮水時，匯入交易在更新事件與快照之前停止；站長核對館方頁並提供理由、官方網址與核對者後才可放行，核對結果存於同一筆 `domain_source_runs`。這是來源品質閘門，不更動公開 API 的節目狀態語意。
+
 ## 目前實作（本機 MVP）
 
 ```mermaid

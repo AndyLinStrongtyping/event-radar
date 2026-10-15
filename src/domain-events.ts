@@ -12,6 +12,13 @@ export function severeDailyShrink(previousCount: number, currentCount: number): 
   return previousCount >= 4 && currentCount < Math.ceil(previousCount / 2);
 }
 
+export function severeDailyIdentityChange(previousKeys: string[], currentKeys: string[]): boolean {
+  if (previousKeys.length < 4 || currentKeys.length < 4) return false;
+  const previous = new Set(previousKeys);
+  const overlap = currentKeys.filter((key) => previous.has(key)).length;
+  return overlap < Math.ceil(Math.min(previousKeys.length,currentKeys.length) / 2);
+}
+
 export function severeOfficialListShrink(previousCount: number, currentCount: number): boolean {
   return previousCount >= 10 && currentCount < Math.ceil(previousCount / 2);
 }
@@ -39,7 +46,8 @@ function normalizedTimes(row: MarineProgramme) {
 }
 
 export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], scope: DomainScope,
-  checkedAt: string, options: { shrinkReviewNote?: string; listReviewNote?: string } = {}): Promise<{ inserted: number; updated: number; unchanged: number }> {
+  checkedAt: string, options: { shrinkReviewNote?: string; listReviewNote?: string;
+    marineReview?: { note: string; evidenceUrl: string; reviewer: string } } = {}): Promise<{ inserted: number; updated: number; unchanged: number }> {
   if (!rows.length || rows.length > 30 || Number.isNaN(Date.parse(checkedAt))) throw new Error('活動批次、筆數或核對時間無效');
   const sourceId = rows[0].sourceId;
   if (rows.some((row) => row.sourceId !== sourceId)
@@ -60,11 +68,25 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
     throw new Error('歌劇院清單覆核說明不可重複提供');
   }
   const reviewNote = options.listReviewNote ?? options.shrinkReviewNote;
+  const marineReview = options.marineReview;
+  if (marineReview) {
+    let evidence: URL;
+    try { evidence = new URL(marineReview.evidenceUrl); }
+    catch { throw new Error('海生館覆核佐證網址無效'); }
+    if (sourceId !== 'nmmba' || scope !== 'daily_page' || reviewNote !== undefined
+      || marineReview.note.trim().length < 20 || marineReview.note.trim().length > 500
+      || marineReview.reviewer.trim().length < 2 || marineReview.reviewer.trim().length > 80
+      || evidence.protocol !== 'https:' || !['www.nmmba.gov.tw','nmmba.gov.tw'].includes(evidence.hostname)
+      || evidence.username || evidence.password) {
+      throw new Error('海生館清單覆核須提供 20–500 字說明、核對者及官方 HTTPS 佐證，且只適用當日頁');
+    }
+  }
   if (reviewNote !== undefined && (scope !== 'ntt_place1_list'
     || reviewNote.trim().length < 20 || reviewNote.trim().length > 500)) {
     throw new Error('歌劇院清單覆核說明須為 20–500 字，且只適用官方 place=1 清單');
   }
-  const identityKeys = scope === 'ntt_place1_list' ? rows.map((row) => row.sourceKey).sort() : null;
+  const identityKeys = ['ntt_place1_list','daily_page'].includes(scope)
+    ? rows.map((row) => row.sourceKey).sort() : null;
   const run = await pool.query<{ id: string }>(`INSERT INTO domain_source_runs(source_id,scope,status)
     VALUES ($1,$2,'running') RETURNING id`, [sourceId, scope]);
   const client = await pool.connect();
@@ -73,13 +95,20 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
     await client.query('BEGIN'); transaction = true;
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [`domain:${sourceId}`]);
     let reviewedListChange = false;
+    let reviewedDailyChange = false;
     if (scope === 'daily_page') {
-      const previous = await client.query<{ accepted_count: number }>(`SELECT accepted_count
+      const previous = await client.query<{ accepted_count: number; identity_keys: string[] | null }>(`SELECT accepted_count,identity_keys
         FROM domain_source_runs WHERE source_id=$1 AND scope='daily_page' AND status='succeeded'
         ORDER BY finished_at DESC,id DESC LIMIT 1`, [sourceId]);
       const previousCount = previous.rows[0]?.accepted_count ?? 0;
-      if (severeDailyShrink(previousCount, rows.length)) {
-        throw new Error(`SOURCE_ANOMALY：海生館當日節目從 ${previousCount} 筆降至 ${rows.length} 筆，需人工核對`);
+      const previousKeys = previous.rows[0]?.identity_keys;
+      const anomaly = severeDailyShrink(previousCount,rows.length)
+        ? `海生館當日節目從 ${previousCount} 筆降至 ${rows.length} 筆`
+        : previousKeys && severeDailyIdentityChange(previousKeys,identityKeys!)
+          ? '海生館當日節目來源鍵大幅變動' : null;
+      if (anomaly) {
+        if (!marineReview) throw new Error(`SOURCE_ANOMALY：${anomaly}，需人工核對`);
+        reviewedDailyChange = true;
       }
     }
     if (scope === 'ntt_place1_list') {
@@ -99,6 +128,7 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
       }
     }
     if (reviewNote && !reviewedListChange) throw new Error('歌劇院清單未達異常覆核條件，拒絕無效覆核說明');
+    if (marineReview && !reviewedDailyChange) throw new Error('海生館清單未達異常覆核條件，拒絕無效覆核說明');
     const counts = { inserted: 0, updated: 0, unchanged: 0 };
     const marineSnapshot: Record<string, unknown>[] = [];
     for (const row of rows) {
@@ -227,8 +257,12 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
       [sourceId,observedOn,snapshotHash,JSON.stringify(marineSnapshot),checkedAt]);
     }
     await client.query(`UPDATE domain_source_runs SET status='succeeded',fetched_count=$2,
-      accepted_count=$2,review_note=$3,identity_keys=$4,finished_at=now() WHERE id=$1`,
-    [run.rows[0].id,rows.length,reviewedListChange ? reviewNote!.trim() : null,identityKeys]);
+      accepted_count=$2,review_note=$3,identity_keys=$4,review_evidence_url=$5,
+      reviewer=$6,finished_at=now() WHERE id=$1`,
+    [run.rows[0].id,rows.length,reviewedListChange ? reviewNote!.trim()
+      : reviewedDailyChange ? marineReview!.note.trim() : null,identityKeys,
+    reviewedDailyChange ? marineReview!.evidenceUrl : null,
+    reviewedDailyChange ? marineReview!.reviewer.trim() : null]);
     await client.query('COMMIT'); transaction=false;
     return counts;
   } catch (error) {

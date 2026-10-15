@@ -2,12 +2,21 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { nttDetailUrls, parseNttDetail } from '../src/sources/ntt-events.ts';
 import { parseNmmbaProgrammes } from '../src/sources/nmmba-programmes.ts';
-import { severeDailyShrink, severeOfficialListShrink, severeOfficialIdentityChange } from '../src/domain-events.ts';
+import { severeDailyShrink, severeDailyIdentityChange, severeOfficialListShrink,
+  severeOfficialIdentityChange } from '../src/domain-events.ts';
 
 test('海生館每日清單大幅縮水須隔離，但小幅自然變動可繼續核對', () => {
   assert.equal(severeDailyShrink(9, 4), true);
   assert.equal(severeDailyShrink(9, 5), false);
   assert.equal(severeDailyShrink(3, 1), false, '少量基準不可輕易判為異常');
+});
+
+test('海生館節目數相同但來源鍵多數換掉時也需人工核對', () => {
+  const oldKeys = ['a','b','c','d','e','f','g','h','i'];
+  assert.equal(severeDailyIdentityChange(oldKeys,['a','b','c','d','x','y','z','u','v']),true);
+  assert.equal(severeDailyIdentityChange(oldKeys,['a','b','c','d','e','x','y','z','u']),false);
+  assert.equal(severeDailyIdentityChange(['a','b','c'],['x','y','z']),false,
+    '三筆以下沒有足夠基準，避免誤判');
 });
 
 test('歌劇院官方清單只在已有足夠基準且突然少於一半時要求覆核', () => {
