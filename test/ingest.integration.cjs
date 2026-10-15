@@ -158,6 +158,13 @@ async function checkPublicApiContract(afterChecks) {
     assert.equal(marine.items[0].observedOn, '2026-10-13');
     assert.equal(marine.items[0].sessions, null);
     assert.deepEqual(marine.items[0].dailySchedule.map((entry) => entry.localTime), ['10:00', '14:00']);
+    const oldMarine = await get('/marine-programmes?date=2026-10-12');
+    assert.deepEqual(oldMarine.items[0].dailySchedule.map((entry) => entry.localTime), ['10:00', '13:00'],
+      '隔日更新後仍能查詢前一觀察日的完整時段');
+    assert.equal((await get('/marine-observation-days')).total,2);
+    assert.equal((await get('/marine-programmes?date=2026-02-30',400)).error.code,'BAD_REQUEST');
+    assert.equal((await get('/marine-programmes?date=2026-10-12&period=upcoming',400)).error.code,
+      'BAD_REQUEST','歷史快照不能套用表演場次的 upcoming 語意');
     assert.equal((await get('/performances?source=other')).total, 0);
 
     const artList = await get('/exhibitions?museum=ntmofa&status=all');
@@ -868,12 +875,29 @@ async function main() {
     assert.match(anomalyRun.rows[0].error_message,/SOURCE_ANOMALY/);
     assert.equal((await get('/marine-programmes?source=nmmba')).total,5,
       '異常縮水不應覆蓋上一份成功清單');
+    assert.equal((await get('/marine-programmes?date=2026-10-15')).total,0,
+      '異常批次不能寫入每日歷史快照');
     assert.deepEqual(await importDomainEvents(testDb,marineBatch.slice(0,4).map((row) => ({
       ...row, observedOn:'2026-10-16',
     })),'daily_page','2026-10-16T02:00:00Z'),{inserted:0,updated:0,unchanged:4});
     const latestMarine = await get('/marine-programmes?source=nmmba');
     assert.equal(latestMarine.total,4,'搜尋只顯示最近一次成功觀察到的節目');
     assert.ok(latestMarine.items.every((item) => item.observedOn === '2026-10-16'));
+    const revisedBatch = marineBatch.slice(0,4).map((row) => ({...row,observedOn:'2026-10-16'}));
+    revisedBatch[0] = {...revisedBatch[0],times:[{...revisedBatch[0].times[0],localTime:'11:00'}]};
+    assert.deepEqual(await importDomainEvents(testDb,revisedBatch,'daily_page','2026-10-16T06:00:00Z'),
+      {inserted:0,updated:1,unchanged:3});
+    const revisedDay = await get('/marine-programmes?date=2026-10-16&limit=2&offset=0');
+    assert.equal(revisedDay.total,4);
+    assert.equal(revisedDay.items.length,2);
+    assert.deepEqual(revisedDay.items[0].dailySchedule.map((entry) => entry.localTime),['11:00']);
+    const observationDays = await get('/marine-observation-days');
+    assert.equal(observationDays.total,4);
+    assert.equal(observationDays.items[0].date,'2026-10-16');
+    assert.equal(observationDays.items[0].versionCount,2);
+    assert.equal((await testDb.query(`SELECT count(*)::int AS total FROM marine_daily_observations
+      WHERE observed_on='2026-10-12'`)).rows[0].total,1,
+    '同日同內容重跑只刷新觀察時間，不新增版本');
     const expandedPerformances = Array.from({ length: 19 }, (_, index) => {
       const sourceKey = `c-integration-${String(index + 1).padStart(2, '0')}`;
       return { ...performance, sourceKey, title: `擴量驗證節目 ${index + 1}`,

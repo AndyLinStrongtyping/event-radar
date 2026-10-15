@@ -155,6 +155,21 @@ const server = createServer(async (request, response) => {
       if (!['upcoming', 'all'].includes(period) || (domain === 'marine' && url.searchParams.has('period'))) {
         throw new Error('period 參數無效');
       }
+      const observedDate = url.searchParams.get('date');
+      if (observedDate !== null && (domain !== 'marine' || !validVisitDate(observedDate))) {
+        throw new Error('date 參數無效');
+      }
+      if (observedDate !== null) {
+        const archive = sourceId && sourceId !== 'nmmba' ? null : (await pool.query<{
+          items: Record<string, unknown>[];
+        }>(`SELECT items FROM marine_daily_observations
+          WHERE source_id='nmmba' AND observed_on=$1::date
+          ORDER BY last_seen_at DESC,first_seen_at DESC,snapshot_hash DESC LIMIT 1`,
+        [observedDate])).rows[0];
+        const items = archive?.items ?? [];
+        json(response,200,{items:items.slice(offset,offset+limit),total:items.length,limit,offset});
+        return;
+      }
       const cutoff = new Date().toISOString();
       const eligibleSession = `s.starts_at >= $4::timestamptz AND s.status IN ('scheduled','sold_out')`;
       const conditions = `d.domain=$1 AND ($2::text IS NULL OR d.source_id=$2)
@@ -196,6 +211,20 @@ const server = createServer(async (request, response) => {
           [domain,sourceId,period,cutoff]),
       ]);
       json(response,200,{items:items.rows,total:count.rows[0].total,limit,offset});
+      return;
+    }
+    if (url.pathname === '/marine-observation-days') {
+      const limit = numeric(url.searchParams.get('limit'), 20, 100, 'limit');
+      const offset = numeric(url.searchParams.get('offset'), 0, 100000, 'offset');
+      const [days,count] = await Promise.all([
+        pool.query(`SELECT to_char(observed_on,'YYYY-MM-DD') AS date,
+          count(*)::int AS "versionCount",max(last_seen_at) AS "lastCheckedAt"
+          FROM marine_daily_observations WHERE source_id='nmmba'
+          GROUP BY observed_on ORDER BY observed_on DESC LIMIT $1 OFFSET $2`,[limit,offset]),
+        pool.query<{ total: number }>(`SELECT count(DISTINCT observed_on)::int AS total
+          FROM marine_daily_observations WHERE source_id='nmmba'`),
+      ]);
+      json(response,200,{items:days.rows,total:count.rows[0].total,limit,offset});
       return;
     }
     if (url.pathname === '/visit-status') {

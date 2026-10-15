@@ -46,6 +46,16 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
     || new Set(rows.map((row) => row.sourceKey)).size !== rows.length) throw new Error('活動來源混雜或來源鍵重複');
   if ((sourceId === 'ntt' && scope === 'daily_page')
     || (sourceId === 'nmmba' && scope !== 'daily_page')) throw new Error('活動來源範圍不符');
+  const marineRows = sourceId === 'nmmba' ? rows as MarineProgramme[] : [];
+  const observedOn = marineRows[0]?.observedOn;
+  const parsedObservedOn = typeof observedOn === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(observedOn)
+    ? new Date(`${observedOn}T00:00:00Z`) : null;
+  if (marineRows.length && (marineRows.some((row) => row.domain !== 'marine'
+    || row.observedOn !== observedOn)
+    || !parsedObservedOn || Number.isNaN(parsedObservedOn.getTime())
+    || parsedObservedOn.toISOString().slice(0,10) !== observedOn)) {
+    throw new Error('海生館當日節目日期不一致或無效');
+  }
   if (options.shrinkReviewNote !== undefined && options.listReviewNote !== undefined) {
     throw new Error('歌劇院清單覆核說明不可重複提供');
   }
@@ -90,6 +100,7 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
     }
     if (reviewNote && !reviewedListChange) throw new Error('歌劇院清單未達異常覆核條件，拒絕無效覆核說明');
     const counts = { inserted: 0, updated: 0, unchanged: 0 };
+    const marineSnapshot: Record<string, unknown>[] = [];
     for (const row of rows) {
       const detail = row.domain === 'performance' ? normalizedSessions(row) : normalizedTimes(row);
       const contentHash = hash([row.title,row.venue,row.sourceUrl,row.ticketUrl,row.priceNote,detail]);
@@ -194,7 +205,26 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
         for (const time of normalizedTimes(row)) await client.query(`INSERT INTO recurring_schedules
           (event_id,local_time,recurrence,duration_minutes,venue)
           VALUES ($1,$2,'daily',$3,$4)`,[id,time.localTime,time.durationMinutes,time.venue]);
+        marineSnapshot.push({ id,sourceId:row.sourceId,sourceKey:row.sourceKey,domain:'marine',
+          title:row.title,venue:row.venue,sourceUrl:row.sourceUrl,ticketUrl:row.ticketUrl,
+          priceNote:row.priceNote,sourceCheckedAt:checkedAt,observedOn:row.observedOn,
+          sessions:null,dailySchedule:normalizedTimes(row).map((time) => ({
+            ...time,timezone:'Asia/Taipei',
+          })) });
       }
+    }
+    if (marineSnapshot.length) {
+      marineSnapshot.sort((a,b) => String(a.sourceKey) < String(b.sourceKey) ? -1
+        : String(a.sourceKey) > String(b.sourceKey) ? 1 : 0);
+      const snapshotHash = hash(marineSnapshot.map(({ sourceCheckedAt: _checkedAt, ...item }) => item));
+      await client.query(`INSERT INTO marine_daily_observations
+        (source_id,observed_on,snapshot_hash,items,first_seen_at,last_seen_at)
+        VALUES ($1,$2,$3,$4::jsonb,$5,$5)
+        ON CONFLICT (source_id,observed_on,snapshot_hash) DO UPDATE
+        SET last_seen_at=GREATEST(marine_daily_observations.last_seen_at,EXCLUDED.last_seen_at),
+          items=CASE WHEN EXCLUDED.last_seen_at >= marine_daily_observations.last_seen_at
+            THEN EXCLUDED.items ELSE marine_daily_observations.items END`,
+      [sourceId,observedOn,snapshotHash,JSON.stringify(marineSnapshot),checkedAt]);
     }
     await client.query(`UPDATE domain_source_runs SET status='succeeded',fetched_count=$2,
       accepted_count=$2,review_note=$3,identity_keys=$4,finished_at=now() WHERE id=$1`,

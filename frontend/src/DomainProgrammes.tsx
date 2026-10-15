@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
+import { compareMarineObservations } from './marine-observation-diff.ts';
 
 type Session = { sessionKey: string; startsAt: string; hall: string | null;
   status: 'scheduled' | 'sold_out' | 'cancelled' | 'postponed' | 'unknown';
   statusOrigin: 'source' | 'manual'; statusEvidenceUrl: string | null;
   statusReviewedAt: string | null };
 type DailyTime = { localTime: string; durationMinutes: number | null; venue: string | null };
-type Programme = { id: string; title: string; venue: string | null; sourceUrl: string;
+type Programme = { id: string; sourceKey: string; title: string; venue: string | null; sourceUrl: string;
   priceNote: string | null; sourceCheckedAt: string; observedOn: string | null;
   sessions: Session[] | null; dailySchedule: DailyTime[] | null };
 type Response = { items: Programme[]; total: number };
@@ -25,12 +26,13 @@ const todayTaipei = () => new Intl.DateTimeFormat('en-CA', {
   timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
 }).format(new Date());
 
-function useProgrammes(path: string) {
+function useProgrammes(path: string | null) {
   const [data, setData] = useState<Response | null>(null);
   const [error, setError] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
     setData(null); setError(false);
+    if (!path) return () => controller.abort();
     fetch(path, { signal: controller.signal })
       .then((response) => { if (!response.ok) throw new Error('無法載入'); return response.json(); })
       .then((body: Response) => setData(body))
@@ -98,8 +100,20 @@ function MarineCard({ item, number }: { item: Programme; number: number }) {
 }
 
 function DeepSeaExpedition() {
-  const { data, error } = useProgrammes('/marine-programmes');
+  const [historyDate, setHistoryDate] = useState('');
+  const [observedDays, setObservedDays] = useState<string[]>([]);
+  const latest = useProgrammes('/marine-programmes?limit=100');
+  const archive = useProgrammes(historyDate ? `/marine-programmes?date=${historyDate}&limit=100` : null);
+  const { data, error } = historyDate ? archive : latest;
   const [activeLayer, setActiveLayer] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/marine-observation-days?limit=100', { signal: controller.signal })
+      .then((response) => response.ok ? response.json() : Promise.reject(new Error('無法載入觀察日期')))
+      .then((body: { items: { date: string }[] }) => setObservedDays(body.items.map((item) => item.date)))
+      .catch(() => {});
+    return () => controller.abort();
+  }, []);
   useEffect(() => {
     if (!data?.items.length || typeof IntersectionObserver === 'undefined') return;
     const observer = new IntersectionObserver((entries) => {
@@ -115,6 +129,10 @@ function DeepSeaExpedition() {
   const chunkSize = Math.max(1, Math.ceil(items.length / seaLayers.length));
   const observedOn = items[0]?.observedOn;
   const isToday = observedOn === todayTaipei();
+  const latestObservedOn = latest.data?.items[0]?.observedOn;
+  const observationChanges = historyDate && data && latest.data && latestObservedOn
+    && latestObservedOn !== historyDate
+    ? compareMarineObservations(data.items,latest.data.items) : null;
   return <section className="deep-sea-section" id="deep-sea" aria-labelledby="deep-sea-title">
     <div className="sea-shore" aria-hidden="true">
       <svg className="sea-shore-shape" viewBox="0 0 1440 300" preserveAspectRatio="none">
@@ -129,7 +147,7 @@ function DeepSeaExpedition() {
       <div className="section-kicker"><span>07</span> DEEP SEA EXPEDITION</div>
       <p className="sea-coordinate">NMMBA / PINGTUNG / TAIWAN</p>
       <h2 id="deep-sea-title">深海<em>探勘</em></h2>
-      <p className="sea-lede">從水面慢慢下潛，打開國立海洋生物博物館的節目觀察紀錄。沿著時刻尋找今天想看的海洋故事。</p>
+      <p className="sea-lede">從水面慢慢下潛，打開國立海洋生物博物館的節目觀察紀錄。沿著時刻尋找海洋故事。</p>
       <a className="sea-dive-link" href="#sea-layer-1">向下探索 <span aria-hidden="true">↓</span></a>
       <p className="sea-disclaimer">這是視覺化的下潛旅程；分層不代表展館樓層或生物棲息深度。</p>
     </div><div className="sea-horizon" aria-hidden="true"><span/><span/><span/></div></div>
@@ -139,13 +157,30 @@ function DeepSeaExpedition() {
           <span className="sea-depth-dot" aria-hidden="true"/><span>{layer.title}</span>
         </a>)}</aside>
       <div className="sea-journey">
+        <label className="sea-observation-picker">選擇觀察紀錄
+          <select value={historyDate} onChange={(event) => setHistoryDate(event.target.value)}>
+            <option value="">最近一次成功匯入</option>
+            {observedDays.map((date) => <option value={date} key={date}>{date} 歷史快照</option>)}
+          </select>
+        </label>
         <div className={`sea-freshness${isToday ? '' : ' sea-freshness-old'}`}>
           <span>資料觀察</span><strong>{observedOn ? `${observedOn} 官網當日節目` : '尚無當日節目資料'}</strong>
-          <p>{isToday ? '這是官網今日列出的時段；場次仍可能臨時調整。' : '這份紀錄不是今天的節目保證。出發前請先查看館方當日頁面。'} 特殊開館與休館請另外核對<a href="https://www.nmmba.gov.tw/cp.aspx?n=A6476B49BA86BBD5&s=B3CCAAE6060F5DB7" target="_blank" rel="noopener noreferrer">館方服務資訊 ↗</a></p>
+          <p>{historyDate ? '這是當日曾成功匯入的最後一版歷史快照，不代表現在或未來仍有相同時段。' : isToday ? '這是官網今日列出的時段；場次仍可能臨時調整。' : '這份紀錄不是今天的節目保證。出發前請先查看館方當日頁面。'} 特殊開館與休館請另外核對<a href="https://www.nmmba.gov.tw/cp.aspx?n=A6476B49BA86BBD5&s=B3CCAAE6060F5DB7" target="_blank" rel="noopener noreferrer">館方服務資訊 ↗</a></p>
         </div>
+        {observationChanges && <div className="sea-comparison">
+          <h3>{historyDate} ↔ {latestObservedOn} 時段對照</h3>
+          <p>比較兩次成功觀察的節目表；差異可能來自當日安排，不能直接判定取消或預告。</p>
+          {observationChanges.length === 0 ? <p>兩次觀察的節目與時段相同。</p>
+            : <ul>{observationChanges.map((entry) => <li key={entry.key}>
+              <strong>{entry.title}</strong>
+              <span>{entry.kind === 'added' ? '最近觀察新增：' : entry.kind === 'removed'
+                ? '最近觀察未列出：' : '時段變化：'}
+                {entry.before.length ? entry.before.join('、') : '未列出'} → {entry.after.length ? entry.after.join('、') : '未列出'}</span>
+            </li>)}</ul>}
+        </div>}
         {error ? <p className="sea-message">當日節目資料暫時無法載入，請直接查看<a href={marineSource} target="_blank" rel="noopener noreferrer">海生館官方頁 ↗</a>。</p>
-          : !data ? <p className="sea-message" role="status">正在下潛，尋找今日的海洋線索…</p>
-          : data.total === 0 ? <p className="sea-message">目前沒有可核對的節目資料，請查看館方當日頁面。</p>
+          : !data ? <p className="sea-message" role="status">正在下潛，尋找海洋線索…</p>
+          : data.total === 0 ? <p className="sea-message">{historyDate ? '這一天沒有已保存的完整節目快照。' : '目前沒有可核對的節目資料，請查看館方當日頁面。'}</p>
           : seaLayers.map((layer, index) => {
             const layerItems = items.slice(index * chunkSize, (index + 1) * chunkSize);
             if (!layerItems.length) return null;

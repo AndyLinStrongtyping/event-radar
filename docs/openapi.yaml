@@ -39,9 +39,10 @@ paths:
       tags: [表演與海洋節目]
       summary: 查詢海生館當日觀察到的每日節目表
       operationId: listMarineProgrammes
-      description: 只回傳最近一次成功匯入的節目；observedOn 是官網當日節目表日期，舊觀察紀錄不混入清單。資料不能推定未來日期或特殊開館。
+      description: 不帶 date 時只回傳最近一次成功匯入的節目；帶 date 時回傳指定觀察日最後接受的完整快照。observedOn 是官網當日節目表日期。歷史快照只能追查已觀察時段，不能推定未來日期或特殊開館。
       parameters:
         - { name: source, in: query, schema: { type: string } }
+        - { name: date, in: query, description: 已成功觀察的日期 YYYY-MM-DD；省略時讀取最新資料, schema: { type: string, format: date } }
         - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
         - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
       responses:
@@ -50,6 +51,23 @@ paths:
           content:
             application/json:
               schema: { $ref: '#/components/schemas/DomainEventList' }
+        '400': { $ref: '#/components/responses/BadRequest' }
+        '500': { $ref: '#/components/responses/InternalError' }
+  /marine-observation-days:
+    get:
+      tags: [表演與海洋節目]
+      summary: 查詢海生館已保存完整快照的觀察日期
+      operationId: listMarineObservationDays
+      description: 僅列成功匯入且自第 023 migration 起保存快照的日期；versionCount 表示同日被接受的不同內容版本數，失敗或異常批次不列入。
+      parameters:
+        - { name: limit, in: query, schema: { type: integer, minimum: 1, maximum: 100, default: 20 } }
+        - { name: offset, in: query, schema: { type: integer, minimum: 0, maximum: 100000, default: 0 } }
+      responses:
+        '200':
+          description: 已保存快照的觀察日期
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/MarineObservationDayList' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '500': { $ref: '#/components/responses/InternalError' }
   /chimei-activities.json:
@@ -288,6 +306,21 @@ components:
         application/json:
           schema: { $ref: '#/components/schemas/Error' }
   schemas:
+    MarineObservationDayList:
+      type: object
+      required: [items, total, limit, offset]
+      properties:
+        items: { type: array, items: { $ref: '#/components/schemas/MarineObservationDay' } }
+        total: { type: integer, minimum: 0 }
+        limit: { type: integer, minimum: 1, maximum: 100 }
+        offset: { type: integer, minimum: 0 }
+    MarineObservationDay:
+      type: object
+      required: [date, versionCount, lastCheckedAt]
+      properties:
+        date: { type: string, format: date }
+        versionCount: { type: integer, minimum: 1 }
+        lastCheckedAt: { type: string, format: date-time }
     DomainEventList:
       type: object
       required: [items, total, limit, offset]

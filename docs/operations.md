@@ -8,6 +8,8 @@
 
 海生館 2026-10-15 官網當日清單本機同步接受 9 筆、均未變。特別開館與每日節目分開核對：只有館方服務或公告頁**明示指定日期**時，站長才執行 `npm run review:marine-opening -- set --date YYYY-MM-DD --status open --opens HH:MM --closes HH:MM --evidence <官方 HTTPS 頁> --reviewer <姓名> --note <20–500 字核對說明>`；休館改用 `--status closed`，不可附時間。對照官方日期與公告全文後再寫入；命令會留下異動史，同內容重跑不重複記錄。沒有證據的日期 API 維持 `unknown`。相關判斷及實測見[Phase 4 階段紀錄](stage-2026-10-15-phase4.md)。
 
+第 023 migration 後，每次成功的海生館當日節目同步也會在同一交易寫入完整日期快照。可先查 `/marine-observation-days`，再查 `/marine-programmes?date=YYYY-MM-DD` 對照該日最後接受的版本；同日 `versionCount` 增加代表曾接受不同內容，需對照館方頁與匯入紀錄判斷原因。`SOURCE_ANOMALY` 失敗時不會留下快照，不應手動改歷史清單來使前端看似正常。快照僅從新版本上線後累積，舊日期未回填；歷史時段不能作為今日行前保證。
+
 這是獨立於限期特展的 `sync:domain` 路徑，尚未接入五館 Queue 或每週 workflow。先核對來源頁與 [Phase 3／4 階段紀錄](stage-2026-10-12-phase3-4.md)，再用 `npm run sync:domain -- --source ntt` 或 `--source nmmba` 手動執行。歌劇院涵蓋官網 `place=1` 清單 HTML 的可辨識詳情，包含 MORE 預藏卡片；單批最多 30 筆，MORE 行為改變時停止，不能當作全站所有節目。單一詳情或人工快照另有 `--detail`／`--snapshot` 模式，不能當作完整清單。海生館只取得館方當日節目，日期、場次數、時刻與地點必須可核對；筆數突然大幅縮水會以 `SOURCE_ANOMALY` 停止，先到官網確認，不應反覆重跑來消除異常。公開 `/marine-programmes` 只顯示最近一次成功匯入批次；觀察日不是今天時不能當作今日節目。相關單元測試及隔離 PostgreSQL／真實 HTTP 整合案例已於 2026-10-14 通過；當日第二次歌劇院真實手動同步接受 20 筆（新增 1、未變 19）。
 
 `sync:domain` 的官方 HTML 請求每次逾時 15 秒，只對逾時／網路錯誤與 HTTP 5xx 最多再試兩次，間隔 2 秒、8 秒；404、429、非館方網址／回應主機、解析失敗或資料過大立即失敗。歌劇院不同詳情之間仍另有兩秒間隔。失敗訊息包含官方失敗網址與嘗試次數，便於人工核對；重試耗盡仍不寫入不完整批次。

@@ -12,6 +12,8 @@ Phase 3／4 的本機手動 `sync:domain`：歌劇院官方 `place=1` 清單 HTM
 
 第 022 migration 將海生館**指定日期**的官方開／休館公告核對結果與異動另存，不混入當日節目或例行時間表。`/visit-status` 僅在該日有官方佐證與人工覆核時給確定狀態；其他日維持 `unknown`。10/15 官網當日節目仍有 9 筆，本機同步全未變。詳見 [Phase 4 階段紀錄](stage-2026-10-15-phase4.md)。
 
+第 023 migration 再將海生館**成功匯入的完整當日節目清單**按觀察日及內容雜湊存入 `marine_daily_observations`，與最新 `domain_events` 更新共用交易。這是由正規化節目組成的歷史快照，並非原始網站鏡像；失敗或 `SOURCE_ANOMALY` 不寫入。無 `date` 的 `/marine-programmes` 仍查最新清單，帶 `date` 查該日最後成功版本，`/marine-observation-days` 列可查日期。舊日期不回填，且不得由每日節目推定未來時段或開館。
+
 ## 目前實作（本機 MVP）
 
 ```mermaid
