@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const { execFileSync, spawn } = require('node:child_process');
-const { readFile, writeFile, mkdtemp, unlink, rmdir } = require('node:fs/promises');
+const { readFile, readdir, writeFile, mkdtemp, unlink, rmdir } = require('node:fs/promises');
 const { tmpdir } = require('node:os');
 const { join, resolve } = require('node:path');
 const { pathToFileURL } = require('node:url');
@@ -244,6 +244,8 @@ async function checkPublicApiContract(afterChecks) {
 }
 
 async function main() {
+  const migrationCount = (await readdir(join(project,'db')))
+    .filter((name) => /^\d{3}_[a-z0-9_]+\.sql$/.test(name)).length;
   await maintenance.query(`CREATE DATABASE "${testDbName}"`);
   created = true;
   testDb = new pg.Pool({ connectionString: testUrl.href });
@@ -252,16 +254,16 @@ async function main() {
       cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href }, encoding: 'utf8',
       stdio: ['ignore', 'pipe', 'pipe'],
     });
-  assert.match(migrate(), /新套用 19 份/, '空白資料庫應由單一命令建立');
+  assert.match(migrate(), new RegExp(`新套用 ${migrationCount} 份`), '空白資料庫應由單一命令建立');
   assert.match(migrate(), /新套用 0 份/, '重跑不得重建表或重複寫入');
   let ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 19);
+  assert.equal(ledger.rows[0].count, migrationCount);
   // 模擬舊版手動執行所有 migration 的資料庫；只有明確指定時才建立帳本。
   await testDb.query('DROP TABLE schema_migrations');
   assert.throws(() => migrate(), /舊版資料庫且沒有 migration 帳本/);
   assert.match(migrate('--baseline-existing'), /新套用 0 份/);
   ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
-  assert.equal(ledger.rows[0].count, 19);
+  assert.equal(ledger.rows[0].count, migrationCount);
   assert.match(migrate(), /新套用 0 份/);
   const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
   async function checkCoverage(keys, rawKeys = [], provider = 'ntm') {
@@ -770,10 +772,29 @@ async function main() {
     sessions: [firstSession, secondSession] };
   assert.deepEqual(await importDomainEvents(testDb,[performance],'single_detail','2026-10-11T12:00:00Z'),
     {inserted:1,updated:0,unchanged:0});
+  const { reviewNttSession } = await import('../src/performance-session-review.ts');
+  const sessionReview = {sourceKey:performance.sourceKey,startsAt:secondStart,status:'postponed',
+    evidenceUrl:performance.sourceUrl,reviewer:'integration-operator',
+    note:'已核對歌劇院同一節目詳情的第二場延期公告，暫不顯示為正常場次。'};
+  assert.equal((await reviewNttSession(testDb,sessionReview)).changed,true);
+  assert.equal((await reviewNttSession(testDb,sessionReview)).changed,false,
+    '同一核對不可重複寫入異動');
+  await assert.rejects(reviewNttSession(testDb,{...sessionReview,
+    evidenceUrl:'https://other.example/notice'}),/官方證據|歌劇院官方|證據須為/);
   assert.deepEqual(await importDomainEvents(testDb,[performance],'single_detail','2026-10-11T12:00:00Z'),
     {inserted:0,updated:0,unchanged:1});
   assert.deepEqual(await importDomainEvents(testDb,[{...performance,sessions:[secondSession]}],
     'single_detail','2026-10-12T12:00:00Z'),{inserted:0,updated:1,unchanged:0});
+  const preservedReview = await testDb.query(`SELECT status,status_origin,status_evidence_url
+    FROM event_sessions s JOIN domain_events d ON d.id=s.event_id
+    WHERE d.source_id='ntt' AND d.source_key=$1 AND s.starts_at=$2::timestamptz`,
+    [performance.sourceKey,secondStart]);
+  assert.equal(preservedReview.rows[0].status,'unknown',
+    '官方節目版本變更後，舊核對結論必須失效並重新審查');
+  assert.equal(preservedReview.rows[0].status_origin,'source');
+  assert.equal(preservedReview.rows[0].status_evidence_url,null);
+  assert.equal((await reviewNttSession(testDb,sessionReview)).changed,true,
+    '核對者可依新版官網內容再次逐場確認');
   await assert.rejects(importDomainEvents(testDb,[performance],'single_detail','2026-10-10T12:00:00Z'),/更舊/);
   const marineProgramme = { sourceId:'nmmba', sourceKey:'大洋池餵食解說|大洋池',
     domain:'marine', title:'大洋池餵食解說', venue:'大洋池',
@@ -790,8 +811,15 @@ async function main() {
   assert.deepEqual(await importDomainEvents(testDb,[nextProgramme],'daily_page','2026-10-13T02:00:00Z'),
     {inserted:0,updated:1,unchanged:0});
   const domainChanges = await testDb.query(`SELECT field_name FROM domain_event_changes ORDER BY field_name`);
-  assert.deepEqual(domainChanges.rows.map((row) => row.field_name), ['recurringSchedule','sessions']);
+  assert.deepEqual(domainChanges.rows.map((row) => row.field_name),
+    ['recurringSchedule','sessionStatus','sessionStatus','sessions']);
   await checkPublicApiContract(async (get) => {
+    const reviewedPerformance = (await get('/performances?source=ntt&period=all&limit=100'))
+      .items.find((item) => item.sourceKey === performance.sourceKey);
+    assert.equal(reviewedPerformance.sessions.find((session) => session.status === 'postponed')
+      .statusOrigin,'manual');
+    assert.equal(reviewedPerformance.sessions.find((session) => session.status === 'postponed')
+      .statusEvidenceUrl,performance.sourceUrl);
     const marineBatch = Array.from({ length: 5 }, (_, index) => ({
       ...marineProgramme, sourceKey:`每日節目${index}|區${index}`,
       title:`每日節目${index}`, venue:`區${index}`, observedOn:'2026-10-14',
@@ -900,6 +928,38 @@ async function main() {
     assert.equal((await get('/performances?source=ntt&offset=1')).items[0].title,'較晚的場次');
     assert.equal((await get('/performances?source=ntt&period=all')).total,4,
       '完整紀錄仍可查閱');
+    const reviewSourceKey = 'c-reviewtest0001';
+    const reviewSourceUrl = `https://www.npac-ntt.org/program/events/${reviewSourceKey}`;
+    const needsReview = {...performance,sourceKey:reviewSourceKey,sourceUrl:reviewSourceUrl,
+      title:'部分場次異動測試',sessions:[temporalSession(6,'unknown'),temporalSession(7,'unknown')]};
+    const companionKey = 'c-normaltest0001';
+    const companion = {...performance,sourceKey:companionKey,
+      sourceUrl:`https://www.npac-ntt.org/program/events/${companionKey}`,
+      title:'同批正常節目',sessions:[temporalSession(8)]};
+    assert.deepEqual(await importDomainEvents(testDb,[needsReview,companion],
+      'sampled_list',new Date().toISOString()),{inserted:2,updated:0,unchanged:0});
+    assert.equal((await get('/performances?source=ntt')).total,3,
+      '待審場次不公開，但同批正常節目應可進即將演出清單');
+    const reviewBase = {sourceKey:reviewSourceKey,evidenceUrl:reviewSourceUrl,
+      reviewer:'integration-operator',note:'已核對歌劇院官方逐場公告，確認該場的實際演出狀態。'};
+    await reviewNttSession(testDb,{...reviewBase,startsAt:needsReview.sessions[0].startsAt,
+      status:'scheduled'});
+    await reviewNttSession(testDb,{...reviewBase,startsAt:needsReview.sessions[1].startsAt,
+      status:'cancelled'});
+    const reviewedUpcoming = await get('/performances?source=ntt&limit=100');
+    assert.equal(reviewedUpcoming.total,4,'只讓人工確認照常演出的場次進未來清單');
+    assert.deepEqual(reviewedUpcoming.items.find((item) => item.sourceKey === reviewSourceKey)
+      .sessions.map((session) => session.status),['scheduled']);
+    const reviewedAll = await get('/performances?source=ntt&period=all&limit=100');
+    const reviewedSessions = reviewedAll.items.find((item) => item.sourceKey === reviewSourceKey).sessions;
+    assert.deepEqual(reviewedSessions.map((session) => session.status),['scheduled','cancelled']);
+    assert.ok(reviewedSessions.every((session) => session.statusOrigin === 'manual'
+      && session.statusEvidenceUrl === reviewSourceUrl && session.statusReviewedAt));
+    assert.deepEqual(await importDomainEvents(testDb,[needsReview],'sampled_list',
+      new Date(Date.now() + 1_000).toISOString()),{inserted:0,updated:0,unchanged:1});
+    assert.deepEqual((await get('/performances?source=ntt&period=all&limit=100')).items
+      .find((item) => item.sourceKey === reviewSourceKey).sessions.map((session) => session.status),
+      ['scheduled','cancelled'],'同步來源的 unknown 不可覆蓋逐場人工核對');
     assert.equal((await get('/performances?period=invalid',400)).error.code,'BAD_REQUEST');
     assert.equal((await get('/marine-programmes?period=upcoming',400)).error.code,'BAD_REQUEST');
   });

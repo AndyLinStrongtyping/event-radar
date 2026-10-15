@@ -40,7 +40,7 @@ test('歌劇院節目詳情轉成兩個獨立場次，不臆測售罄', () => {
   assert.throws(() => parseNttDetail(html.replace('2026/10/29','2026/02/30'),url), /日期無效/);
 });
 
-test('歌劇院標題或內文公告部分場次異動時拒絕推定所有場次正常', () => {
+test('歌劇院標題或內文公告部分場次異動時隔離場次，不推定正常', () => {
   const url = 'https://www.npac-ntt.org/program/events/c-kboz8xw2UFj';
   const html = `<input id="txtSubject" value="百老匯傳奇音樂劇"><div class="post-place">大劇院</div>
     <div class="event-time"><span>2026/07/10<b>(五)</b>19:30</span>
@@ -48,11 +48,25 @@ test('歌劇院標題或內文公告部分場次異動時拒絕推定所有場�
     <section id="SortIntroduction"><div class="title">作品簡介</div><div class="callout">
     <p>【演出異動公告】7月10日場次延期至7月12日，7月11日場次取消演出。</p>
     </div></section>`;
-  assert.throws(() => parseNttDetail(html,url), /內文異動公告.*人工核對/);
-  assert.throws(() => parseNttDetail(html.replace('百老匯傳奇音樂劇','〖活動取消〗百老匯傳奇音樂劇')
-    .replace('<div class="callout">','<div class="intro">'),url), /異動公告.*人工核對/);
+  assert.deepEqual(parseNttDetail(html,url).sessions.map((s) => s.status),['unknown','unknown']);
+  assert.deepEqual(parseNttDetail(html.replace('百老匯傳奇音樂劇','〖活動取消〗百老匯傳奇音樂劇')
+    .replace('<div class="callout">','<div class="intro">'),url).sessions.map((s) => s.status),
+  ['unknown','unknown']);
   assert.equal(parseNttDetail(html.replace('演出異動公告','演出公告')
     .replace('場次延期','場次調整').replace('場次取消演出','場次說明'),url).sessions.length,2);
+});
+
+test('歌劇院只在官方報名按鈕明示全節目額滿時標記場次售罄', () => {
+  const url = 'https://www.npac-ntt.org/program/events/c-NIh2qmoeYT7';
+  const base = `<input id="txtSubject" value="測試工作坊"><div class="event-time">
+    <span>2026/10/24<b>(六)</b>09:30</span><span>2026/10/25<b>(日)</b>09:30</span></div>`;
+  const action = (label: string) => `<a class="btn btn-link btn-buy-ticket" href="https://www.npac-ntt.org/tickets"><i></i>${label}</a>`;
+  assert.deepEqual(parseNttDetail(base + action('已額滿(需後補)'),url).sessions.map((s) => s.status),
+    ['sold_out','sold_out']);
+  assert.deepEqual(parseNttDetail(base + action('立即購票'),url).sessions.map((s) => s.status),
+    ['scheduled','scheduled']);
+  assert.deepEqual(parseNttDetail(base + action('部分場次完售，仍可購票'),url).sessions.map((s) => s.status),
+    ['scheduled','scheduled'], '混合票況不可推定全部場次售罄');
 });
 
 test('歌劇院初始清單不默默截成五筆，超過匯入上限則停止', () => {

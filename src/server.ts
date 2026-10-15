@@ -174,9 +174,12 @@ const server = createServer(async (request, response) => {
           d.price_note AS "priceNote",d.source_checked_at AS "sourceCheckedAt",
           to_char(d.observed_on,'YYYY-MM-DD') AS "observedOn",
           CASE WHEN d.domain='performance' THEN
-            COALESCE((SELECT jsonb_agg(jsonb_build_object('startsAt',s.starts_at,
+            COALESCE((SELECT jsonb_agg(jsonb_build_object('sessionKey',s.session_key,
+              'startsAt',s.starts_at,
               'hall',s.hall,'ticketUrl',s.ticket_url,'priceMin',s.price_min,
-              'priceMax',s.price_max,'status',s.status) ORDER BY s.starts_at)
+              'priceMax',s.price_max,'status',s.status,'statusOrigin',s.status_origin,
+              'statusEvidenceUrl',s.status_evidence_url,'statusReviewedAt',s.status_reviewed_at)
+              ORDER BY s.starts_at)
               FROM event_sessions s WHERE s.event_id=d.id
                 AND ($3::text='all' OR (${eligibleSession}))),'[]'::jsonb)
             ELSE NULL END AS sessions,

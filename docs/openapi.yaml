@@ -324,14 +324,18 @@ components:
           items: { $ref: '#/components/schemas/DailySchedule' }
     EventSession:
       type: object
-      required: [startsAt, hall, ticketUrl, priceMin, priceMax, status]
+      required: [sessionKey, startsAt, hall, ticketUrl, priceMin, priceMax, status, statusOrigin, statusEvidenceUrl, statusReviewedAt]
       properties:
+        sessionKey: { type: string, description: 同來源節目的場次識別鍵 }
         startsAt: { type: string, format: date-time }
         hall: { type: string, nullable: true }
         ticketUrl: { type: string, format: uri, nullable: true }
         priceMin: { type: integer, minimum: 0, nullable: true }
         priceMax: { type: integer, minimum: 0, nullable: true }
         status: { type: string, enum: [scheduled, sold_out, cancelled, postponed, unknown], description: scheduled 僅表示來源列有場次，不表示尚有餘票 }
+        statusOrigin: { type: string, enum: [source, manual], description: manual 表示站長依館方證據逐場核對 }
+        statusEvidenceUrl: { type: string, format: uri, nullable: true }
+        statusReviewedAt: { type: string, format: date-time, nullable: true }
     DailySchedule:
       type: object
       required: [localTime, durationMinutes, venue, timezone]

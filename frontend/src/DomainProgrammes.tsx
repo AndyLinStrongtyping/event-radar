@@ -1,6 +1,9 @@
 import { useEffect, useState } from 'react';
 
-type Session = { startsAt: string; hall: string | null; status: string };
+type Session = { sessionKey: string; startsAt: string; hall: string | null;
+  status: 'scheduled' | 'sold_out' | 'cancelled' | 'postponed' | 'unknown';
+  statusOrigin: 'source' | 'manual'; statusEvidenceUrl: string | null;
+  statusReviewedAt: string | null };
 type DailyTime = { localTime: string; durationMinutes: number | null; venue: string | null };
 type Programme = { id: string; title: string; venue: string | null; sourceUrl: string;
   priceNote: string | null; sourceCheckedAt: string; observedOn: string | null;
@@ -27,6 +30,7 @@ function useProgrammes(path: string) {
   const [error, setError] = useState(false);
   useEffect(() => {
     const controller = new AbortController();
+    setData(null); setError(false);
     fetch(path, { signal: controller.signal })
       .then((response) => { if (!response.ok) throw new Error('無法載入'); return response.json(); })
       .then((body: Response) => setData(body))
@@ -37,25 +41,44 @@ function useProgrammes(path: string) {
 }
 
 function Performances() {
-  const { data, error } = useProgrammes('/performances');
+  const [period, setPeriod] = useState<'upcoming' | 'all'>('upcoming');
+  const { data, error } = useProgrammes(`/performances?period=${period}&limit=100`);
+  const statusLabel = (session: Session) => {
+    if (session.status === 'scheduled') return '館方列有場次，票況未確認';
+    if (session.status === 'sold_out') return session.statusOrigin === 'manual'
+      ? '人工核對：售罄／額滿' : '館方標示：售罄／額滿';
+    if (session.status === 'cancelled') return '人工核對：已取消';
+    if (session.status === 'postponed') return '人工核對：已延期';
+    return '狀態待核對';
+  };
   return <section className="domain-section" id="performances" aria-labelledby="performances-title">
     <span id="expeditions" aria-hidden="true"/>
     <div className="section-kicker"><span>06</span> PERFORMANCE FIELD NOTES</div>
     <div className="intro-heading"><h2 id="performances-title">舞臺上的故事，<em>從場次開始。</em></h2>
       <p>同一節目可能演出不只一次。從臺中國家歌劇院的場次與廳，找到想看的時間。</p></div>
-    <p className="domain-caveat">這裡只列尚未開始的場次；有成功取得官網清單時，也會排除清單已不再列出的節目。這不是即時或完整節目表，列有場次不代表仍有票；購票、取消與改期請以<a href={nttSource} target="_blank" rel="noopener noreferrer">歌劇院官方節目頁 ↗</a>為準。</p>
+    <p className="domain-caveat">預設只列尚未開始的場次；有成功取得官網清單時，也會排除清單已不再列出的節目。這不是即時或完整節目表；購票與最新異動請以<a href={nttSource} target="_blank" rel="noopener noreferrer">歌劇院官方節目頁 ↗</a>為準。</p>
+    <div className="domain-tabs" aria-label="表演節目檢視範圍">
+      <button type="button" className={period === 'upcoming' ? 'active' : ''}
+        aria-pressed={period === 'upcoming'} onClick={() => setPeriod('upcoming')}>即將演出</button>
+      <button type="button" className={period === 'all' ? 'active' : ''}
+        aria-pressed={period === 'all'} onClick={() => setPeriod('all')}>完整紀錄與異動</button>
+    </div>
     {error ? <p className="domain-message">節目暫時無法載入，請查看館方網站。</p>
       : !data ? <p className="domain-message" role="status">正在翻閱演出檔案…</p>
-      : data.total === 0 ? <p className="domain-message">目前沒有可核對的未來場次，請查看館方節目頁。</p>
+      : data.total === 0 ? <p className="domain-message">目前沒有可核對的{period === 'upcoming' ? '未來場次' : '節目紀錄'}，請查看館方節目頁。</p>
       : <div className="domain-grid">{data.items.map((item) => <article className="domain-card" key={item.id}>
         <span>PERFORMANCE / 台中</span><h3>{item.title}</h3>
         {item.sessions?.length ? <ul>{item.sessions.map((session) => <li key={session.startsAt}>
-          <b>{dateTime(session.startsAt)}</b><small>{session.hall ? ` · ${session.hall}` : ''} · {session.status === 'sold_out' ? '資料標為售罄' : '館方列有場次'}</small>
+          <b>{dateTime(session.startsAt)}</b><small>{session.hall ? ` · ${session.hall}` : ''} · {statusLabel(session)}
+            {session.statusReviewedAt ? `（核對於 ${dateTime(session.statusReviewedAt)}）` : ''}</small>
+          {session.statusEvidenceUrl && <a href={session.statusEvidenceUrl} target="_blank"
+            rel="noopener noreferrer">查看異動依據 ↗</a>}
         </li>)}</ul> : null}
         {item.priceNote && <p>{item.priceNote}</p>}
         <small>資料核對：{dateTime(item.sourceCheckedAt)}</small>
         <a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">查看館方節目詳情 ↗</a>
       </article>)}</div>}
+    {data && data.total > data.items.length && <p className="domain-caveat">目前顯示前 {data.items.length} 筆，共 {data.total} 筆；更多紀錄可透過 API 分頁查詢。</p>}
   </section>;
 }
 

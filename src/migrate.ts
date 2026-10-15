@@ -35,6 +35,7 @@ const requiredColumns: Record<string, string[]> = {
   programme_events: ['id', 'museum_id', 'source_type', 'source_event_id', 'raw_date', 'schedule_type'],
   programme_event_changes: ['id', 'event_id', 'field_name'],
   domain_source_runs: ['id', 'scope', 'review_note', 'identity_keys'],
+  event_sessions: ['id', 'session_key', 'status_origin', 'status_evidence_url', 'status_reviewed_at', 'status_source_hash'],
 };
 const requiredIndexes = [
   'exhibitions_source_identity', 'exhibitions_dates_idx', 'exhibitions_title_idx',

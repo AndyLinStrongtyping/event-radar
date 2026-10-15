@@ -8,7 +8,7 @@
 2. [本頁](development-guide.md)與[目前架構](architecture.md#目前實作本機-mvp)：資料如何進入、分流與被查詢。
 3. [API 說明](api.md)和 [OpenAPI 3.0](openapi.yaml)：公開唯讀端點的語意、參數、回應與錯誤。
 4. [來源盤點](sources.md)及[技術決策](technical-decisions.md)：每館證據、資料品質規則與取捨。
-5. [運作設計](operations.md)與[階段紀錄](stage-2026-10-12-phase3-4.md)：手動同步、Queue 閘門、測試證據及未完成事項。
+5. [運作設計](operations.md)與[Phase 3 階段紀錄](stage-2026-10-15-phase3.md)：歌劇院場次核對、手動同步、測試證據及未完成事項。
 
 ## 三條資料路徑
 
@@ -25,6 +25,8 @@
 `sourceStatus` 說明資料取得方式，`dataStatus` 說明最近官方取得及嘗試情況，`coverageStatus` 說明清單完整度是否可相信；這三個欄位**不能互相替代**。`pendingReviewCount` 是待人工核對的來源列數，不是漏掉的當期展覽數。展覽通過完整日期與來源驗證才進公開搜尋；無法核對的列保留在待審，不猜展期。詳細定義見 [API 說明](api.md)及[來源完整度決策](technical-decisions.md)。
 
 表演與海洋節目是另外的 Domain：表演可以有多個有時區的 `sessions`，海洋節目是帶 `observedOn` 的本地每日時段。海洋 API 只顯示最近一次成功匯入的批次；若新清單相對前次大幅縮水，匯入記為 `SOURCE_ANOMALY` 並保留前次資料。即使最近批次成功，`observedOn` 不是今天時，前端仍提醒先查館方。這套保護的單元測試與隔離 PostgreSQL／真實 HTTP 整合案例已通過；未驗證官網跨週穩定或特殊日開館。
+
+歌劇院的場次售票狀態只在官方詳情明示額滿時標 `sold_out`；公告涉及部分場次更動時先標 `unknown`，由 `npm run review:performance -- pending` 找出待核對場次，再用 `set` 附官方證據逐場核對。人工結果記錄來源版本及異動歷史；下一次來源內容改變會使舊核對失效，避免沿用過期結論。流程詳見[Phase 3 階段紀錄](stage-2026-10-15-phase3.md)。
 
 ## 從修改到驗證
 

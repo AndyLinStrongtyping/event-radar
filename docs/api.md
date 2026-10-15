@@ -42,6 +42,8 @@ CI 的 `npm run test:integration` 會建立隔離 PostgreSQL 資料庫、匯入�
 
 ## Phase 3／4 節目資料
 
+Phase 3 場次另外回傳 `sessionKey`、`statusOrigin`、可空的 `statusEvidenceUrl`／`statusReviewedAt`。`source` 表示來自館方詳情中的場次或全節目報名標記；`manual` 表示站長依同節目官方詳情或館方公告逐場核對，證據網址與時間可直接在 API 查閱。只有官網報名按鈕明示全節目「已額滿／售罄」時才自動將該節目的場次標為 `sold_out`；部分場次取消或延期先標 `unknown`，不由自由文字推算。人工結論綁定當時來源版本，官網詳情內容變動後會失效，待再次核對。`period=all` 可查看已核對的取消／延期與過去紀錄，React 表演區亦提供「完整紀錄與異動」檢視；資料仍非即時票務。
+
 `GET /performances?source=ntt` 回傳節目與 `sessions[]`，每場含 `startsAt`、`hall`、`ticketUrl`、可空的 `priceMin/priceMax` 和 `status`。`period` 預設 `upcoming`：只列出開始時間晚於查詢當下、狀態為 `scheduled` 或 `sold_out` 的場次，按下一場時間排序；同一節目的過去場次不混在回應內，`total` 也只計符合條件的節目。若已有成功且保存來源鍵的歌劇院官方 `place=1` 清單，預設清單只列該次成功批次仍包含的節目；異常失敗批次不取代基準，人工抽樣也不刷新基準。首次尚無此基準時只套用場次時間與狀態條件。`period=all` 可查保留的歷史節目、清單缺席節目、過去場次及 `unknown`／取消／延期狀態。此篩選不會改寫或刪除資料，更不代表缺席就是取消。手動同步讀取臺中國家歌劇院官網 `place=1` 清單 HTML 所有可辨識詳情，包含「MORE」預藏卡片；若按鈕行為改變或超過單批 30 筆即停止，並不代表全站其他篩選條件。`scheduled` 只表示館方列有場次，不表示尚有餘票。來源詳情內消失的場次標為 `unknown`，不自動判定取消。票價因平日／假日等差異無法安全拆分時維持 `null`，保留原文 `priceNote`。
 
 `GET /marine-programmes?source=nmmba` 只回傳最近一次成功匯入的官網當日節目表，包含 `dailySchedule[]` 與 `observedOn`；較早觀察日的紀錄仍保留於資料庫供追查，但不混入此清單。若新清單從至少四筆的上次成功基準突然降到不足一半，匯入以 `SOURCE_ANOMALY` 失敗並保留上次成功資料，待人工核對。`localTime` 是臺灣本地時刻；不得把昨日觀察推定為明日必有活動，也不可用節目表推定特殊日開館。兩條 API 均支援 `limit`（1–100）與 `offset`，來源時間由 `sourceCheckedAt` 回傳，詳見 [OpenAPI](openapi.yaml)。本機手動同步指令為 `npm run sync:domain -- --source ntt` 或 `--source nmmba`，未進入線上排程。

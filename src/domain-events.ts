@@ -123,16 +123,30 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
           ] as const) await change(client,id,field,before,after);
           const oldDetail = row.domain === 'performance'
             ? await client.query(`SELECT session_key AS "sessionKey",starts_at AS "startsAt",hall,
-              ticket_url AS "ticketUrl",price_min AS "priceMin",price_max AS "priceMax",status
+              ticket_url AS "ticketUrl",price_min AS "priceMin",price_max AS "priceMax",status,
+              status_origin AS "statusOrigin",status_source_hash AS "statusSourceHash"
               FROM event_sessions WHERE event_id=$1 ORDER BY session_key`,[id])
             : await client.query(`SELECT to_char(local_time,'HH24:MI') AS "localTime",
               duration_minutes AS "durationMinutes",venue FROM recurring_schedules
               WHERE event_id=$1 ORDER BY local_time`,[id]);
+          const manualStatuses = new Map(row.domain === 'performance'
+            ? oldDetail.rows.filter((session) => session.statusOrigin === 'manual'
+              && session.statusSourceHash?.trim() === contentHash)
+              .map((session) => [session.sessionKey,session.status]) : []);
+          const staleManualKeys = new Set(row.domain === 'performance'
+            ? oldDetail.rows.filter((session) => session.statusOrigin === 'manual'
+              && session.statusSourceHash?.trim() !== contentHash)
+              .map((session) => session.sessionKey) : []);
           const prior = row.domain === 'performance' ? oldDetail.rows.map((session) => ({
-            ...session, startsAt: new Date(session.startsAt).toISOString(),
+            sessionKey:session.sessionKey,startsAt:new Date(session.startsAt).toISOString(),
+            hall:session.hall,ticketUrl:session.ticketUrl,priceMin:session.priceMin,
+            priceMax:session.priceMax,status:session.status,
           })) : oldDetail.rows;
           const next = row.domain === 'performance' ? normalizedSessions(row).map((session) => ({
-            ...session, startsAt: new Date(session.startsAt).toISOString(),
+            ...session,status:manualStatuses.get(session.sessionKey)
+              ?? (staleManualKeys.has(session.sessionKey) && session.status === 'scheduled'
+                ? 'unknown' : session.status),
+            startsAt: new Date(session.startsAt).toISOString(),
           })) : normalizedTimes(row);
           await change(client,id,row.domain === 'performance' ? 'sessions' : 'recurringSchedule',prior,next);
           await client.query(`UPDATE domain_events SET title=$2,venue=$3,source_url=$4,ticket_url=$5,
@@ -149,11 +163,31 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
           ON CONFLICT (event_id,session_key) DO UPDATE SET starts_at=EXCLUDED.starts_at,hall=EXCLUDED.hall,
           ticket_url=EXCLUDED.ticket_url,price_min=EXCLUDED.price_min,
-          price_max=EXCLUDED.price_max,status=EXCLUDED.status,last_seen_at=now()`,
+          price_max=EXCLUDED.price_max,
+          status=CASE
+            WHEN event_sessions.status_origin='manual' AND event_sessions.status_source_hash=$9
+              THEN event_sessions.status
+            WHEN event_sessions.status_origin='manual' AND EXCLUDED.status='scheduled'
+              THEN 'unknown' ELSE EXCLUDED.status END,
+          status_origin=CASE WHEN event_sessions.status_origin='manual'
+            AND event_sessions.status_source_hash=$9 THEN 'manual' ELSE 'source' END,
+          status_evidence_url=CASE WHEN event_sessions.status_origin='manual'
+            AND event_sessions.status_source_hash=$9 THEN event_sessions.status_evidence_url ELSE NULL END,
+          status_reviewed_at=CASE WHEN event_sessions.status_origin='manual'
+            AND event_sessions.status_source_hash=$9 THEN event_sessions.status_reviewed_at ELSE NULL END,
+          status_reviewer=CASE WHEN event_sessions.status_origin='manual'
+            AND event_sessions.status_source_hash=$9 THEN event_sessions.status_reviewer ELSE NULL END,
+          status_review_note=CASE WHEN event_sessions.status_origin='manual'
+            AND event_sessions.status_source_hash=$9 THEN event_sessions.status_review_note ELSE NULL END,
+          status_source_hash=CASE WHEN event_sessions.status_origin='manual'
+            AND event_sessions.status_source_hash=$9 THEN event_sessions.status_source_hash ELSE NULL END,
+          last_seen_at=now()`,
         [id,session.sessionKey,session.startsAt,session.hall,session.ticketUrl,
-          session.priceMin,session.priceMax,session.status]);
+          session.priceMin,session.priceMax,session.status,contentHash]);
         const keys = sessions.map((session) => session.sessionKey);
-        await client.query(`UPDATE event_sessions SET status='unknown'
+        await client.query(`UPDATE event_sessions SET status='unknown',status_origin='source',
+          status_evidence_url=NULL,status_reviewed_at=NULL,status_reviewer=NULL,
+          status_review_note=NULL,status_source_hash=NULL
           WHERE event_id=$1 AND NOT (session_key=ANY($2::text[]))`,[id,keys]);
       } else {
         await client.query('DELETE FROM recurring_schedules WHERE event_id=$1',[id]);

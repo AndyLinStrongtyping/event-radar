@@ -10,7 +10,9 @@
 
 `sync:domain` 的官方 HTML 請求每次逾時 15 秒，只對逾時／網路錯誤與 HTTP 5xx 最多再試兩次，間隔 2 秒、8 秒；404、429、非館方網址／回應主機、解析失敗或資料過大立即失敗。歌劇院不同詳情之間仍另有兩秒間隔。失敗訊息包含官方失敗網址與嘗試次數，便於人工核對；重試耗盡仍不寫入不完整批次。
 
-歌劇院詳情若標題或「作品簡介」醒目公告明示取消、延期、場次異動，會停止整批自動匯入並在錯誤中列出詳情網址。先核對該頁的每個原定與新場次；目前沒有可安全逐場自動套用公告的流程，不要反覆重跑或把所有場次推定為正常。這個保護只涵蓋已確認的公告位置，票務售罄仍須到館方或售票頁核對。
+歌劇院詳情若標題或「作品簡介」醒目公告明示取消、延期、場次異動，該節目的場次先標為 `unknown`，不進預設「即將演出」；同批其他節目可繼續同步。這不會從公告文字猜哪一場受影響。執行 `npm run review:performance -- pending` 可列出未來待核對場次；逐場對照館方詳情或官方新聞後，以 `npm run review:performance -- set --source-key <c-...> --starts-at <含時區 ISO 時間> --status <scheduled|sold_out|cancelled|postponed|unknown> --evidence <同節目官方詳情或館方新聞 HTTPS 網址> --reviewer <核對者> --note <20–500 字說明>` 保存結果。`sourceKey`、`startsAt` 可從 `GET /performances?period=all` 或 `pending` 輸出取得。人工核對有證據網址、核對時間與 `domain_event_changes` 紀錄；相同內容重跑不重複記錄，**來源內容未改變**時再次同步保留人工狀態。若官方內容改版，舊結論失效：原本人工狀態轉為 `unknown`（官網明確全額滿則轉為 `sold_out`），須重新核對；若原場次從詳情消失，同樣回到 `unknown`，不得推定取消。這個保護只涵蓋已確認的公告位置；站長仍應核對官網與售票頁。
+
+若館方整個節目的報名按鈕明確顯示「已額滿（需後補）」或「售罄／完售」，Adapter 會把該頁的場次標為 `sold_out`。僅一部分場次額滿、或內文提到過去節目完售時不套用；尚未取得可靠的逐場即時票務介面，`scheduled` 永遠不代表有票。
 
 歌劇院官方 `place=1` 清單另記為 `ntt_place1_list`，不和 `--snapshot`／`--detail` 的抽樣互相比。前次成功至少 10 筆、這次不足一半，或前後清單至少各 10 筆且重疊來源鍵少於較小清單的一半時，會以 `SOURCE_ANOMALY` 整批停止，原有節目不被改寫。第 019 migration 起，官方批次的來源鍵存於 `domain_source_runs.identity_keys`；舊批次沒有鍵時，必須先成功同步一次才能建立比對基準。先開啟[館方清單](https://www.npac-ntt.org/program/events?place=1)核對換季、活動落幕與詳情連結；若確認可接受，執行 `npm run sync:domain -- --source ntt --review-list-change "已核對館方清單及逐筆詳情，確認節目與連結變動屬正常換季。"`。原 `--review-shrink` 參數仍可使用。說明須 20–500 字，記入 `domain_source_runs.review_note`；只有觸發異常時可用，不要寫入機密資訊。人工覆核不代表缺席節目自動取消，也不會刪除舊資料。
 

@@ -52,19 +52,18 @@ export function parseNttDetail(html: string, rawUrl: string): PerformanceEvent {
   const url = nttUrl(rawUrl);
   const title = plain(html.match(/<input\b[^>]*id="txtSubject"[^>]*value="([^"]+)"/i)?.[1] ?? '');
   if (!title || title.length > 240) throw new Error('歌劇院詳情缺少可核對標題');
-  if (/(?:取消|延期)(?:演出|節目|活動|場次)|(?:演出|節目|活動|場次)(?:取消|延期)|延期|異動公告/.test(title)) {
-    throw new Error('歌劇院異動公告須逐場人工核對');
-  }
+  const titleNeedsReview = /(?:取消|延期)(?:演出|節目|活動|場次)|(?:演出|節目|活動|場次)(?:取消|延期)|延期|異動公告/.test(title);
   // The official page can leave its title and session list unchanged while a
   // callout inside the introduction announces changes to only some sessions.
   const introduction = html.match(/<section\b[^>]*\bid="SortIntroduction"[^>]*>([\s\S]*?)<\/section>/i)?.[1] ?? '';
   const notice = plain(introduction.match(/<div\b[^>]*class="[^"]*\bcallout\b[^"]*"[^>]*>([\s\S]*?)<\/div>/i)?.[1] ?? '');
-  if (/(?:演出異動公告|場次異動|(?:取消|延期)(?:演出|場次|活動|節目)|(?:演出|場次|活動|節目)(?:取消|延期))/.test(notice)) {
-    throw new Error('歌劇院內文異動公告須逐場人工核對');
-  }
+  const noticeNeedsReview = /(?:演出異動公告|場次異動|(?:取消|延期)(?:演出|場次|活動|節目)|(?:演出|場次|活動|節目)(?:取消|延期))/.test(notice);
   const hall = plain(html.match(/<div\b[^>]*class="post-place"[^>]*>([\s\S]*?)<\/div>/i)?.[1] ?? '') || null;
   const timeBlock = html.match(/<div\b[^>]*class="event-time"[^>]*>([\s\S]*?)<\/div>/i)?.[1] ?? '';
-  const ticketRaw = html.match(/<a\b[^>]*class="[^"]*btn-buy-ticket[^"]*"[^>]*href="([^"]+)"/i)?.[1];
+  const ticketAction = html.match(/<a\b[^>]*class="[^"]*btn-buy-ticket[^"]*"[^>]*>[\s\S]*?<\/a>/i)?.[0] ?? '';
+  const ticketRaw = ticketAction.match(/\bhref="([^"]+)"/i)?.[1];
+  const ticketLabel = plain(ticketAction);
+  const fullyBooked = /^(?:已額滿(?:[（(][^）)]*[）)])?|(?:已)?(?:售罄|售完|完售))$/.test(ticketLabel);
   let ticketUrl: string | null = null;
   if (ticketRaw) {
     const ticket = new URL(ticketRaw);
@@ -86,7 +85,8 @@ export function parseNttDetail(html: string, rawUrl: string): PerformanceEvent {
     const sessionKey = `${day}T${match[4]}:${match[5]}+08:00`;
     if (sessions.some((session) => session.sessionKey === sessionKey)) throw new Error('歌劇院場次重複');
     sessions.push({ sessionKey, startsAt: sessionKey, hall, ticketUrl,
-      priceMin, priceMax, status: 'scheduled' });
+      priceMin, priceMax, status: titleNeedsReview || noticeNeedsReview
+        ? 'unknown' : fullyBooked ? 'sold_out' : 'scheduled' });
   }
   if (!sessions.length) throw new Error('歌劇院詳情沒有完整年份與時間的場次');
   return { sourceId: 'ntt', sourceKey: url.pathname.split('/').at(-1)!, domain: 'performance',
