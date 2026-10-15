@@ -52,6 +52,9 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
   const sourceId = rows[0].sourceId;
   if (rows.some((row) => row.sourceId !== sourceId)
     || new Set(rows.map((row) => row.sourceKey)).size !== rows.length) throw new Error('活動來源混雜或來源鍵重複');
+  if ((sourceId !== 'ntt' && sourceId !== 'nmmba')
+    || rows.some((row) => row.domain !== (sourceId === 'ntt' ? 'performance' : 'marine')))
+    throw new Error('活動來源與領域不符');
   if ((sourceId === 'ntt' && scope === 'daily_page')
     || (sourceId === 'nmmba' && scope !== 'daily_page')) throw new Error('活動來源範圍不符');
   const marineRows = sourceId === 'nmmba' ? rows as MarineProgramme[] : [];

@@ -23,4 +23,6 @@ erDiagram
 
 第 [025 migration](../db/025_domain_child_integrity.sql)在 `domain_events(id,domain)` 建立複合參照鍵；表演場次帶固定 `performance`、每日時段帶固定 `marine`，各以複合外鍵指向正確領域的父節目。既有匯入仍只提供 `event_id`，固定 domain 由資料庫預設填入。這同時阻止已有子資料的父節目被改成另一領域，且沒有把 `ntt`／`nmmba` 等目前來源寫死在模型中，往後同類型來源可以沿用。**資料庫約束只防錯誤關聯，不保證來源資料正確或跨週穩定。**
 
+目前匯入入口另要求 `ntt → performance`、`nmmba → marine`；這是**現有兩個 Adapter 的執行時契約**，不是資料庫永久限定來源。新增同類來源時須先新增來源 Adapter、範圍規則與測試，不能直接繞過入口把未驗證資料送入通用表。
+
 後續若要做跨領域搜尋，先定義清楚型別化的結果與時態：展期、單一場次、當日觀察需分別帶時間種類、來源品質和導回官方的網址。不能只用一組可空 `startAt/endAt` 抹平差異。沖繩來源依使用者指示暫停；`sourceLanguage`、`Asia/Tokyo` 仍是未驗證需求，不加入現行共通欄位。

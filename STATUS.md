@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-15 Phase 6 匯入邊界續作：`importDomainEvents` 現在會在建立批次紀錄前拒絕未知來源、歌劇院／海生館來源與領域錯配；隔離整合測試確認錯誤輸入沒有留下匯入批次。與第 025 migration 的資料庫外鍵形成兩層保護。這只涵蓋目前兩個 Domain Adapter，新增來源仍需明確擴充入口契約；見 [ER-75](docs/technical-decisions.md)。
+
 2026-10-15 Phase 6 模型收斂啟動：已整理[限期展、美術館、表演、海洋節目與奇美活動候選的時間及身分語意](docs/domain-model.md)。第 025 migration 增加資料庫複合外鍵，表演場次不可掛到海洋節目、每日時段不可掛到表演；隔離 PostgreSQL 測試亦驗證已有場次的父節目不可換領域。本機 migration 已套用；71 項單元、型別與隔離 PostgreSQL／HTTP 整合測試通過。這是資料完整性與模型盤點，**尚無跨領域公開搜尋、沖繩來源或線上部署**。見 [ER-74](docs/technical-decisions.md)。
 
 2026-10-15 Phase 4 清單可靠性續作：第 024 migration 讓海生館每日成功批次保存來源鍵；筆數大幅縮水或同筆數但多數來源鍵更換時，以 `SOURCE_ANOMALY` 拒收，舊清單與快照不變。站長核對官方當日頁後可附 20–500 字說明、官方 HTTPS 佐證與核對者人工放行，成功批次留痕；非官方證據與無異常覆核均拒絕。71 項單元、型別及隔離 PostgreSQL／HTTP 整合測試通過，第 024 migration 已套本機。**只用合成異常驗證，沒有真實特殊日放行紀錄**；既有 10/15 批次無來源鍵，待下一次正常官方同步建立基準。見 [ER-73](docs/technical-decisions.md)與[階段紀錄](docs/stage-2026-10-15-phase4.md)。

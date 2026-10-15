@@ -777,6 +777,14 @@ async function main() {
     title: '測試節目', venue: '大劇院', sourceUrl: 'https://www.npac-ntt.org/program/events/c-tv0mE3YHxoF',
     ticketUrl: 'https://npacntt.tw/ticket', priceNote: null, observedOn: null,
     sessions: [firstSession, secondSession] };
+  const runsBeforeInvalidDomain = (await testDb.query(`SELECT count(*)::int AS count
+    FROM domain_source_runs`)).rows[0].count;
+  await assert.rejects(importDomainEvents(testDb,[{...performance,domain:'marine'}],
+    'single_detail','2026-10-11T12:00:00Z'),/來源與領域不符/);
+  await assert.rejects(importDomainEvents(testDb,[{...performance,sourceId:'unknown'}],
+    'single_detail','2026-10-11T12:00:00Z'),/來源與領域不符/);
+  assert.equal((await testDb.query(`SELECT count(*)::int AS count FROM domain_source_runs`))
+    .rows[0].count,runsBeforeInvalidDomain,'來源與領域不符不得建立匯入批次');
   assert.deepEqual(await importDomainEvents(testDb,[performance],'single_detail','2026-10-11T12:00:00Z'),
     {inserted:1,updated:0,unchanged:0});
   const { reviewNttSession } = await import('../src/performance-session-review.ts');
