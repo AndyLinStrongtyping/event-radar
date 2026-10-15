@@ -35,7 +35,8 @@ const requiredColumns: Record<string, string[]> = {
   programme_events: ['id', 'museum_id', 'source_type', 'source_event_id', 'raw_date', 'schedule_type'],
   programme_event_changes: ['id', 'event_id', 'field_name'],
   domain_source_runs: ['id', 'scope', 'review_note', 'identity_keys', 'review_evidence_url', 'reviewer'],
-  event_sessions: ['id', 'session_key', 'status_origin', 'status_evidence_url', 'status_reviewed_at', 'status_source_hash'],
+  event_sessions: ['id', 'domain', 'session_key', 'status_origin', 'status_evidence_url', 'status_reviewed_at', 'status_source_hash'],
+  recurring_schedules: ['event_id', 'domain', 'local_time', 'recurrence'],
   museum_opening_exceptions: ['museum_id', 'visit_date', 'status', 'evidence_url', 'reviewed_at'],
   museum_opening_exception_changes: ['id', 'museum_id', 'visit_date', 'old_value', 'new_value'],
   marine_daily_observations: ['source_id', 'observed_on', 'snapshot_hash', 'items', 'first_seen_at', 'last_seen_at'],
@@ -45,7 +46,7 @@ const requiredIndexes = [
   'source_records_review_idx', 'source_jobs_due_idx', 'source_jobs_expired_idx',
   'programme_events_source_identity', 'programme_event_changes_event_idx',
   'museum_opening_exception_changes_date_idx',
-  'marine_daily_observations_day_idx',
+  'marine_daily_observations_day_idx', 'domain_events_id_domain_key',
 ];
 
 function migrationBody(sql: string): string {

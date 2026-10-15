@@ -811,6 +811,20 @@ async function main() {
       {localTime:'13:00',durationMinutes:15,venue:'大洋池'}] };
   assert.deepEqual(await importDomainEvents(testDb,[marineProgramme],'daily_page','2026-10-12T02:00:00Z'),
     {inserted:1,updated:0,unchanged:0});
+  const domainParents = await testDb.query(`SELECT id,domain FROM domain_events
+    WHERE (source_id='ntt' AND source_key=$1) OR (source_id='nmmba' AND source_key=$2)`,
+  [performance.sourceKey,marineProgramme.sourceKey]);
+  const parentId = Object.fromEntries(domainParents.rows.map((row) => [row.domain,row.id]));
+  assert.ok(parentId.performance && parentId.marine);
+  await assert.rejects(testDb.query(`INSERT INTO event_sessions(event_id,session_key,starts_at)
+    VALUES ($1,'wrong-domain',$2)`,[parentId.marine,firstStart]),
+  (error) => error.code === '23503', '海生館節目不可被寫成表演場次');
+  await assert.rejects(testDb.query(`INSERT INTO recurring_schedules(event_id,local_time,recurrence)
+    VALUES ($1,'15:00','daily')`,[parentId.performance]),
+  (error) => error.code === '23503', '表演節目不可被寫成每日時段');
+  await assert.rejects(testDb.query(`UPDATE domain_events SET domain='marine',observed_on='2026-10-12'
+    WHERE id=$1`,[parentId.performance]),
+  (error) => error.code === '23503', '已有表演場次的父節目不可改成海洋領域');
   assert.deepEqual(await importDomainEvents(testDb,[marineProgramme],'daily_page','2026-10-12T02:00:00Z'),
     {inserted:0,updated:0,unchanged:1});
   const nextProgramme = {...marineProgramme,observedOn:'2026-10-13',times:[
