@@ -1,6 +1,8 @@
 # Event Radar｜目前進度
 
-2026-10-15 表演清單時態修正：`/performances` 預設只回傳尚未開始且狀態為 `scheduled`／`sold_out` 的場次，同節目已過場次不混列；`total`、排序與分頁依篩選後結果計算，`period=all` 可查保留的完整紀錄。React 表演區同步說明這不是即時票務，完整邊界見 [ER-67](docs/technical-decisions.md)。67 項單元、型別檢查及 React build 通過；隔離 PostgreSQL 整合案例已寫入但本機 Docker Engine 未啟動，**尚未驗證通過**，須在可用的資料庫環境重跑 `npm run test:integration`。此改動不處理整個節目從來源清單消失的判定，亦未開啟線上排程。
+2026-10-15 P3 歌劇院缺席節目顯示修正：預設 `/performances` 以最近一次成功、含來源鍵的官方 `place=1` 清單限制節目；來源上整筆缺席時保留資料與 `period=all` 歷史查詢，但不再混入訪客的未來場次。異常失敗批次和人工抽樣不取代成功基準；這不是取消判定。隔離 PostgreSQL 測試涵蓋基準建立、拒收、覆核後縮水和歷史保留，Docker Engine 恢復後已重跑通過；67 項單元、型別與 React build 亦通過。未做真實官網新一輪同步或跨週觀察，見 [ER-68](docs/technical-decisions.md)。
+
+2026-10-15 表演清單時態修正：`/performances` 預設只回傳尚未開始且狀態為 `scheduled`／`sold_out` 的場次，同節目已過場次不混列；`total`、排序與分頁依篩選後結果計算，`period=all` 可查保留的完整紀錄。React 表演區同步說明這不是即時票務，完整邊界見 [ER-67](docs/technical-decisions.md)。67 項單元、型別檢查、React build 及隔離 PostgreSQL 整合測試通過。整筆節目缺席問題由後續 ER-68 處理；線上排程仍未啟用。
 
 2026-10-14 歌劇院清單來源鍵異常保護：第 019 migration 為成功／失敗的官方 `place=1` 批次保存來源鍵。前後清單至少各 10 筆時，若重疊來源鍵少於較小清單的一半，即使總筆數相同也以 `SOURCE_ANOMALY` 整批拒收；人工核對後可用 `--review-list-change` 留原因放行（原 `--review-shrink` 仍可用）。隔離 PostgreSQL 測試涵蓋同筆數大量換鍵、縮水及覆核；67 項單元、型別與 React build 通過。本機第 019 migration 已套用，再次真實同步 20 筆全部未變並保存新鍵基準。這只建立基準，未證明跨週穩定，見 [ER-66](docs/technical-decisions.md)。
 

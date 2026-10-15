@@ -20,7 +20,7 @@ paths:
       tags: [表演與海洋節目]
       summary: 查詢已核對的表演節目與場次
       operationId: listPerformances
-      description: 手動同步讀取歌劇院 place=1 清單全部可辨識詳情（含同頁 MORE 預藏卡片，單批最多 30 筆）；按鈕行為改變時停止，不涵蓋其他篩選條件。預設只回傳尚未開始且狀態為 scheduled 或 sold_out 的場次，依最近場次排序；period=all 可查保留的舊資料及其他狀態。scheduled 只表示館方列有場次，不能據此推定仍有票。
+      description: 手動同步讀取歌劇院 place=1 清單全部可辨識詳情（含同頁 MORE 預藏卡片，單批最多 30 筆）；按鈕行為改變時停止，不涵蓋其他篩選條件。預設只回傳尚未開始且狀態為 scheduled 或 sold_out 的場次；若已有成功的官方清單來源鍵，另排除該清單缺席的節目。異常失敗批次不取代清單基準；period=all 可查保留的舊資料及其他狀態。清單缺席不等於取消，scheduled 也不保證仍有票。
       parameters:
         - { name: source, in: query, schema: { type: string } }
         - { name: period, in: query, description: 預設 upcoming；all 回傳所有保留的節目與場次, schema: { type: string, enum: [upcoming, all], default: upcoming } }

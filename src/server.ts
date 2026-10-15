@@ -160,6 +160,11 @@ const server = createServer(async (request, response) => {
       const conditions = `d.domain=$1 AND ($2::text IS NULL OR d.source_id=$2)
         AND ($3::text='all' OR EXISTS (SELECT 1 FROM event_sessions s
           WHERE s.event_id=d.id AND ${eligibleSession}))
+        AND ($3::text='all' OR d.source_id<>'ntt' OR COALESCE((
+          SELECT d.source_key=ANY(r.identity_keys) FROM domain_source_runs r
+          WHERE r.source_id='ntt' AND r.scope='ntt_place1_list'
+            AND r.status='succeeded' AND r.identity_keys IS NOT NULL
+          ORDER BY r.finished_at DESC,r.id DESC LIMIT 1),true))
         AND ($1::text <> 'marine' OR d.source_checked_at = (
           SELECT max(latest.source_checked_at) FROM domain_events latest
           WHERE latest.domain='marine' AND latest.source_id=d.source_id))`;

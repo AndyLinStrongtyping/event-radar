@@ -43,7 +43,7 @@ function Performances() {
     <div className="section-kicker"><span>06</span> PERFORMANCE FIELD NOTES</div>
     <div className="intro-heading"><h2 id="performances-title">舞臺上的故事，<em>從場次開始。</em></h2>
       <p>同一節目可能演出不只一次。從臺中國家歌劇院的場次與廳，找到想看的時間。</p></div>
-    <p className="domain-caveat">這裡只列出資料庫中尚未開始、且未標為待核對的場次，按時間先後排列；不是即時或完整節目表。列有場次不代表仍有票；購票、取消與改期請以<a href={nttSource} target="_blank" rel="noopener noreferrer">歌劇院官方節目頁 ↗</a>為準。</p>
+    <p className="domain-caveat">這裡只列尚未開始的場次；有成功取得官網清單時，也會排除清單已不再列出的節目。這不是即時或完整節目表，列有場次不代表仍有票；購票、取消與改期請以<a href={nttSource} target="_blank" rel="noopener noreferrer">歌劇院官方節目頁 ↗</a>為準。</p>
     {error ? <p className="domain-message">節目暫時無法載入，請查看館方網站。</p>
       : !data ? <p className="domain-message" role="status">正在翻閱演出檔案…</p>
       : data.total === 0 ? <p className="domain-message">目前沒有可核對的未來場次，請查看館方節目頁。</p>
