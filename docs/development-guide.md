@@ -5,7 +5,7 @@
 ## 建議閱讀順序
 
 1. [STATUS](../STATUS.md)：哪些來源可匯入、哪些只有人工資料、哪些仍待驗證。
-2. [本頁](development-guide.md)與[目前架構](architecture.md#目前實作本機-mvp)：資料如何進入、分流與被查詢。
+2. [本頁](development-guide.md)、[目前架構](architecture.md#目前實作本機-mvp)與[ERD](erd.md)：資料如何進入、分流、建立關聯與被查詢。
 3. [API 說明](api.md)和 [OpenAPI 3.0](openapi.yaml)：公開唯讀端點的語意、參數、回應與錯誤。
 4. [來源盤點](sources.md)及[技術決策](technical-decisions.md)：每館證據、資料品質規則與取捨。
 5. [運作設計](operations.md)、[Phase 3](stage-2026-10-15-phase3.md)與[Phase 4](stage-2026-10-15-phase4.md)階段紀錄：逐場／逐日核對、手動同步、測試證據及未完成事項。
@@ -29,6 +29,8 @@
 歌劇院的場次售票狀態只在官方詳情明示額滿時標 `sold_out`；公告涉及部分場次更動時先標 `unknown`，由 `npm run review:performance -- pending` 找出待核對場次，再用 `set` 附官方證據逐場核對。人工結果記錄來源版本及異動歷史；下一次來源內容改變會使舊核對失效，避免沿用過期結論。流程詳見[Phase 3 階段紀錄](stage-2026-10-15-phase3.md)。
 
 ## 從修改到驗證
+
+文件變更可先跑 `npm run check:docs`，確認 README、STATUS 與 `docs/*.md` 的本機相對連結都有目標檔案；這不驗證外部網址或頁內錨點。
 
 新增或修改一個來源時，先在 [來源盤點](sources.md)留下官方入口與已核對的欄位，再改對應 adapter。來源特有欄位留在 adapter；輸入驗證失敗應產生待審或讓整批失敗，不讓不明資料冒充公開展覽。若更動資料庫結構，新增 `db/` migration 並更新查詢與 [OpenAPI](openapi.yaml)；舊 migration 不改寫。
 

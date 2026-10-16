@@ -35,7 +35,8 @@
     "test": "node --experimental-strip-types --test test/*.test.ts",
     "pretest:integration": "npm run build:web",
     "test:integration": "node --env-file-if-exists=.env test/ingest.integration.cjs",
-    "typecheck": "tsc --noEmit && tsc --noEmit -p frontend/tsconfig.json"
+    "typecheck": "tsc --noEmit && tsc --noEmit -p frontend/tsconfig.json",
+    "check:docs": "node scripts/check-docs.mjs"
   },
   "engines": {
     "node": ">=22.10"

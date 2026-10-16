@@ -1,24 +1,32 @@
-# Event Radar｜臺灣博物館特展情報
+# Event Radar｜博物館與展演資訊整理平台
 
-科博館個人 API Key 已在本機驗證並接入當期展覽與未來一週開放時間；搜尋頁也有休館提醒、展覽狀態與明確免費資訊篩選。詳細狀態見[統一進度](STATUS.md)與[第五階段紀錄](docs/stage-2026-10-05-phase5.md)。
+Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查詢結果。核心工作是**來源 Adapter、資料驗證、保守去重、異動偵測、待審隔離與來源健康追蹤**；不同領域保留各自的時間模型。這是**本機作品集系統，尚未公開部署**，沒有線上使用者或流量數據。
 
-目前做到哪裡、哪些尚未接入：請先看 [統一進度](STATUS.md)。第一次接手可從[開發導覽](docs/development-guide.md)了解三條資料路徑、狀態判讀、文件閱讀順序與驗證方式。每項能力的實作、取捨、證據與限制集中在[技術處理與決策紀錄](docs/technical-decisions.md)；後續功能進度要同步更新該文件。
+| 領域 | 現有能力 | 資料邊界 |
+| --- | --- | --- |
+| 博物館限期展 | 科博館、故宮南／北院、海生館、科工館等來源的本機匯入、搜尋與異動；國美館另有美術專屬欄位 | 完整展期與官方連結才進公開搜尋；奇美特展仍以人工資料及文化部補充為主 |
+| 表演藝術 | 臺中國家歌劇院 `place=1` 範圍的節目、逐場時間／廳別、可核對票價與狀態 | 本機手動同步；不是全站或即時票務 |
+| 海洋節目 | 屏東海生館的當日餵食／解說時段與成功批次歷史快照 | 觀察到的當日表不能保證未來每日場次或開館 |
+| 靜態導覽 | 沖繩美麗海、澎湖化石館、左鎮化石園區等館所／圖鑑資訊 | 人工整理、有來源連結；不冒充自動匯入 |
+| 奇美活動 | 官網內部 JSON 候選 Adapter、人工刷新快照及本機候選表 | 官網端點**不是公開文件化 API**；尚無自動活動同步或公開活動搜尋 |
 
-目前依[11 階段修正版路線圖](docs/future-roadmap.md#2026-10-11-優先順序取代下方舊版擴館部署順序)先做資料來源與 Domain 模型，之後才公開部署。Phase 3／4 已有臺中國家歌劇院 `place=1` 節目清單多場次與海生館當日節目表的本機手動同步、獨立 API 和 React 入口。歌劇院「MORE」經查只展開同頁預藏卡片，已一併讀取；2026-10-14 真實手動同步接受 20 筆。隔離 PostgreSQL 已驗證海生館縮水保護及歌劇院 19 筆合成測試資料的批次冪等與 API 清單。其他篩選條件與跨週穩定仍未證實，見[階段紀錄](docs/stage-2026-10-12-phase3-4.md)。奇美活動已有人工快照及本機候選表的冪等／欄位異動驗證；網站仍讀快照，奇美官網內部端點**不是公開文件化 API**，尚無自動活動同步或公開活動搜尋。
+首頁採 React + Vite，提供城市與館所連動、展覽狀態／明確免費資訊篩選、表演、深海與化石專區；載入展覽的發掘動畫支援「減少動態效果」。下圖是本機介面，不代表網站已上線。
 
-首頁已改為 React 互動介面，採古文明、化石與考古檔案視覺；載入展覽時顯示短暫的文物發掘動畫，並遵守「減少動態效果」系統設定。此為本機改版，尚未公開部署。[本階段實作紀錄](docs/stage-2026-10-10-react.md)記載驗證結果。
+想快速評估專案，可依序閱讀：[目前進度](STATUS.md) → [面試用專案介紹](docs/portfolio-brief.md) → [開發導覽](docs/development-guide.md) → [API 契約](docs/api.md)／[OpenAPI](docs/openapi.yaml) → [來源盤點](docs/sources.md) → [技術決策](docs/technical-decisions.md)。[Phase 8 文件驗收](docs/stage-2026-10-16-phase8.md)記錄這次整理範圍與限制。
 
 ![Event Radar React 考古主視覺](docs/screenshots/event-radar-react-hero.jpg)
 
 [早期首頁畫面](docs/screenshots/event-radar-showcase.png)保留作設計歷程。
 
-[架構圖：目前實作與目標方向](docs/architecture.md)將已完成的本機資料流程與使用者提供的長期構想分開標示；目前只有本機 PostgreSQL 五館來源 Queue 與未啟用的每週排程路徑，概念圖中的多階段 Queue、通知與遠端監控仍未實作。
+[目前系統架構圖](docs/architecture.md#目前實作本機-mvp)、[資料庫 ERD](docs/erd.md)及[領域模型對照](docs/domain-model.md)分別說明執行流程、資料關聯與不同時間語意。長期概念圖中的多階段 Queue、通知與遠端監控仍未實作。
 
-目標是從臺灣各博物館的官方資訊取得特展資料，整理展期、展館、城市與簡介，供人依地點與日期查詢，並回到官方公告核對。第一版聚焦**特展與期間限定展**，不收市集、音樂會或一般演出。
+原始產品核心是臺灣博物館的特展與期間限定展；後續為驗證不同時間模型，另開表演藝術與海洋節目專區。三種資料各有查詢端點，不把演出、每日活動或市集混入特展結果。所有頁面均提供官方入口供訪客出發前核對。
 
-目前是 **本機 MVP**：資料庫、查詢 API、五館既有來源匯入及國美館官方頁本機手動匯入、文化部奇美補充來源、十館博物館介紹、來源隔離、本機審核頁、有限重試及嘗試紀錄、五館來源 Queue 與未啟用的每週排程路徑、同館去重、欄位異動紀錄與測試已完成本機驗證。搜尋可按展覽狀態與明確免費資訊篩選；現有來源多數沒有可靠的**個別展覽票價**，所以免費結果可能為空。首頁另有十館一般入館票價與購票入口的人工核對索引，奇美法老展有單獨的特展票價；兩種票務資訊分開顯示。[票務來源與維護](docs/ticketing.md)列出人工核對證據，[最新階段紀錄](docs/stage-2026-10-05-phase5.md)列出先前實測與索引判斷。每週同步排程與 CI 已寫成 GitHub Actions 設定檔，但線上每週同步與公開網站尚未啟用，因此不列為已上線系統。
+目前是 **本機 MVP**：資料庫、查詢 API、五館來源 Queue、國美館／歌劇院／海生館的本機手動同步、待審流程、同館去重與異動紀錄已有測試。一般入館票價與購票入口是人工核對資料，不等於每檔展覽票價；免費篩選只認來源明確標示。詳見[票務來源與維護](docs/ticketing.md)。每週排程程式路徑與 CI 設定已存在，但線上排程與公開站尚未啟用。
 
-## 範圍
+## 來源與展示範圍
+
+以下保留初期館所選擇的背景；**目前是否有自動 Adapter、人工快照或只有靜態導覽，請以[來源盤點](docs/sources.md)的現況矩陣為準**。表演、海洋節目與化石圖鑑是後續獨立加入的領域。
 
 - **首批來源目標**：奇美博物館、國立自然科學博物館、國立臺灣博物館、國立故宮博物院（北／南院）、國立臺灣歷史博物館。
 - **第二批**：國立科學工藝博物館、國立臺灣科學教育館、國立臺灣美術館、臺南市美術館。
@@ -26,8 +34,8 @@
 - 科博館的[官方 OpenAPI](https://www.nmns.edu.tw/ch/about/info-central/opendata/index.html)個人金鑰已核發並在本機驗證。`NMNS_API_KEY` 優先供展覽與未來一週開放時間使用；無金鑰時展覽匯入仍可使用原 `NMNS_OPEN_DATA_URL`，開放時間只顯示官網核對入口。金鑰只存在 Git 忽略的本機 `.env`，不提交到 Git。
 - 故宮南院的[當期展覽](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3112)與[展覽預告](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3111)是第三個真實來源。匯入有起訖日期的特別展覽與限期輪替展，保留官方詳情連結；無結束日的常設展與年度期程不列入搜尋。這是官方網頁同步，不是館方提供的公開 API。
 - 故宮北院[公開展覽 JSON](https://odapi.npm.gov.tw/data/open/api/v1/exhibition/current.json)與海生館[公開特展 JSON](https://www.nmmba.gov.tw/OpenData.aspx?SN=BF6D6EB9CB6876BB)已接入本機。逐筆保留原始值，分流有效、待審與略過資料；故宮按院區與展期保守篩選。海生館若日期欄空白，僅對介紹文字明載完整展期的少數紀錄，再與同筆館方詳情頁的展名及日期核對；其他紀錄仍待審，不推測為常設展。用 `npm run review -- --source nmmba` 或 `--source npm-north` 查看待審原因。
-- 首頁的「博物館介紹」另有[奇美](web/guides/chimei.html)、[科博館（含植物園）](web/guides/nmns.html)、[臺博館](web/guides/ntm.html)、[臺史博](web/guides/nmth.html)、[故宮南院](web/guides/npm-south.html)、[科工館](web/guides/nstm.html)、[科教館](web/guides/ntsec.html)、[故宮北院](web/guides/npm-north.html)、[海生館](web/guides/nmmba.html)與[國美館](web/guides/ntmofa.html)十頁人工編寫介紹。各頁附典藏或常設展路線、人工核對的平常開館時間（舊九館 2026-10-10；國美館 2026-10-11）與官方查證連結；[開館時間來源](docs/opening-hours.md)列出範圍。多頁附照片及[圖片依據](docs/sources.md#常設展照片來源與使用)。這些時間不是逐日同步資料；國定假日、節慶及臨時變動須以館方公告為準。臺博館、臺史博與科教館的近期特展尚未接入本站資料庫。React 首頁與十頁靜態介紹並存。
-- 十頁導覽都有交通規劃：可選出發縣市並選填更精確的地址或車站，分別開啟 Google Maps 大眾運輸與開車路線，旁邊保留館方交通連結。只選縣市時以該縣市政府作示意起點；本站不計算即時車程、票價或「最佳」交通方式，也不儲存輸入地點。
+- 首頁的「館所圖鑑」目前連到 14 篇人工編寫的介紹：十間原有博物館／美術館，加上臺中國家歌劇院、沖繩美麗海水族館、澎湖化石館與臺南左鎮化石園區。各頁的展示路線、平常開館資訊、照片來源與交通入口採人工核對，**不等於逐日開館或當期展件保證**；館方公告仍是出發前依據。臺博館、臺史博與科教館的近期特展尚未接入資料庫；沖繩與兩座化石館目前也只有靜態導覽。見[來源盤點](docs/sources.md)、[開館時間](docs/opening-hours.md)與[照片署名](web/photo-credits.html)。
+- 導覽頁的地圖入口可選出發地，開啟外部路線；本站不計算即時車程、票價或最佳路線，也不儲存輸入地點。
 - 奇美公開特展頁已有**本機可執行的每週變更檢查**（`npm run check:chimei`）。該檢查與文化部補充匯入互相獨立；前者比對官網初始 HTML 明確列出的連結及已知特展詳情的展名／展期，後者只納入能通過官網逐筆核對的文化部資料，兩者都不保證完整奇美展覽清單。線上排程尚未啟用。
 
 詳見 [需求規格](docs/requirements.md)、[API 契約](docs/api.md)、[來源盤點](docs/sources.md)、[官方 API／第三方資料源查證](docs/api-source-research.md)、[每週同步運作設計](docs/operations.md)與[後續方向（館所與 Queue）](docs/future-roadmap.md)。
@@ -51,16 +59,16 @@ test/                 測試與官方資訊範例
 
 需要 Node.js 22.10+、PostgreSQL 17 或 Docker。本機已用 Node.js 24 與 Docker Desktop 的 PostgreSQL 17 驗證資料匯入和 API。此電腦的 Docker 執行檔位於使用者目錄，若終端機找不到 `docker`，可呼叫 `C:\Users\user\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe`。
 
-若要先看介面，先執行 `npm ci`，再執行 `npm run preview`，開啟 `http://127.0.0.1:4180/`。`preview` 與 `start` 都會先建置 React 首頁。這個預覽不需資料庫，頁面會標示資料是官方頁快照，並可主動顯示模擬資料；**它不是即時同步**。主視覺採「考古探索未知文明」方向，使用使用者提供的展品照片與原有已標註來源的素材。
+若要先看介面，先執行 `npm ci`，再執行 `npm run preview`，開啟 `.env` 中 `PORT` 指定的本機網址；預設值請看 `.env.example`。`preview` 與 `start` 都會先建置 React 首頁；請擇一使用同一連接埠。預覽不需資料庫，頁面使用快照／示例資料，**不是即時同步**。
 
 ```powershell
 Copy-Item .env.example .env
 npm ci
 docker compose up -d db
-$env:DATABASE_URL='postgres://event_radar:event_radar@localhost:5432/event_radar'
 npm run migrate
 npm run import:chimei:programmes # 可選：把已人工刷新之奇美活動快照匯入本機候選表
 npm test
+npm run check:docs
 npm run test:integration
 npm run ingest -- --file test/fixtures/chimei.json --source chimei
 npm run ingest -- --file test/fixtures/nmns-mock.json --source nmns
@@ -95,4 +103,4 @@ npm start
 
 ## 已完成與未完成
 
-已完成本機驗證：規格、schema 與 migration、科博館私人 Key 展覽／開放時間 API、其他四館公開資料或官方頁 adapter、文化部奇美補充 adapter、查詢 API、休館提醒介面、原始資料隔離、密碼保護的本機審核頁、有限次來源重試與嘗試紀錄、同館跨來源保守去重、欄位異動歷史、PostgreSQL 來源工作佇列及未啟用的每週排程路徑、單元與資料庫整合測試。未完成：奇美新聞自動同步、其他館逐日休館資料、多階段 Queue／通知 worker、線上每週同步、跨館同展關聯、通知、公開部署與 AWS。
+P7 已完成**現有本機功能**的 72 項單元、型別、React build、隔離 PostgreSQL／HTTP 整合及公開 GET OpenAPI 回應契約驗收；P8 文件與作品集資訊見[驗收紀錄](docs/stage-2026-10-16-phase8.md)。來源跨週穩定、奇美特展正式自動匯入、沖繩自動來源、逐日特殊開館、公開部署、線上排程、通知及 AWS 尚未完成。不能將本機測試或靜態導覽寫成線上維運成果。

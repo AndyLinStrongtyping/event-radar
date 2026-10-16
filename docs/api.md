@@ -17,6 +17,7 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 | GET | `/exhibitions/:id/art-changes` | 美術展欄位異動紀錄（最近 100 筆） |
 | GET | `/performances` | 歌劇院節目與場次；預設只列未來場次 |
 | GET | `/marine-programmes` | 海生館最近一次成功匯入的當日節目觀察 |
+| GET | `/marine-observation-days` | 可查詢的海生館成功觀察日與版本數 |
 
 另外 `GET /chimei-activities.json` 回傳 `{checkedAt, sourceUrl, items}`；每筆含 `id, title, dateText, type, sourceUrl`。`dateText` 是清理 HTML 後的館方時間原文，可能包含售票日，不可直接視為活動日期。頁面及 API 使用者應開啟 `sourceUrl` 核對最新場次與票務。
 

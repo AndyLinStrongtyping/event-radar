@@ -13,8 +13,8 @@
 | 5. 第一個國外來源 | 評估沖繩美ら海水族館、日文來源、`Asia/Tokyo` 時區及日期格式；驗證跨國 Adapter | **重新啟動，第一步為靜態展示**：沖繩館所圖鑑與深海區節目線索於 2026-10-16 依官網人工核對，標示日本當地時間與日期。自動 Adapter、每日同步、持久化觀察、日文日期及跨國模型驗證仍待實作；靜態頁不能當作來源穩定證據。 |
 | 6. 整體模型收斂 | 比較博物館展期、美術館人物／相關活動、表演多場次、海生館週期性節目，抽出共通核心與 Domain 擴充 | **現有本機領域模型已收斂**：完成[模型對照](domain-model.md)、匯入入口與 DB 領域完整性、分型 OpenAPI／端點契約測試。各領域分開查詢；跨領域搜尋不屬此階段已實作能力。沖繩目前只有靜態導覽，故跨國模型尚未驗證。 |
 | 7. 工程品質 | 單元／整合、OpenAPI 回應、migration、來源 Adapter、冪等、異動、場次、週期性節目、health／coverage 與 CI | **現有功能的本機品質驗收完成**：72 項單元、隔離 PostgreSQL／HTTP 整合、公開 GET 回應契約、migration 帳本順序與 checksum 防護均通過；CI 已接上同等命令。GitHub 當次 run、外站跨週穩定及未接入來源的完整覆蓋仍待觀察，不能稱為已驗證。見[Phase 7 紀錄](stage-2026-10-16-phase7.md)。 |
-| 8. 文件與作品集 | README、架構、ERD、技術決策、來源、roadmap、API、架構圖及面試介紹同步 | 部分既有文件已存在；新 Domain 須隨實作持續更新。 |
-| 9. Deployment | 完成以上功能後才接 React／公開 Backend API／遠端 PostgreSQL，檢查環境、migration、CORS、HTTPS、smoke test、source SHA 與 production health | **延後，未開始**；首版不要求 AWS。 |
+| 8. 文件與作品集 | README、架構、ERD、技術決策、來源、roadmap、API、架構圖及面試介紹同步 | **本輪完成**：現有本機能力與靜態／候選來源等級已對齊，新增[ERD](erd.md)、[面試介紹](portfolio-brief.md)及[驗收紀錄](stage-2026-10-16-phase8.md)。往後新 Domain 或來源仍須同步更新文件。 |
+| 9. Deployment | 完成以上功能後才接 React／公開 Backend API／遠端 PostgreSQL，檢查環境、migration、CORS、HTTPS、smoke test、source SHA 與 production health | **下一階段，未開始**；須先定公開測試版來源範圍與資料新鮮度承諾，首版不要求 AWS。 |
 | 10. 線上穩定運作 | 部署穩定後才啟用 production Queue、每週排程、主動告警與跨週觀察 | 未開始；本機來源 Queue 不能當作已上線。 |
 | 11. AWS | 待課程進度足夠後，視需求逐步導入 RDS、S3、CloudWatch、SQS、EventBridge、Secrets Manager | 未開始；非目前前置條件。 |
 

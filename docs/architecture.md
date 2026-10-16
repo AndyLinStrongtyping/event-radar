@@ -1,6 +1,6 @@
 # Event Radar 架構：目前實作與目標方向
 
-最後核對：2026-10-15。這份文件供作品展示與開發取捨使用；新接手者可先讀[開發導覽](development-guide.md)。**下方第一張圖以原有特展路徑為主；Phase 3／4 另有下述本機節目路徑。第二張是未來構想，不代表現有服務或已上線能力。** 特展搜尋與表演／海洋節目分流，一般市集、音樂節與講座不自動混入特展搜尋。
+最後核對：2026-10-16。這份文件供作品展示與開發取捨使用；新接手者可先讀[開發導覽](development-guide.md)，資料關聯見[ERD](erd.md)。**目前實作圖只描述本機驗證的服務與資料路徑；下方 PNG 是未來構想，不代表已上線能力。** 特展搜尋與表演／海洋節目分流，一般市集、音樂節與講座不自動混入特展搜尋。
 
 Phase 6 的[資料模型對照](domain-model.md)列出限期展、美術館、表演、海洋節目與奇美活動候選的共同來源概念和不同時間語意。第 025 migration 保證 `event_sessions` 只屬表演、`recurring_schedules` 只屬海洋節目；現階段仍是分領域查詢，沒有統一公開事件 API。
 
@@ -37,18 +37,34 @@ flowchart LR
     W --> H
     F --> I["REST 查詢 API"]
     I --> J["特展搜尋網頁"]
-    K["人工編寫的十館典藏／常設展導覽"] --> J
+    K["人工編寫的館所／場館導覽<br/>含沖繩與化石館靜態頁"] --> J
     F --> L["本機待審、缺席核對<br/>與來源健康頁"]
     M["奇美官網內部 JSON<br/>人工觸發匿名取得"] --> N["活動候選 Adapter<br/>保留 raw date 與來源 ID"]
     N --> O[("PostgreSQL programme_events<br/>冪等與欄位異動歷史")]
     N --> P["人工 JSON 快照<br/>本機活動卡片"]
 ```
 
+表演與海洋節目在本機另走下列領域路徑；它們和上圖的 `exhibitions` 是分開的資料表及公開查詢端點。奇美活動候選同樣獨立，不是第三種公開節目 API。
+
+```mermaid
+flowchart LR
+    N["臺中國家歌劇院<br/>place=1 官方 HTML"] --> A["ntt-events Adapter<br/>解析節目及多場次"]
+    M["海生館<br/>官方當日活動頁"] --> B["nmmba-programmes Adapter<br/>解析觀察日與每日時段"]
+    A --> V["來源與領域驗證<br/>冪等、異動比較"]
+    B --> V
+    V --> D[("PostgreSQL<br/>domain_events<br/>event_sessions／recurring_schedules<br/>domain_source_runs／changes")]
+    V --> S[("marine_daily_observations<br/>成功日完整快照")]
+    D --> P["GET /performances<br/>GET /marine-programmes"]
+    S --> P
+    P --> R["React 表演與深海區"]
+    L["沖繩與兩座化石館<br/>人工核對靜態導覽"] --> R
+```
+
 `src/sync-source.ts` 可對六個來源各自執行本機同步，暫時性錯誤最多嘗試三次，重試間隔為 30 秒、2 分鐘；`sync_attempts` 留下結果。新增的國美館來源仍由人手動觸發，尚未接入每週 Queue 工作或線上排程；奇美文化部補充資料亦未納入。國美館的藝術家、策展人、展覽類型、展區及相關活動放在獨立美術欄位表，不把欄位硬塞進共通展覽表。資料無法確認展期或官方連結時進入待審，不進公開搜尋。匯入有交易回滾、同館跨來源保守去重與欄位異動紀錄；來源可能不完整，缺席只列候選，不自動下架。
 
 官方清單完整度閘門以筆數與來源鍵變化判斷是否暫緩缺席流程。若館方確實換季，本機命令列可預覽新舊來源鍵，再由站長附官方證據更新後續比較基準；審查紀錄存在 `source_baseline_reviews`。這項操作不改展覽公開狀態，下次官方成功同步才重新評估。
 
-網站由 `src/server.ts` 提供靜態頁面與 `/museums`、`/exhibitions`、`/exhibitions/:id/changes`、`/visit-status` 等 API。可依城市、館所、日期、展覽狀態及**明確標示免費**的資料查詢；關鍵字目前使用 `ILIKE`。十館典藏／常設展頁是人工編寫的靜態導覽，不是自動同步的展件清單。
+網站由 `src/server.ts` 提供靜態頁面與 `/museums`、`/exhibitions`、`/exhibitions/:id/changes`、`/visit-status`、`/performances`、`/marine-programmes` 與 `/marine-observation-days` 等公開唯讀 API。特展可依城市、館所、日期、狀態及**明確標示免費**的資料查詢；關鍵字目前使用 `ILIKE`。14 篇館所／場館導覽是人工編寫的靜態頁，不是自動同步的展件清單。
 
 本機 `sync:status` 與登入後的 `/health` 頁從同步嘗試、官方成功時間與待審量計算來源健康狀態；重試依 `sync_id` 歸為同一工作。手動 PostgreSQL Queue 已能讓五館成為獨立來源工作，租約到期後由下一次 worker 領取流程回收；**每週 workflow 已接入單館 Queue，但閘門仍關閉**。這是本機排查與手動執行工具，沒有主動告警。GitHub Actions 的 CI 已執行型別、單元與 PostgreSQL 整合測試。每週同步 workflow 雖已寫好，仍受 `EVENT_RADAR_SYNC_ENABLED` 關閉；沒有遠端資料庫、公開網站或線上定期更新。詳見[目前進度](../STATUS.md)與[運作設計](operations.md)。
 
@@ -73,6 +89,6 @@ flowchart LR
 
 ## 接下來的工程順序
 
-目前按[11 階段優先順序](future-roadmap.md#2026-10-11-優先順序取代下方舊版擴館部署順序)進行：Phase 1 的來源可靠性未結項保留追蹤，Phase 2 已有國美館本機資料及模型，Phase 3 的歌劇院 `place=1` 本機功能已完成場次核對與來源版本失效驗證，Phase 4 的海生館仍需持續核對；沖繩 Phase 5 依使用者指示暫停。完成共通模型、測試和文件後才公開部署；production Queue、每週排程與告警在部署穩定後啟用，AWS 留到課程進度足夠時。
+目前按[11 階段優先順序](future-roadmap.md#2026-10-11-優先順序取代下方舊版擴館部署順序)進行：Phase 1 的來源可靠性未結項保留追蹤，Phase 2 有國美館本機資料及模型，Phase 3 歌劇院 `place=1` 本機功能完成，Phase 4 海生館仍需持續核對；Phase 5 沖繩目前只恢復**人工核對的靜態導覽**，尚無跨國 Adapter。Phase 6／7 已完成現有本機模型與測試驗收，Phase 8 文件整理完成後進 Phase 9 部署準備；production Queue、每週排程與告警在部署穩定後啟用，AWS 留到需求與課程進度足夠時。
 
 每完成一階段，都應更新這份文件的現況、測試證據與概念圖標示，避免把設計目標誤寫成工作經驗。
