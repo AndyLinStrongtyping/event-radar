@@ -496,6 +496,13 @@
 - **決策**：五張卡片加入可查作者與 Creative Commons 授權的 Wikimedia Commons 縮圖，本站靜態路由供圖，卡片直接註明「野外／他館物種示意」或「過往館內展場紀錄」，並連到原圖；完整攝影者與授權集中在[照片來源頁](../web/photo-credits.html)。沖繩區加入依官方樓層圖排序的「珊瑚之海 3F → 黑潮之海 2F → 深海 1F」核心常設展區，逐區連回館方介紹。它們只作靜態參觀導覽，不進限期展 API，也不推定當日展示物種。
 - **來源／限制**：[館方樓層圖](https://churaumi.okinawa/en/area/floormap/)及[珊瑚之海](https://churaumi.okinawa/en/area/the-coral-reef/coral-sea/)、[黑潮之海](https://churaumi.okinawa/en/area/the-kuroshio/kuroshio/)、[深海](https://churaumi.okinawa/en/area/the-deep-sea/deep-sea/)用於展區敘述；生物照片授權逐張列在照片來源頁。照片不代表 2026/10/16 的活體狀態。72 項單元測試、型別、React build、隔離 PostgreSQL／HTTP 整合測試通過，整合測試確認五張照片與來源頁可由服務載入。沖繩仍不是自動資料來源。
 
+### ER-79｜化石探勘以分館靜態導覽與可追溯圖鑑起步（本機已驗證）
+
+- **問題**：原站有海洋生物圖鑑與兩館深海分區，化石主題只有科博館的零散照片，無法讓訪客比較澎湖化石館與左鎮化石園區。若直接把常設展廳放進限期展 API、從新聞發布日猜活動場次，或把其他館的化石照片當成現場館藏，會製造錯誤行程資訊。
+- **決策**：在 React 新增獨立「化石探勘」，以兩館切換呈現常設展區、行前資訊與每館兩筆化石圖鑑；另建兩篇可直接連結的館所介紹。澎湖三大主題按[縣府文化局館舍頁](https://www.penghu.gov.tw/phhcc/home.jsp?id=115)及[縣府公報](https://www.penghu.gov.tw/uploaddowndoc?file=govpaper%2F202512111255320.pdf&filedisplay=%E6%BE%8E%E6%B9%96%E7%B8%A3%E6%94%BF%E5%BA%9C%E5%85%AC%E5%A0%B1114%E5%B9%B4%E7%AC%AC12%E6%9C%9F.pdf&flag=pdf)整理；左鎮五大展館與化石館樓層按[園區官網](https://fossil.tnc.gov.tw/)及[化石館頁](https://fossil.tnc.gov.tw/content/index.php?m2=58)整理。澎湖古鱷使用本站線條示意並明標非標本照片；澎湖水道古菱齒象齒化石雖相關，攝於臺北他館，在卡片與署名頁都標明。左鎮早坂犀、臺灣古鱷照片為可追溯授權的過往園區紀錄，不推定今日展出。布氏鯨是骨骼標本，放展區敘述但不混入化石圖鑑。
+- **來源衝突與限制**：[澎湖文化局館舍頁](https://www.penghu.gov.tw/phhcc/home.jsp?id=115)寫週四至週一，[服務時間頁](https://www.penghu.gov.tw/phhcc/home.jsp?id=67)則對週二另有說法；前端不自選較「新」的規則，而明示週二需再確認。兩館沒有完成可靠的當期活動清單驗證，因此只連館方公告，不建立可搜尋限期展、活動場次、票價、指定日開館或自動同步。圖像按各 Wikimedia 檔案頁所列 CC0／CC BY-SA 授權使用 960px 縮圖，來源、攝影者與裁切資訊見[照片署名](../web/photo-credits.html)。
+- **驗證**：2026-10-16 型別檢查、72 項單元、React build 和隔離 PostgreSQL／HTTP 整合測試通過；整合測試讀取兩篇館所頁與四張化石照片。這只證明本機功能與路由，不證明跨日來源穩定或官方清單完整。
+
 ## 後續更新方式
 
 每次功能或技術決策有變動，**同一個提交**更新對應的 ER 編號：將「規劃」改為實際狀態，寫明實作方法、取捨、失敗情境與可重現的驗證，附程式／測試路徑；若改變資料來源或對外承諾，同步更新 [STATUS](../STATUS.md)、[API 契約](api.md)、[架構](architecture.md)或[運作設計](operations.md)。新增技術點接續編號，不要刪除曾影響設計的決策；被取代的做法標註原因與日期。**只有測試通過或實際連線核對過的項目，才能寫「已驗證」。**

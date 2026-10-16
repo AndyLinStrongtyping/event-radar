@@ -131,6 +131,19 @@ async function checkPublicApiContract(afterChecks) {
     const photoCredits = await fetch(base + '/photo-credits.html');
     assert.equal(photoCredits.status, 200);
     assert.match(await photoCredits.text(), /大鬼蝠魟/);
+    for (const [slug, marker] of [['penghu-fossil', '週二是否開館'], ['zuojhen-fossil', '早坂犀']]) {
+      const guide = await fetch(base + `/guides/${slug}.html`);
+      assert.equal(guide.status, 200, `${slug} 圖鑑應可開啟`);
+      assert.match(await guide.text(), new RegExp(marker));
+    }
+    for (const filename of [
+      'fossil-penghu-elephant-commons.jpg', 'fossil-zuojhen-rhino-commons.jpg',
+      'fossil-zuojhen-crocodile-commons.jpg', 'fossil-zuojhen-building-commons.jpg',
+    ]) {
+      const photo = await fetch(base + `/assets/${filename}`);
+      assert.equal(photo.status, 200, `${filename} 應可載入`);
+      assert.match(photo.headers.get('content-type') ?? '', /^image\/jpeg/);
+    }
     const programmes = await get('/chimei-activities.json');
     assert.ok(programmes.items.length > 0);
     assert.ok(programmes.items.every((item) => item.sourceUrl.startsWith('https://www.chimeimuseum.org/event/')));
