@@ -299,6 +299,26 @@ async function main() {
   assert.match(migrate(), /新套用 0 份/, '重跑不得重建表或重複寫入');
   let ledger = await testDb.query('SELECT count(*)::int AS count FROM schema_migrations');
   assert.equal(ledger.rows[0].count, migrationCount);
+  const firstMigration = (await testDb.query(`SELECT checksum FROM schema_migrations
+    WHERE filename='001_init.sql'`)).rows[0].checksum;
+  const secondMigration = (await testDb.query(`SELECT checksum FROM schema_migrations
+    WHERE filename='002_sources_and_changes.sql'`)).rows[0].checksum;
+  await testDb.query(`INSERT INTO schema_migrations(filename,checksum)
+    VALUES ('999_unknown.sql',repeat('0',64))`);
+  assert.throws(() => migrate(), /migration 帳本與本機版本不一致/,
+    '帳本包含本機不存在的新版 migration 時不可假裝結構相容');
+  await testDb.query("DELETE FROM schema_migrations WHERE filename='999_unknown.sql'");
+  await testDb.query("DELETE FROM schema_migrations WHERE filename='002_sources_and_changes.sql'");
+  assert.throws(() => migrate(), /migration 帳本與本機版本不一致/,
+    '已套用版本中間有缺口時不可逆序補跑舊 migration');
+  await testDb.query(`INSERT INTO schema_migrations(filename,checksum)
+    VALUES ('002_sources_and_changes.sql',$1)`,[secondMigration]);
+  await testDb.query("UPDATE schema_migrations SET checksum=repeat('0',64) WHERE filename='001_init.sql'");
+  assert.throws(() => migrate(), /內容與已套用版本不同/,
+    '已套用 SQL 的 checksum 異動必須阻止後續 migration');
+  await testDb.query(`UPDATE schema_migrations SET checksum=$1 WHERE filename='001_init.sql'`,
+    [firstMigration]);
+  assert.match(migrate(), /新套用 0 份/);
   // 模擬舊版手動執行所有 migration 的資料庫；只有明確指定時才建立帳本。
   await testDb.query('DROP TABLE schema_migrations');
   assert.throws(() => migrate(), /舊版資料庫且沒有 migration 帳本/);

@@ -12,6 +12,11 @@ const baselineExisting = args.includes('--baseline-existing');
 const files = (await readdir(new URL('../db/', import.meta.url)))
   .filter((file) => /^\d{3}_[a-z0-9_]+\.sql$/.test(file)).sort();
 if (!files.length || files[0] !== '001_init.sql') throw new Error('找不到初始 migration');
+for (const [index, file] of files.entries()) {
+  if (Number(file.slice(0, 3)) !== index + 1) {
+    throw new Error(`migration 編號不連續：預期 ${String(index + 1).padStart(3, '0')}，找到 ${file}`);
+  }
+}
 const migrations = await Promise.all(files.map(async (file) => {
   const sql = await readFile(new URL(`../db/${file}`, import.meta.url), 'utf8');
   return { file, sql, checksum: createHash('sha256').update(sql).digest('hex') };
@@ -101,6 +106,14 @@ try {
     }
     await client.query('COMMIT');
   } catch (error) { await client.query('ROLLBACK'); throw error; }
+
+  const recordedFiles = await client.query<{ filename: string }>(
+    'SELECT filename FROM schema_migrations ORDER BY filename');
+  for (const [index, row] of recordedFiles.rows.entries()) {
+    if (row.filename !== migrations[index]?.file) {
+      throw new Error(`migration 帳本與本機版本不一致：${row.filename}；請先檢查缺失或未知版本`);
+    }
+  }
 
   let applied = 0;
   for (const migration of migrations) {
