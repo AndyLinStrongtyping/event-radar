@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-16 修正本機化石館照片破圖：4101 原本是尚未載入化石圖片路由的舊服務，已核對並重新啟動 Event Radar。另補齊 `preview.cjs` 的兩館介紹及圖片路由，避免改用預覽模式時再次破圖。瀏覽器實測澎湖、左鎮各兩張圖鑑照片、兩篇館所介紹主圖與館所圖鑑卡片皆可載入；見 [ER-83](docs/technical-decisions.md)。
+
 2026-10-16 潘氏澎湖鱷圖鑑與澎湖化石館卡片改用澎湖縣政府 2025 年展場照片，來源及網站資料開放宣告可查；原本的線條示意不再作主圖。圖片僅證明當時展場紀錄，不代表今日展件狀態。見 [ER-82](docs/technical-decisions.md) 與 [照片署名](web/photo-credits.html)。
 
 2026-10-16 Phase 7 現有功能的本機工程品質驗收完成：72 項單元、型別、React build、隔離 PostgreSQL／HTTP 整合及公開 GET OpenAPI 契約通過。Migration 新增連號與帳本前綴檢查，整合測試驗證未知版本、缺版、checksum 異動會拒絕繼續更新。CI 已設定同等命令，但此處未聲稱 GitHub 當次 run、外站跨週穩定或尚未接入來源的完整覆蓋。見[Phase 7 驗收紀錄](docs/stage-2026-10-16-phase7.md)與[ER-81](docs/technical-decisions.md)。
