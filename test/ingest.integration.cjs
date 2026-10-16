@@ -115,9 +115,22 @@ async function checkPublicApiContract(afterChecks) {
     const okinawaHtml = await okinawaGuide.text();
     assert.match(okinawaHtml, /尚未接入每日自動同步/);
     assert.match(okinawaHtml, /churaumi\.okinawa\/en\/guide\/hour/);
+    assert.match(okinawaHtml, /核心常設展區/);
     const okinawaImage = await fetch(base + '/assets/okinawa-churaumi-commons.jpg');
     assert.equal(okinawaImage.status, 200, '沖繩圖鑑照片應可載入');
     assert.match(okinawaImage.headers.get('content-type') ?? '', /^image\/jpeg/);
+    for (const filename of [
+      'species-formosan-salmon-commons.jpg', 'species-beluga-commons.jpg',
+      'species-nmmba-penguins-commons.jpg', 'species-churaumi-whale-shark-commons.jpg',
+      'species-giant-manta-commons.jpg',
+    ]) {
+      const photo = await fetch(base + `/assets/${filename}`);
+      assert.equal(photo.status, 200, `${filename} 應可載入`);
+      assert.match(photo.headers.get('content-type') ?? '', /^image\/jpeg/);
+    }
+    const photoCredits = await fetch(base + '/photo-credits.html');
+    assert.equal(photoCredits.status, 200);
+    assert.match(await photoCredits.text(), /大鬼蝠魟/);
     const programmes = await get('/chimei-activities.json');
     assert.ok(programmes.items.length > 0);
     assert.ok(programmes.items.every((item) => item.sourceUrl.startsWith('https://www.chimeimuseum.org/event/')));

@@ -17,6 +17,17 @@ type SeaExhibitionResponse = { items: SeaExhibition[]; total: number };
 const marineSource = 'https://www.nmmba.gov.tw/ActiveShow_D_Cus.aspx?n=33D045D1594ED637&sms=00C15C8CDECA96C3';
 const nttSource = 'https://www.npac-ntt.org/program/events?place=1';
 const churaumiSource = 'https://churaumi.okinawa/en/area/floormap/';
+const churaumiCoreAreas = [
+  { floor: '3F', title: '珊瑚之海', subtitle: '從陽光開始',
+    description: '開放式水槽引入自然光，讓活珊瑚與礁區生物成為下潛旅程的第一站。',
+    url: 'https://churaumi.okinawa/en/area/the-coral-reef/coral-sea/' },
+  { floor: '2F', title: '黑潮之海', subtitle: '走進大水槽',
+    description: '大型水槽呈現黑潮海域，從觀景窗看鯨鯊與蝠魟的游動。活體展示以館方當日資訊為準。',
+    url: 'https://churaumi.okinawa/en/area/the-kuroshio/kuroshio/' },
+  { floor: '1F', title: '深海', subtitle: '抵達低光海域',
+    description: '沿樓層向下，認識水深 300 公尺以上海域的生物與環境。',
+    url: 'https://churaumi.okinawa/en/area/the-deep-sea/deep-sea/' },
+] as const;
 const churaumiProgrammes = [
   { name: '黑潮之海餵食', place: '館內 2F／黑潮之海', times: '魟魚 09:30；鯨鯊 15:00、17:00',
     note: '館方提醒，動物狀況可能使餵食取消。', url: 'https://churaumi.okinawa/en/program/aquarium/kuroshio/' },
@@ -25,18 +36,33 @@ const churaumiProgrammes = [
 ] as const;
 const marineSpecies = [
   { name: '臺灣鉤吻鮭', habitat: '臺灣水域館／高山溪流', clue: '從冷冽溪流認識臺灣特有魚類，以及水域環境和生物之間的關係。',
+    image: '/assets/species-formosan-salmon-commons.jpg', imageAlt: '臺灣鉤吻鮭在武陵溪流中游動的野外照片',
+    imageNote: '物種示意｜武陵野外照片，非館內展示',
+    imageSource: 'https://commons.wikimedia.org/wiki/File:Formosan_Landlocked_Salmon_in_Wuling_Farm,_Taichung,_Taiwan.jpg',
     url: 'https://www.nmmba.gov.tw/News_Cus2.aspx?CategorySN=100&n=10CA9F72C981FC4C' },
   { name: '白鯨', habitat: '珊瑚王國館／白鯨池', clue: '留意牠如何上浮換氣；館方另介紹聲學研究、照護與環境豐富化。',
+    image: '/assets/species-beluga-commons.jpg', imageAlt: '白鯨在水中游動的照片，攝於加拿大水族館',
+    imageNote: '物種示意｜攝於加拿大，非海生館',
+    imageSource: 'https://commons.wikimedia.org/wiki/File:Beluga_whale.jpg',
     url: 'https://www.nmmba.gov.tw/News_Cus2.aspx?CategorySN=105&n=10CA9F72C981FC4C' },
   { name: '企鵝', habitat: '世界水域館／極地水域', clue: '觀察不同企鵝在寒冷水域的活動方式；實際展示種類以館方當日資訊為準。',
+    image: '/assets/species-nmmba-penguins-commons.jpg', imageAlt: '國立海洋生物博物館過往展場中的企鵝',
+    imageNote: '海生館過往展場照片｜非今日展示紀錄',
+    imageSource: 'https://commons.wikimedia.org/wiki/File:National_Museum_of_Marine_Biology_and_Aquarium,_Taiwan_02.jpg',
     url: 'https://www.nmmba.gov.tw/cp.aspx?n=c3b73a6100ac6f06&s=6CAFA8D4F7D63697' },
 ] as const;
 const churaumiSpecies = [
   { name: '鯨鯊', scientificName: 'Rhincodon typus', habitat: '黑潮之海',
     clue: '體型巨大的濾食性鯊魚；館方圖鑑介紹牠如何攝食浮游生物。',
+    image: '/assets/species-churaumi-whale-shark-commons.jpg', imageAlt: '沖繩美麗海水族館過往展場中游過大水槽的鯨鯊',
+    imageNote: '美麗海過往展場照片｜非今日展示紀錄',
+    imageSource: 'https://commons.wikimedia.org/wiki/File:Whale_shark_at_Churauma_Aquarium,_Okinawa.jpg',
     url: 'https://churaumi.okinawa/fishbook/00000510/' },
   { name: '大鬼蝠魟', scientificName: 'Mobula birostris', habitat: '黑潮之海',
     clue: '留意寬大的胸鰭與游動姿態；館方圖鑑說明牠與其他蝠魟的差異。',
+    image: '/assets/species-giant-manta-commons.jpg', imageAlt: '大鬼蝠魟在泰國海域游動的野外照片',
+    imageNote: '物種示意｜泰國野外照片，非館內展示',
+    imageSource: 'https://commons.wikimedia.org/wiki/File:Giant_oceanic_manta_ray.jpg',
     url: 'https://churaumi.okinawa/fishbook/1543394214/' },
 ] as const;
 const seaLayers = [
@@ -242,17 +268,28 @@ function DeepSeaExpedition() {
           })}
         <section className="sea-species" aria-labelledby="sea-species-title"><div className="sea-subheading"><span>FIELD GUIDE / 03</span><h4 id="sea-species-title">海生館生物圖鑑</h4><p>挑三組館方展區介紹提到的生物，作為探索入口；活體與展區配置可能變動，並非當日展示保證。</p></div>
           <div className="sea-species-grid">{marineSpecies.map((species, index) => <article className="sea-species-card" key={species.name}>
+            <figure className="sea-species-image"><img src={species.image} alt={species.imageAlt} loading="lazy" decoding="async"/>
+              <figcaption>{species.imageNote} · <a href={species.imageSource} target="_blank" rel="noopener noreferrer">照片來源 ↗</a></figcaption></figure>
             <span>SPECIMEN / {String(index + 1).padStart(2, '0')}</span><h5>{species.name}</h5><small>{species.habitat}</small><p>{species.clue}</p><a href={species.url} target="_blank" rel="noopener noreferrer">閱讀館方介紹 ↗</a>
           </article>)}</div></section>
         <section className="sea-okinawa" id="sea-okinawa" aria-labelledby="sea-okinawa-title">
           <div className="sea-museum-heading"><span>EXPEDITION 02 / OKINAWA</span><h3 id="sea-okinawa-title">沖繩美麗海水族館</h3><p>官網動線由珊瑚礁、黑潮之海走向深海。這裡先整理館方展區和節目頁，時間為人工核對紀錄，尚未接入每日自動匯入。</p><a href="/guides/okinawa-churaumi.html">閱讀沖繩館所介紹 ↗</a></div>
           <div className="sea-okinawa-layout"><img src="/assets/okinawa-churaumi-commons.jpg" alt="沖繩美麗海水族館黑潮之海的大水槽，鯨鯊從觀眾前方游過" loading="lazy"/><div><span>CHURAUMI / 2026.10.16 核對</span><h4>從珊瑚走入黑潮</h4><p>3F 珊瑚礁、2F 黑潮之海與 1F 深海展區，依<a href={churaumiSource} target="_blank" rel="noopener noreferrer">館方樓層圖 ↗</a>安排閱讀路線。照片為 2015 年展場紀錄，<a href="/photo-credits.html">查看授權 ↗</a>。</p></div></div>
+          <section className="sea-core" id="sea-okinawa-core" aria-labelledby="sea-okinawa-core-title">
+            <div className="sea-subheading"><span>CORE EXHIBITIONS / 03</span><h4 id="sea-okinawa-core-title">核心常設展區</h4><p>依館方樓層圖由 3F 走向 1F。這是長期參觀動線，不是有起訖日期的限期特展；活體與展示內容請以館方當日資訊為準。</p></div>
+            <div className="sea-core-grid">{churaumiCoreAreas.map((area, index) => <article className="sea-core-card" key={area.floor}>
+              <div className="sea-core-number"><span>{String(index + 1).padStart(2, '0')}</span><strong>{area.floor}</strong></div>
+              <div><small>{area.subtitle}</small><h5>{area.title}</h5><p>{area.description}</p><a href={area.url} target="_blank" rel="noopener noreferrer">閱讀館方展區介紹 ↗</a></div>
+            </article>)}</div>
+          </section>
           <div className="sea-subheading"><span>FEEDING & SHOW / JST · UTC+9</span><h4>餵食與解說線索</h4><p>官網於 2026/10/16 核對時列出的日本當地時段；動物狀況、維修與臨時公告可能改變安排，出發前請點開官方頁。</p></div>
           <div className="marine-grid">{churaumiProgrammes.map((programme, index) => <article className="marine-card" key={programme.name}>
             <div className="marine-card-top"><span>OKINAWA / {String(index + 1).padStart(2, '0')}</span><span aria-hidden="true">✧</span></div><h4>{programme.name}</h4><p className="marine-venue">{programme.place}</p><p className="marine-price">日本當地時間｜{programme.times}</p><p className="marine-price">{programme.note}</p><a href={programme.url} target="_blank" rel="noopener noreferrer">核對館方節目頁 ↗</a>
           </article>)}</div>
           <section className="sea-species sea-okinawa-species" aria-labelledby="sea-okinawa-species-title"><div className="sea-subheading"><span>FIELD GUIDE / OKINAWA</span><h4 id="sea-okinawa-species-title">美麗海生物圖鑑</h4><p>先挑兩種館方圖鑑介紹的黑潮生物，保留學名與原始條目。這是生物線索，不能據此保證當日展示；<a href="https://churaumi.okinawa/sp/tc/fishbook/" target="_blank" rel="noopener noreferrer">瀏覽館方完整生物圖鑑 ↗</a></p></div>
             <div className="sea-species-grid">{churaumiSpecies.map((species, index) => <article className="sea-species-card" key={species.scientificName}>
+              <figure className="sea-species-image"><img src={species.image} alt={species.imageAlt} loading="lazy" decoding="async"/>
+                <figcaption>{species.imageNote} · <a href={species.imageSource} target="_blank" rel="noopener noreferrer">照片來源 ↗</a></figcaption></figure>
               <span>SPECIMEN / {String(index + 1).padStart(2, '0')}</span><h5>{species.name}</h5><small>{species.scientificName} · {species.habitat}</small><p>{species.clue}</p><a href={species.url} target="_blank" rel="noopener noreferrer">閱讀館方生物條目 ↗</a>
             </article>)}</div></section>
           <div className="sea-floor"><span aria-hidden="true">✧</span><p>兩座海洋現場，都值得親自去看。</p><a href="/guides/okinawa-churaumi.html">查看沖繩參觀資訊 ↗</a></div>
