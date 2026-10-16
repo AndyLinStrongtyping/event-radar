@@ -63,7 +63,8 @@ async function checkPublicApiContract(afterChecks) {
   const base = `http://127.0.0.1:${port}`;
   const coveredSuccessPaths = new Set();
   const server = spawn(process.execPath, ['--experimental-strip-types', 'src/server.ts'], {
-    cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href, PORT: String(port), NMNS_API_KEY: '' },
+    cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href, PORT: String(port),
+      PUBLIC_BASE_URL: 'https://event-radar.example', NMNS_API_KEY: '' },
     stdio: 'ignore',
   });
   async function get(path, status = 200) {
@@ -89,6 +90,15 @@ async function checkPublicApiContract(afterChecks) {
     assert.match(homepage.headers.get('content-type') ?? '', /^text\/html/);
     const html = await homepage.text();
     assert.match(html, /id="root"/);
+    assert.match(html, /rel="canonical" href="https:\/\/event-radar\.example\/"/);
+    const robots = await fetch(base + '/robots.txt');
+    assert.equal(robots.status, 200);
+    assert.match(await robots.text(), /Sitemap: https:\/\/event-radar\.example\/sitemap\.xml/);
+    const sitemap = await fetch(base + '/sitemap.xml');
+    assert.equal(sitemap.status, 200);
+    assert.match(await sitemap.text(), /https:\/\/event-radar\.example\/guides\/nmmba\.html/);
+    const indexedGuide = await fetch(base + '/guides/nmmba.html');
+    assert.match(await indexedGuide.text(), /rel="canonical" href="https:\/\/event-radar\.example\/guides\/nmmba\.html"/);
     const bundlePath = html.match(/src="(\/react-assets\/[^\"]+\.js)"/)?.[1];
     const stylesheetPath = html.match(/href="(\/react-assets\/[^\"]+\.css)"/)?.[1];
     assert.ok(bundlePath, '首頁應載入 React bundle');
@@ -275,6 +285,38 @@ async function checkPublicApiContract(afterChecks) {
     if (afterChecks) await afterChecks(get);
     assert.deepEqual([...coveredSuccessPaths].sort(), [...documentedGetPaths].sort(),
       '每條公開 GET 路由都至少要有一筆真實 HTTP 成功回應通過 OpenAPI schema');
+  } finally {
+    if (server.exitCode === null && server.signalCode === null) {
+      const exited = new Promise((resolve) => server.once('exit', resolve));
+      server.kill();
+      await exited;
+    }
+  }
+}
+
+async function checkPreviewIndexing() {
+  const port = 35000 + Math.floor(Math.random() * 2000);
+  const base = `http://127.0.0.1:${port}`;
+  const server = spawn(process.execPath, ['--experimental-strip-types', 'src/server.ts'], {
+    cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href, PORT: String(port),
+      PUBLIC_BASE_URL: '', NMNS_API_KEY: '' }, stdio: 'ignore',
+  });
+  try {
+    let ready = false;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      try { if ((await fetch(base + '/health')).status === 200) { ready = true; break; } }
+      catch { await new Promise((resolve) => setTimeout(resolve, 100)); }
+    }
+    assert.equal(ready, true, '技術預覽服務應可啟動');
+    for (const path of ['/', '/guides/nmmba.html']) {
+      const response = await fetch(base + path);
+      assert.equal(response.status, 200);
+      assert.equal(response.headers.get('x-robots-tag'), 'noindex');
+      assert.doesNotMatch(await response.text(), /rel="canonical"/);
+    }
+    const robots = await fetch(base + '/robots.txt');
+    assert.match(await robots.text(), /Allow: \/\n/);
+    assert.equal((await fetch(base + '/sitemap.xml')).status, 404);
   } finally {
     if (server.exitCode === null && server.signalCode === null) {
       const exited = new Promise((resolve) => server.once('exit', resolve));
@@ -1330,6 +1372,7 @@ async function main() {
   await step('2026-10-15T06:00:00Z', [followup(202), followup(203)]);
   assert.equal((await testDb.query('SELECT count(*)::int AS count FROM programme_events')).rows[0].count,
     5, '歷史缺席項可保留，但覆蓋率只與上一份可信快照比較');
+  await checkPreviewIndexing();
   process.stdout.write('匯入回滾、去重、欄位異動及公開 API 回應契約：通過\n');
 }
 

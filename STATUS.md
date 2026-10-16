@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-16 **Phase 9 部署前本機準備完成，尚未部署**：已加入 Render 免費技術預覽範本、Node 版本固定、正式啟動命令、可控的 `HOST`／`PORT`、首頁與館所頁的 canonical／sitemap、預覽禁索引，以及唯讀部署後 smoke 腳本。型別、72 項單元、React build、隔離 PostgreSQL／HTTP 整合與本機 smoke 通過。Neon／Render 建立、遠端 migration 與官方資料匯入、公開網址、線上觀測及搜尋收錄都尚待站長登入後執行；**不能把本機驗證當成線上運作證據**。見[部署手冊](docs/deployment.md)、[Phase 9 準備紀錄](docs/stage-2026-10-16-phase9-prep.md)與[ER-85](docs/technical-decisions.md)。
+
 2026-10-16 **Phase 8 文件與作品集整理完成**：README 以現有領域及來源等級重寫入口，架構圖補表演／海洋節目路徑，新增主要實際外鍵的[ERD](docs/erd.md)與[面試用專案介紹](docs/portfolio-brief.md)；來源盤點、API 路由清單、路線圖及技術決策同步。這是文件階段，**未新增公開部署、線上流量、自動沖繩來源或 production Queue**。驗證及殘留限制見[Phase 8 驗收](docs/stage-2026-10-16-phase8.md)和[ER-84](docs/technical-decisions.md)。
 
 2026-10-16 修正本機化石館照片破圖：4101 原本是尚未載入化石圖片路由的舊服務，已核對並重新啟動 Event Radar。另補齊 `preview.cjs` 的兩館介紹及圖片路由，避免改用預覽模式時再次破圖。瀏覽器實測澎湖、左鎮各兩張圖鑑照片、兩篇館所介紹主圖與館所圖鑑卡片皆可載入；見 [ER-83](docs/technical-decisions.md)。

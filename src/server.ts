@@ -8,6 +8,11 @@ import { museumTickets, ticketingForExhibition } from './ticketing.ts';
 
 if (!process.env.DATABASE_URL) throw new Error('請先設定 DATABASE_URL');
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+const publicBaseUrl = process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL) : null;
+if (publicBaseUrl && (publicBaseUrl.protocol !== 'https:' || publicBaseUrl.pathname !== '/'
+  || publicBaseUrl.search || publicBaseUrl.hash || publicBaseUrl.username || publicBaseUrl.password)) {
+  throw new Error('PUBLIC_BASE_URL 必須是 HTTPS 網站根網址');
+}
 
 function json(response: ServerResponse, status: number, body: unknown): void {
   response.writeHead(status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
@@ -106,14 +111,34 @@ const staticFiles = new Map<string, [string, string]>([
   ['/assets/ntmofa-building-commons.jpg', ['../web/assets/ntmofa-building-commons.jpg', 'image/jpeg']],
   ['/assets/ntt-building-commons.jpg', ['../web/assets/ntt-building-commons.jpg', 'image/jpeg']],
 ]);
+const indexablePaths = ['/', ...[...staticFiles.keys()].filter((path) => path.startsWith('/guides/'))];
 
 const server = createServer(async (request, response) => {
   try {
+    if (!publicBaseUrl) response.setHeader('x-robots-tag', 'noindex');
     if (request.method !== 'GET') {
       json(response, 405, { error: { code: 'METHOD_NOT_ALLOWED', message: '只支援 GET' } });
       return;
     }
     const url = new URL(request.url ?? '/', 'http://localhost');
+    if (url.pathname === '/robots.txt') {
+      const body = publicBaseUrl
+        ? `User-agent: *\nAllow: /\nSitemap: ${publicBaseUrl.origin}/sitemap.xml\n`
+        : 'User-agent: *\nAllow: /\n';
+      response.writeHead(200, { 'content-type': 'text/plain; charset=utf-8' });
+      response.end(body);
+      return;
+    }
+    if (url.pathname === '/sitemap.xml') {
+      if (!publicBaseUrl) {
+        json(response, 404, { error: { code: 'NOT_FOUND', message: '尚未設定公開網址' } });
+        return;
+      }
+      const urls = indexablePaths.map((path) => `<url><loc>${publicBaseUrl.origin}${path}</loc></url>`).join('');
+      response.writeHead(200, { 'content-type': 'application/xml; charset=utf-8' });
+      response.end(`<?xml version="1.0" encoding="UTF-8"?><urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${urls}</urlset>`);
+      return;
+    }
     if (/^\/react-assets\/[a-zA-Z0-9_-]+\.(js|css)$/.test(url.pathname)) {
       const mime = url.pathname.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
       response.writeHead(200, { 'content-type': mime, 'cache-control': 'public, max-age=31536000, immutable' });
@@ -123,7 +148,11 @@ const server = createServer(async (request, response) => {
     const asset = staticFiles.get(url.pathname);
     if (asset) {
       response.writeHead(200, { 'content-type': asset[1] });
-      response.end(await readFile(new URL(asset[0], import.meta.url)));
+      const content = await readFile(new URL(asset[0], import.meta.url));
+      if (publicBaseUrl && asset[1].startsWith('text/html')) {
+        const canonical = `<link rel="canonical" href="${publicBaseUrl.origin}${url.pathname}">`;
+        response.end(content.toString('utf8').replace(/<\/head>/i, `${canonical}</head>`));
+      } else response.end(content);
       return;
     }
     if (url.pathname === '/health') {
@@ -357,8 +386,12 @@ const server = createServer(async (request, response) => {
 
 try {
   await pool.query('SELECT 1');
-  server.listen(Number(process.env.PORT ?? 3000), '127.0.0.1', () => {
-    process.stdout.write(`Event Radar listening on http://127.0.0.1:${process.env.PORT ?? 3000}\n`);
+  const port = Number(process.env.PORT ?? 3000);
+  const host = process.env.HOST ?? '127.0.0.1';
+  if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('PORT 無效');
+  if (host !== '127.0.0.1' && host !== '0.0.0.0') throw new Error('HOST 無效');
+  server.listen(port, host, () => {
+    process.stdout.write(`Event Radar listening on http://${host}:${port}\n`);
   });
 } catch {
   process.stderr.write('Event Radar 無法連接資料庫，HTTP 服務未啟動\n');

@@ -1,0 +1,17 @@
+# Phase 9 technical preview. Importing this Blueprint creates a public service.
+# Keep PUBLIC_BASE_URL unset until the site is ready to be indexed.
+services:
+  - type: web
+    name: event-radar-preview
+    runtime: node
+    region: singapore
+    plan: free
+    autoDeployTrigger: off
+    buildCommand: npm ci --include=dev --ignore-scripts --no-audit --no-fund && npm run build:web
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: HOST
+        value: 0.0.0.0
+      - key: DATABASE_URL
+        sync: false

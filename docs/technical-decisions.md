@@ -534,6 +534,13 @@
 - **決策**：README 第一屏先給目前能力／資料邊界與閱讀路徑；[架構圖](architecture.md)區分限期展、表演／海洋節目與人工靜態導覽；[ERD](erd.md)只畫實際外鍵並說明領域時間模型；[來源盤點](sources.md)按本機同步、候選及靜態導覽分類。[面試介紹](portfolio-brief.md)只採有日期的本機測試與同步證據，拒絕虛構公開網址、流量、營收或線上 SLA。API 的人類可讀清單與既有 OpenAPI 保持一致。
 - **證據／界線**：交付文件與連結檢查記於[Phase 8 驗收](stage-2026-10-16-phase8.md)。本次沒有新增來源、資料庫表、公開 API 或部署；先前 Phase 7 的測試結果仍只證明當時的本機功能，文件整理不能替代正式環境 smoke test。
 
+### ER-85｜公開測試版採同源服務與可明確關閉索引的部署準備（本機已驗證，未上線）
+
+- **問題**：原 `start` 會在啟動前重建 React，HTTP 只綁本機位址，沒有可重現的部署後檢查。若免費預覽服務被搜尋引擎誤收錄，或新資料庫只有館所資料卻對外宣稱展覽可查，也會造成作品集與訪客的錯誤期待。
+- **決策**：第一版以單一 Node Web Service 同源提供 React 與既有 API，資料庫用獨立 PostgreSQL；保留本機 `127.0.0.1` 預設，部署時明設 `HOST=0.0.0.0`，由平台注入 `PORT`。`start:prod` 只啟動已建好的頁面；`render.yaml` 固定免費技術預覽、手動部署及外部 `DATABASE_URL` Secret，不建立管理服務或 Queue。`PUBLIC_BASE_URL` 未設時，回應 `X-Robots-Tag: noindex`，並允許爬蟲讀取該標頭、不提供 sitemap；設定成最終 HTTPS 根網址後才為首頁及既有靜態館所介紹輸出 canonical 和 sitemap。動態展覽沒有獨立 HTML 頁，不加入 sitemap。`smoke:deploy` 唯讀檢查 health、bundle、資料 API、介紹頁及照片，預覽時以 `--expect-noindex` 另檢查標頭。
+- **取捨／故障模式**：Render 免費 Web Service 閒置休眠，休眠時平台代回 `Disallow: /` 的 `robots.txt`，爬蟲可能看不到本站的 `noindex`；預覽並非私有環境，因此不宣稱絕對不收錄、自然搜尋或持續可用。migration 與第一次官方匯入須由站長連遠端資料庫執行；只建 schema 不會產生展覽，冒煙檢查因此要求至少一筆可公開特展。`render.yaml` 只是範本，匯入後才會建立公開服務。程式版本以 Render 部署 SHA 核對，沒有內建公開 SHA 端點；資料庫 schema 回退需另行備份與計畫。
+- **驗證**：2026-10-16 型別、72 項單元、React build、隔離 PostgreSQL／HTTP 整合及本機 smoke 通過；整合測試確認 `PUBLIC_BASE_URL` 下的 canonical、robots、sitemap。詳見[部署手冊](deployment.md)與[階段紀錄](stage-2026-10-16-phase9-prep.md)。尚未建立 Neon／Render 帳號資源、遠端 migration、公開網址或真實流量。
+
 ## 後續更新方式
 
 每次功能或技術決策有變動，**同一個提交**更新對應的 ER 編號：將「規劃」改為實際狀態，寫明實作方法、取捨、失敗情境與可重現的驗證，附程式／測試路徑；若改變資料來源或對外承諾，同步更新 [STATUS](../STATUS.md)、[API 契約](api.md)、[架構](architecture.md)或[運作設計](operations.md)。新增技術點接續編號，不要刪除曾影響設計的決策；被取代的做法標註原因與日期。**只有測試通過或實際連線核對過的項目，才能寫「已驗證」。**

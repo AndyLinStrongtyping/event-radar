@@ -7,6 +7,7 @@
     "build:web": "vite build --config frontend/vite.config.mjs",
     "prestart": "npm run build:web",
     "start": "node --env-file-if-exists=.env --experimental-strip-types src/server.ts",
+    "start:prod": "node --experimental-strip-types src/server.ts",
     "prepreview": "npm run build:web",
     "preview": "node --env-file-if-exists=.env preview.cjs",
     "ingest": "node --env-file-if-exists=.env --experimental-strip-types src/ingest.ts",
@@ -36,7 +37,8 @@
     "pretest:integration": "npm run build:web",
     "test:integration": "node --env-file-if-exists=.env test/ingest.integration.cjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p frontend/tsconfig.json",
-    "check:docs": "node scripts/check-docs.mjs"
+    "check:docs": "node scripts/check-docs.mjs",
+    "smoke:deploy": "node scripts/smoke-deploy.mjs"
   },
   "engines": {
     "node": ">=22.10"
