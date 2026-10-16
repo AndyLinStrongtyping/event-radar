@@ -110,6 +110,14 @@ async function checkPublicApiContract(afterChecks) {
     assert.match(await theaterGuide.text(), /臺中國家歌劇院/);
     const theaterImage = await fetch(base + '/assets/ntt-building-commons.jpg');
     assert.equal(theaterImage.status, 200, '歌劇院圖鑑照片應可載入');
+    const okinawaGuide = await fetch(base + '/guides/okinawa-churaumi.html');
+    assert.equal(okinawaGuide.status, 200, '沖繩美麗海圖鑑應可開啟');
+    const okinawaHtml = await okinawaGuide.text();
+    assert.match(okinawaHtml, /尚未接入每日自動同步/);
+    assert.match(okinawaHtml, /churaumi\.okinawa\/en\/guide\/hour/);
+    const okinawaImage = await fetch(base + '/assets/okinawa-churaumi-commons.jpg');
+    assert.equal(okinawaImage.status, 200, '沖繩圖鑑照片應可載入');
+    assert.match(okinawaImage.headers.get('content-type') ?? '', /^image\/jpeg/);
     const programmes = await get('/chimei-activities.json');
     assert.ok(programmes.items.length > 0);
     assert.ok(programmes.items.every((item) => item.sourceUrl.startsWith('https://www.chimeimuseum.org/event/')));

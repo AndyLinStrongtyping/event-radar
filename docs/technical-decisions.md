@@ -484,7 +484,12 @@
 - **決策**：保持現有 JSON 不變，將 `DomainEvent` 改成 `PerformanceEvent | MarineProgramme` 的 `oneOf`，以 `domain` 區分；表演只能有逐場 `sessions`，海洋節目只用觀察日與 `dailySchedule`。`/performances` 與 `/marine-programmes` 各自引用對應的清單型別。測試用 OpenAPI 驗證器加入 `oneOf` 恰好符合一個分支的檢查；未支援的 `not` 仍明確拒絕，避免文件形同虛設。
 - **證據／界線**：單元契約測試涵蓋正確兩型、錯置日期／場次、錯端點回應；隔離 PostgreSQL／HTTP 整合測試驗證既有真實查詢形狀仍符合新契約。未建立跨領域搜尋 API，沖繩來源依指示暫停；新增其他來源時須連同分型契約調整。
 
-## 後續更新方式
+### ER-77｜深海探勘分館呈現與沖繩靜態來源邊界（本機已驗證）
 
+- **問題**：原深海探勘只顯示海生館每日節目，海生館限期展留在通用特展搜尋，沖繩既沒有圖鑑頁也沒有節目線索。若直接將沖繩人工核對時刻混入 `/marine-programmes`，會讓訪客誤以為它和海生館每日成功匯入資料具備相同新鮮度。
+- **決策**：React 深海區分成屏東海生館與沖繩美麗海兩個館所區。海生館限期展透過既有 `/exhibitions?museum=nmmba&status=active` 在此區呈現，通用搜尋仍保留可尋性；每日餵食／解說沿用 `/marine-programmes` 的成功觀察日與歷史快照。生物圖鑑先採人工精選、連結館方條目的輕量版本：屏東三組、沖繩兩組；沖繩保留館方學名，均不把圖鑑條目當成當日展示保證。沖繩另有靜態館所介紹與館方節目頁人工核對快照；只記日本當地時間、核對日期、例外與官方連結，不寫入 `domain_events`，也不宣稱已完成日文 Adapter、每日同步或跨國模型驗證。未批量抓取或永久保存館方生物圖像，照片僅採 Wikimedia Commons CC BY-SA 4.0 縮圖並列明攝影者與授權。
+- **來源／限制**：沖繩官方[樓層圖](https://churaumi.okinawa/en/area/floormap/)、[黑潮餵食](https://churaumi.okinawa/en/program/aquarium/kuroshio/)、[海豚劇場](https://churaumi.okinawa/en/program/surrounding-area/1459390261/)、[開館時間](https://churaumi.okinawa/en/guide/hour/)、[交通](https://churaumi.okinawa/en/guide/access/)與[生物圖鑑](https://churaumi.okinawa/sp/tc/fishbook/)於 2026-10-16 人工核對；海生館生物條目依館方展區頁整理。時段可變，沖繩 2027/01/04–01/09 海豚秀有已公告暫停。72 項單元、型別、React build 與隔離 PostgreSQL／HTTP 整合測試通過；本機瀏覽器核對到兩檔海生館限期展與沖繩區塊。跨日來源穩定性仍未建立。
+
+## 後續更新方式
 
 每次功能或技術決策有變動，**同一個提交**更新對應的 ER 編號：將「規劃」改為實際狀態，寫明實作方法、取捨、失敗情境與可重現的驗證，附程式／測試路徑；若改變資料來源或對外承諾，同步更新 [STATUS](../STATUS.md)、[API 契約](api.md)、[架構](architecture.md)或[運作設計](operations.md)。新增技術點接續編號，不要刪除曾影響設計的決策；被取代的做法標註原因與日期。**只有測試通過或實際連線核對過的項目，才能寫「已驗證」。**

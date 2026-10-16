@@ -10,9 +10,35 @@ type Programme = { id: string; sourceKey: string; title: string; venue: string |
   priceNote: string | null; sourceCheckedAt: string; observedOn: string | null;
   sessions: Session[] | null; dailySchedule: DailyTime[] | null };
 type Response = { items: Programme[]; total: number };
+type SeaExhibition = { id: string; title: string; startDate: string; endDate: string;
+  exhibitionStatus: 'ongoing' | 'upcoming' | 'ended'; sourceUrl: string; summary: string | null };
+type SeaExhibitionResponse = { items: SeaExhibition[]; total: number };
 
 const marineSource = 'https://www.nmmba.gov.tw/ActiveShow_D_Cus.aspx?n=33D045D1594ED637&sms=00C15C8CDECA96C3';
 const nttSource = 'https://www.npac-ntt.org/program/events?place=1';
+const churaumiSource = 'https://churaumi.okinawa/en/area/floormap/';
+const churaumiProgrammes = [
+  { name: '黑潮之海餵食', place: '館內 2F／黑潮之海', times: '魟魚 09:30；鯨鯊 15:00、17:00',
+    note: '館方提醒，動物狀況可能使餵食取消。', url: 'https://churaumi.okinawa/en/program/aquarium/kuroshio/' },
+  { name: '海豚劇場', place: '海洋博公園／水族館外', times: '10:30、11:30、13:00、15:00、17:00',
+    note: '館方列為免費節目；2027/01/04–01/09 因維修暫停。', url: 'https://churaumi.okinawa/en/program/surrounding-area/1459390261/' },
+] as const;
+const marineSpecies = [
+  { name: '臺灣鉤吻鮭', habitat: '臺灣水域館／高山溪流', clue: '從冷冽溪流認識臺灣特有魚類，以及水域環境和生物之間的關係。',
+    url: 'https://www.nmmba.gov.tw/News_Cus2.aspx?CategorySN=100&n=10CA9F72C981FC4C' },
+  { name: '白鯨', habitat: '珊瑚王國館／白鯨池', clue: '留意牠如何上浮換氣；館方另介紹聲學研究、照護與環境豐富化。',
+    url: 'https://www.nmmba.gov.tw/News_Cus2.aspx?CategorySN=105&n=10CA9F72C981FC4C' },
+  { name: '企鵝', habitat: '世界水域館／極地水域', clue: '觀察不同企鵝在寒冷水域的活動方式；實際展示種類以館方當日資訊為準。',
+    url: 'https://www.nmmba.gov.tw/cp.aspx?n=c3b73a6100ac6f06&s=6CAFA8D4F7D63697' },
+] as const;
+const churaumiSpecies = [
+  { name: '鯨鯊', scientificName: 'Rhincodon typus', habitat: '黑潮之海',
+    clue: '體型巨大的濾食性鯊魚；館方圖鑑介紹牠如何攝食浮游生物。',
+    url: 'https://churaumi.okinawa/fishbook/00000510/' },
+  { name: '大鬼蝠魟', scientificName: 'Mobula birostris', habitat: '黑潮之海',
+    clue: '留意寬大的胸鰭與游動姿態；館方圖鑑說明牠與其他蝠魟的差異。',
+    url: 'https://churaumi.okinawa/fishbook/1543394214/' },
+] as const;
 const seaLayers = [
   { title: '入海', english: 'DESCENT 01', note: '光線還在水面閃動，先打開今日的第一批觀察紀錄。' },
   { title: '暮光', english: 'DESCENT 02', note: '繼續往下，沿著時刻與地點尋找下一條線索。' },
@@ -103,9 +129,19 @@ function DeepSeaExpedition() {
   const [historyDate, setHistoryDate] = useState('');
   const [observedDays, setObservedDays] = useState<string[]>([]);
   const latest = useProgrammes('/marine-programmes?limit=100');
+  const [exhibitions, setExhibitions] = useState<SeaExhibitionResponse | null>(null);
+  const [exhibitionError, setExhibitionError] = useState(false);
   const archive = useProgrammes(historyDate ? `/marine-programmes?date=${historyDate}&limit=100` : null);
   const { data, error } = historyDate ? archive : latest;
   const [activeLayer, setActiveLayer] = useState(0);
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch('/exhibitions?museum=nmmba&status=active&limit=100', { signal: controller.signal })
+      .then((response) => { if (!response.ok) throw new Error('無法載入展覽'); return response.json(); })
+      .then((body: SeaExhibitionResponse) => setExhibitions(body))
+      .catch((reason: Error) => { if (reason.name !== 'AbortError') setExhibitionError(true); });
+    return () => controller.abort();
+  }, []);
   useEffect(() => {
     const controller = new AbortController();
     fetch('/marine-observation-days?limit=100', { signal: controller.signal })
@@ -145,10 +181,10 @@ function DeepSeaExpedition() {
     <div className="sea-light" aria-hidden="true"/><div className="sea-bubbles" aria-hidden="true"/>
     <div className="sea-intro"><div className="sea-intro-inner">
       <div className="section-kicker"><span>07</span> DEEP SEA EXPEDITION</div>
-      <p className="sea-coordinate">NMMBA / PINGTUNG / TAIWAN</p>
+      <p className="sea-coordinate">PINGTUNG / TAIWAN → MOTOBU / OKINAWA</p>
       <h2 id="deep-sea-title">深海<em>探勘</em></h2>
-      <p className="sea-lede">從水面慢慢下潛，打開國立海洋生物博物館的節目觀察紀錄。沿著時刻尋找海洋故事。</p>
-      <a className="sea-dive-link" href="#sea-layer-1">向下探索 <span aria-hidden="true">↓</span></a>
+      <p className="sea-lede">從屏東海生館的展覽與每日節目出發，再游向沖繩美麗海水族館。兩座館的資料來源與更新方式各自標示。</p>
+      <a className="sea-dive-link" href="#sea-taiwan">向下探索 <span aria-hidden="true">↓</span></a>
       <p className="sea-disclaimer">這是視覺化的下潛旅程；分層不代表展館樓層或生物棲息深度。</p>
     </div><div className="sea-horizon" aria-hidden="true"><span/><span/><span/></div></div>
     <div className="sea-body">
@@ -157,6 +193,20 @@ function DeepSeaExpedition() {
           <span className="sea-depth-dot" aria-hidden="true"/><span>{layer.title}</span>
         </a>)}</aside>
       <div className="sea-journey">
+        <nav className="sea-museum-nav" aria-label="深海探勘館所"><a href="#sea-taiwan">01 / 屏東海生館</a><a href="#sea-okinawa">02 / 沖繩美麗海</a></nav>
+        <div className="sea-museum-heading" id="sea-taiwan"><span>EXPEDITION 01 / PINGTUNG</span><h3>國立海洋生物博物館</h3><p>限期展、當日節目與海洋生物線索，從不同角度認識同一座館。</p><a href="/guides/nmmba.html">閱讀海生館館所介紹 ↗</a></div>
+        <section className="sea-exhibitions" aria-labelledby="sea-exhibitions-title">
+          <div className="sea-subheading"><span>EXHIBITIONS / 01</span><h4 id="sea-exhibitions-title">海生館展覽</h4><p>由現有展覽資料庫讀取未結束的限期展；日期與是否仍開放請逐筆核對館方。</p></div>
+          {exhibitionError ? <p className="sea-message">展覽暫時無法載入，請查看<a href="https://www.nmmba.gov.tw/News.aspx?n=3BA711487C292039" target="_blank" rel="noopener noreferrer">館方展覽頁 ↗</a>。</p>
+            : !exhibitions ? <p className="sea-message" role="status">正在尋找海生館展覽…</p>
+            : exhibitions.total === 0 ? <p className="sea-message">目前沒有已核對展期且未結束的展覽；常設展請看館所介紹，最新資訊請查館方。</p>
+            : <div className="sea-exhibition-grid">{exhibitions.items.map((item) => <article className="sea-exhibition-card" key={item.id}>
+              <span>{item.exhibitionStatus === 'upcoming' ? '即將展出' : '展出中'} / {item.startDate} — {item.endDate}</span><h5>{item.title}</h5>
+              {item.summary && <p>{item.summary}</p>}<a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">核對館方展覽 ↗</a>
+            </article>)}</div>}
+          <a className="sea-more-link" href="/?museum=nmmba#explore-title">使用狀態篩選查看海生館全部展覽 ↗</a>
+        </section>
+        <div className="sea-subheading" id="sea-programmes"><span>DAILY PROGRAMMES / 02</span><h4>餵食與定點解說</h4><p>以下節目依海生館當日頁匯入，歷史快照只代表觀察當天。</p></div>
         <label className="sea-observation-picker">選擇觀察紀錄
           <select value={historyDate} onChange={(event) => setHistoryDate(event.target.value)}>
             <option value="">最近一次成功匯入</option>
@@ -190,7 +240,23 @@ function DeepSeaExpedition() {
                 <MarineCard key={item.id} item={item} number={index * chunkSize + itemIndex + 1}/>)}</div>
             </div>;
           })}
-        <div className="sea-floor"><span aria-hidden="true">✧</span><p>探勘紀錄到此，真正的海洋故事從現場開始。</p><a href={marineSource} target="_blank" rel="noopener noreferrer">開啟海生館當日活動頁 ↗</a></div>
+        <section className="sea-species" aria-labelledby="sea-species-title"><div className="sea-subheading"><span>FIELD GUIDE / 03</span><h4 id="sea-species-title">海生館生物圖鑑</h4><p>挑三組館方展區介紹提到的生物，作為探索入口；活體與展區配置可能變動，並非當日展示保證。</p></div>
+          <div className="sea-species-grid">{marineSpecies.map((species, index) => <article className="sea-species-card" key={species.name}>
+            <span>SPECIMEN / {String(index + 1).padStart(2, '0')}</span><h5>{species.name}</h5><small>{species.habitat}</small><p>{species.clue}</p><a href={species.url} target="_blank" rel="noopener noreferrer">閱讀館方介紹 ↗</a>
+          </article>)}</div></section>
+        <section className="sea-okinawa" id="sea-okinawa" aria-labelledby="sea-okinawa-title">
+          <div className="sea-museum-heading"><span>EXPEDITION 02 / OKINAWA</span><h3 id="sea-okinawa-title">沖繩美麗海水族館</h3><p>官網動線由珊瑚礁、黑潮之海走向深海。這裡先整理館方展區和節目頁，時間為人工核對紀錄，尚未接入每日自動匯入。</p><a href="/guides/okinawa-churaumi.html">閱讀沖繩館所介紹 ↗</a></div>
+          <div className="sea-okinawa-layout"><img src="/assets/okinawa-churaumi-commons.jpg" alt="沖繩美麗海水族館黑潮之海的大水槽，鯨鯊從觀眾前方游過" loading="lazy"/><div><span>CHURAUMI / 2026.10.16 核對</span><h4>從珊瑚走入黑潮</h4><p>3F 珊瑚礁、2F 黑潮之海與 1F 深海展區，依<a href={churaumiSource} target="_blank" rel="noopener noreferrer">館方樓層圖 ↗</a>安排閱讀路線。照片為 2015 年展場紀錄，<a href="/photo-credits.html">查看授權 ↗</a>。</p></div></div>
+          <div className="sea-subheading"><span>FEEDING & SHOW / JST · UTC+9</span><h4>餵食與解說線索</h4><p>官網於 2026/10/16 核對時列出的日本當地時段；動物狀況、維修與臨時公告可能改變安排，出發前請點開官方頁。</p></div>
+          <div className="marine-grid">{churaumiProgrammes.map((programme, index) => <article className="marine-card" key={programme.name}>
+            <div className="marine-card-top"><span>OKINAWA / {String(index + 1).padStart(2, '0')}</span><span aria-hidden="true">✧</span></div><h4>{programme.name}</h4><p className="marine-venue">{programme.place}</p><p className="marine-price">日本當地時間｜{programme.times}</p><p className="marine-price">{programme.note}</p><a href={programme.url} target="_blank" rel="noopener noreferrer">核對館方節目頁 ↗</a>
+          </article>)}</div>
+          <section className="sea-species sea-okinawa-species" aria-labelledby="sea-okinawa-species-title"><div className="sea-subheading"><span>FIELD GUIDE / OKINAWA</span><h4 id="sea-okinawa-species-title">美麗海生物圖鑑</h4><p>先挑兩種館方圖鑑介紹的黑潮生物，保留學名與原始條目。這是生物線索，不能據此保證當日展示；<a href="https://churaumi.okinawa/sp/tc/fishbook/" target="_blank" rel="noopener noreferrer">瀏覽館方完整生物圖鑑 ↗</a></p></div>
+            <div className="sea-species-grid">{churaumiSpecies.map((species, index) => <article className="sea-species-card" key={species.scientificName}>
+              <span>SPECIMEN / {String(index + 1).padStart(2, '0')}</span><h5>{species.name}</h5><small>{species.scientificName} · {species.habitat}</small><p>{species.clue}</p><a href={species.url} target="_blank" rel="noopener noreferrer">閱讀館方生物條目 ↗</a>
+            </article>)}</div></section>
+          <div className="sea-floor"><span aria-hidden="true">✧</span><p>兩座海洋現場，都值得親自去看。</p><a href="/guides/okinawa-churaumi.html">查看沖繩參觀資訊 ↗</a></div>
+        </section>
       </div>
     </div>
   </section>;

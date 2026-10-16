@@ -27,4 +27,4 @@ erDiagram
 
 公開回應的 `DomainEvent` 契約在 [OpenAPI](openapi.yaml) 用 `oneOf` 明確分成 `PerformanceEvent` 與 `MarineProgramme`，兩個查詢端點各自只接受對應清單。表演的 `observedOn`、`dailySchedule` 必須為 `null`，海洋節目的 `sessions` 必須為 `null` 且 `observedOn` 是有效日期。這是現有 JSON 的契約加嚴，沒有變動 API 回傳格式；契約測試會拒絕錯領域資料或把時間欄位放錯的回應。
 
-後續若要做跨領域搜尋，先定義清楚型別化的結果與時態：展期、單一場次、當日觀察需分別帶時間種類、來源品質和導回官方的網址。不能只用一組可空 `startAt/endAt` 抹平差異。沖繩來源依使用者指示暫停；`sourceLanguage`、`Asia/Tokyo` 仍是未驗證需求，不加入現行共通欄位。
+後續若要做跨領域搜尋，先定義清楚型別化的結果與時態：展期、單一場次、當日觀察需分別帶時間種類、來源品質和導回官方的網址。不能只用一組可空 `startAt/endAt` 抹平差異。沖繩目前只有人工核對的靜態導覽與節目線索，並未寫入領域資料表；`sourceLanguage`、`Asia/Tokyo` 的匯入語意仍未驗證，不加入現行共通欄位。
