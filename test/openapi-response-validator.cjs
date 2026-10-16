@@ -40,12 +40,21 @@ function assertFormat(value, format, location) {
 
 function assertSchema(schema, value, location) {
   if (schema.$ref) return assertSchema(resolveRef(schema.$ref), value, location);
-  for (const keyword of ['oneOf', 'not']) {
+  for (const keyword of ['not']) {
     assert.ok(!Object.hasOwn(schema, keyword), `${location} 出現未支援的 OpenAPI ${keyword}`);
   }
   if (value === null) {
     assert.equal(schema.nullable, true, `${location} 不允許 null`);
     return;
+  }
+  if (schema.oneOf) {
+    let matches = 0;
+    for (const part of schema.oneOf) {
+      try { assertSchema(part, value, location); matches += 1; } catch (error) {
+        if (!(error instanceof assert.AssertionError)) throw error;
+      }
+    }
+    assert.equal(matches, 1, `${location} 必須恰好符合 oneOf 的一個分支`);
   }
   if (schema.anyOf) {
     let matches = 0;

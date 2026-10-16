@@ -31,7 +31,7 @@ paths:
           description: 表演與場次清單
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/DomainEventList' }
+              schema: { $ref: '#/components/schemas/PerformanceEventList' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '500': { $ref: '#/components/responses/InternalError' }
   /marine-programmes:
@@ -50,7 +50,7 @@ paths:
           description: 每日節目表觀察結果
           content:
             application/json:
-              schema: { $ref: '#/components/schemas/DomainEventList' }
+              schema: { $ref: '#/components/schemas/MarineProgrammeList' }
         '400': { $ref: '#/components/responses/BadRequest' }
         '500': { $ref: '#/components/responses/InternalError' }
   /marine-observation-days:
@@ -329,9 +329,32 @@ components:
         total: { type: integer, minimum: 0 }
         limit: { type: integer, minimum: 1, maximum: 100 }
         offset: { type: integer, minimum: 0 }
+    PerformanceEventList:
+      allOf:
+        - { $ref: '#/components/schemas/DomainEventList' }
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: '#/components/schemas/PerformanceEvent' } }
+    MarineProgrammeList:
+      allOf:
+        - { $ref: '#/components/schemas/DomainEventList' }
+        - type: object
+          required: [items]
+          properties:
+            items: { type: array, items: { $ref: '#/components/schemas/MarineProgramme' } }
     DomainEvent:
+      description: 表演與海洋節目使用不同時間模型；必須恰好符合其中一種回應。
+      oneOf:
+        - { $ref: '#/components/schemas/PerformanceEvent' }
+        - { $ref: '#/components/schemas/MarineProgramme' }
+      discriminator:
+        propertyName: domain
+        mapping:
+          performance: '#/components/schemas/PerformanceEvent'
+          marine: '#/components/schemas/MarineProgramme'
+    DomainEventCommon:
       type: object
-      description: 表演與海洋節目的共通回應；由 domain 決定 sessions 或 dailySchedule 哪一組有值，與限期特展模型分開。
       required: [id, sourceId, sourceKey, domain, title, venue, sourceUrl, ticketUrl, priceNote, sourceCheckedAt, observedOn, sessions, dailySchedule]
       properties:
         id: { type: string, format: uuid }
@@ -344,17 +367,32 @@ components:
         ticketUrl: { type: string, format: uri, nullable: true }
         priceNote: { type: string, nullable: true }
         sourceCheckedAt: { type: string, format: date-time, description: 最近一次成功匯入此筆節目的核對時間，不保證館方未再變更 }
-        observedOn: { type: string, format: date, nullable: true, description: 海生館官網當日節目頁的觀察日期；表演為 null }
-        sessions:
-          type: array
-          nullable: true
-          description: 表演場次；海洋節目為 null
-          items: { $ref: '#/components/schemas/EventSession' }
-        dailySchedule:
-          type: array
-          nullable: true
-          description: 海洋節目當次觀察到的每日時刻；表演為 null，且不能推定未來日期
-          items: { $ref: '#/components/schemas/DailySchedule' }
+    PerformanceEvent:
+      allOf:
+        - { $ref: '#/components/schemas/DomainEventCommon' }
+        - type: object
+          required: [domain, sourceId, observedOn, sessions, dailySchedule]
+          properties:
+            domain: { type: string, enum: [performance] }
+            sourceId: { type: string, enum: [ntt] }
+            observedOn: { type: string, nullable: true, enum: [null], description: 表演以各場 startsAt 表示時間 }
+            dailySchedule: { type: array, nullable: true, enum: [null], items: { $ref: '#/components/schemas/DailySchedule' } }
+            sessions:
+              type: array
+              items: { $ref: '#/components/schemas/EventSession' }
+    MarineProgramme:
+      allOf:
+        - { $ref: '#/components/schemas/DomainEventCommon' }
+        - type: object
+          required: [domain, sourceId, observedOn, sessions, dailySchedule]
+          properties:
+            domain: { type: string, enum: [marine] }
+            sourceId: { type: string, enum: [nmmba] }
+            observedOn: { type: string, format: date, description: 海生館官網當日節目頁的觀察日期，不代表未來場次 }
+            sessions: { type: array, nullable: true, enum: [null], items: { $ref: '#/components/schemas/EventSession' } }
+            dailySchedule:
+              type: array
+              items: { $ref: '#/components/schemas/DailySchedule' }
     EventSession:
       type: object
       required: [sessionKey, startsAt, hall, ticketUrl, priceMin, priceMax, status, statusOrigin, statusEvidenceUrl, statusReviewedAt]

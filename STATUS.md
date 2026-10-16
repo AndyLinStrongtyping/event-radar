@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-16 Phase 6 本機模型收斂：表演與海洋節目的 OpenAPI 回應改以 `oneOf` 分型，各查詢端點只接受自己的領域；契約測試會拒絕錯領域資料、錯置日期或另一種時間欄位。這不改變 API JSON；第 025 migration 與匯入入口的領域保護仍維持。現有臺灣領域模型已完成盤點與本機驗證；**跨領域搜尋、沖繩來源、公開部署都未完成**。見[模型文件](docs/domain-model.md)與[ER-76](docs/technical-decisions.md)。
+
 2026-10-15 Phase 6 匯入邊界續作：`importDomainEvents` 現在會在建立批次紀錄前拒絕未知來源、歌劇院／海生館來源與領域錯配；隔離整合測試確認錯誤輸入沒有留下匯入批次。與第 025 migration 的資料庫外鍵形成兩層保護。這只涵蓋目前兩個 Domain Adapter，新增來源仍需明確擴充入口契約；見 [ER-75](docs/technical-decisions.md)。
 
 2026-10-15 Phase 6 模型收斂啟動：已整理[限期展、美術館、表演、海洋節目與奇美活動候選的時間及身分語意](docs/domain-model.md)。第 025 migration 增加資料庫複合外鍵，表演場次不可掛到海洋節目、每日時段不可掛到表演；隔離 PostgreSQL 測試亦驗證已有場次的父節目不可換領域。本機 migration 已套用；71 項單元、型別與隔離 PostgreSQL／HTTP 整合測試通過。這是資料完整性與模型盤點，**尚無跨領域公開搜尋、沖繩來源或線上部署**。見 [ER-74](docs/technical-decisions.md)。

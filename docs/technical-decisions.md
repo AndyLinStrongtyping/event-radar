@@ -478,6 +478,12 @@
 - **決策**：在 `importDomainEvents` 的批次前置驗證要求目前 `ntt → performance`、`nmmba → marine`，拒絕未知來源或混入的領域；原有 scope 規則保持。這是現有 Adapter 的入口規則，資料庫本身仍不寫死來源，日後新增來源必須連同契約與測試擴充。
 - **證據／界線**：隔離 PostgreSQL 整合測試送入錯配及未知來源，兩者皆在建立 `domain_source_runs` 前拒絕；既有表演、海洋匯入及公開 API 契約保持通過。此檢查不能替代官方資料內容核對，也沒有新增跨領域搜尋。
 
+### ER-76｜公開節目回應採分型契約，避免時間語意被 nullable 欄位掩蓋（本機已驗證）
+
+- **問題**：原 OpenAPI `DomainEvent` 把 `observedOn`、`sessions`、`dailySchedule` 都設為可空。即使 API 查詢把表演與海洋分開，契約測試仍會接受表演帶海洋日期、海洋帶表演場次，或端點回錯領域的資料。
+- **決策**：保持現有 JSON 不變，將 `DomainEvent` 改成 `PerformanceEvent | MarineProgramme` 的 `oneOf`，以 `domain` 區分；表演只能有逐場 `sessions`，海洋節目只用觀察日與 `dailySchedule`。`/performances` 與 `/marine-programmes` 各自引用對應的清單型別。測試用 OpenAPI 驗證器加入 `oneOf` 恰好符合一個分支的檢查；未支援的 `not` 仍明確拒絕，避免文件形同虛設。
+- **證據／界線**：單元契約測試涵蓋正確兩型、錯置日期／場次、錯端點回應；隔離 PostgreSQL／HTTP 整合測試驗證既有真實查詢形狀仍符合新契約。未建立跨領域搜尋 API，沖繩來源依指示暫停；新增其他來源時須連同分型契約調整。
+
 ## 後續更新方式
 
 
