@@ -152,6 +152,8 @@ function MarineCard({ item, number }: { item: Programme; number: number }) {
 }
 
 function DeepSeaExpedition() {
+  const [selectedMuseum, setSelectedMuseum] = useState<'taiwan' | 'okinawa'>(() =>
+    typeof window !== 'undefined' && window.location.hash.startsWith('#sea-okinawa') ? 'okinawa' : 'taiwan');
   const [historyDate, setHistoryDate] = useState('');
   const [observedDays, setObservedDays] = useState<string[]>([]);
   const latest = useProgrammes('/marine-programmes?limit=100');
@@ -160,6 +162,23 @@ function DeepSeaExpedition() {
   const archive = useProgrammes(historyDate ? `/marine-programmes?date=${historyDate}&limit=100` : null);
   const { data, error } = historyDate ? archive : latest;
   const [activeLayer, setActiveLayer] = useState(0);
+  useEffect(() => {
+    const selectFromHash = () => {
+      const hash = window.location.hash;
+      if (!hash.startsWith('#sea-okinawa') && hash !== '#sea-taiwan' && !hash.startsWith('#sea-layer-')) return;
+      setSelectedMuseum(hash.startsWith('#sea-okinawa') ? 'okinawa' : 'taiwan');
+      requestAnimationFrame(() => requestAnimationFrame(() => document.getElementById(hash.slice(1))?.scrollIntoView()));
+    };
+    window.addEventListener('hashchange', selectFromHash);
+    if (window.location.hash.startsWith('#sea-okinawa')) {
+      requestAnimationFrame(() => document.getElementById(window.location.hash.slice(1))?.scrollIntoView());
+    }
+    return () => window.removeEventListener('hashchange', selectFromHash);
+  }, []);
+  const chooseMuseum = (museum: 'taiwan' | 'okinawa') => {
+    setSelectedMuseum(museum);
+    window.history.replaceState(null, '', museum === 'taiwan' ? '#sea-taiwan' : '#sea-okinawa');
+  };
   useEffect(() => {
     const controller = new AbortController();
     fetch('/exhibitions?museum=nmmba&status=active&limit=100', { signal: controller.signal })
@@ -185,7 +204,7 @@ function DeepSeaExpedition() {
     }, { rootMargin: '-35% 0px -45% 0px' });
     document.querySelectorAll<HTMLElement>('.sea-layer[data-layer]').forEach((layer) => observer.observe(layer));
     return () => observer.disconnect();
-  }, [data]);
+  }, [data, selectedMuseum]);
 
   const items = data?.items ?? [];
   const chunkSize = Math.max(1, Math.ceil(items.length / seaLayers.length));
@@ -210,16 +229,20 @@ function DeepSeaExpedition() {
       <p className="sea-coordinate">PINGTUNG / TAIWAN → MOTOBU / OKINAWA</p>
       <h2 id="deep-sea-title">深海<em>探勘</em></h2>
       <p className="sea-lede">從屏東海生館的展覽與每日節目出發，再游向沖繩美麗海水族館。兩座館的資料來源與更新方式各自標示。</p>
-      <a className="sea-dive-link" href="#sea-taiwan">向下探索 <span aria-hidden="true">↓</span></a>
+      <a className="sea-dive-link" href="#sea-museum-switch">選擇探索館所 <span aria-hidden="true">↓</span></a>
       <p className="sea-disclaimer">這是視覺化的下潛旅程；分層不代表展館樓層或生物棲息深度。</p>
     </div><div className="sea-horizon" aria-hidden="true"><span/><span/><span/></div></div>
-    <div className="sea-body">
-      <aside className="sea-depth-guide" aria-label="下潛章節">{seaLayers.map((layer, index) =>
+    <div className={`sea-body${selectedMuseum === 'okinawa' ? ' sea-body-okinawa' : ''}`}>
+      {selectedMuseum === 'taiwan' && <aside className="sea-depth-guide" aria-label="下潛章節">{seaLayers.map((layer, index) =>
         <a key={layer.english} href={`#sea-layer-${index + 1}`} aria-current={activeLayer === index ? 'step' : undefined}>
           <span className="sea-depth-dot" aria-hidden="true"/><span>{layer.title}</span>
-        </a>)}</aside>
+        </a>)}</aside>}
       <div className="sea-journey">
-        <nav className="sea-museum-nav" aria-label="深海探勘館所"><a href="#sea-taiwan">01 / 屏東海生館</a><a href="#sea-okinawa">02 / 沖繩美麗海</a></nav>
+        <div className="sea-museum-nav" id="sea-museum-switch" role="group" aria-label="切換深海探勘館所">
+          <button type="button" aria-pressed={selectedMuseum === 'taiwan'} className={selectedMuseum === 'taiwan' ? 'active' : ''} onClick={() => chooseMuseum('taiwan')}><span>01 / 屏東・臺灣</span><strong>國立海洋生物博物館</strong></button>
+          <button type="button" aria-pressed={selectedMuseum === 'okinawa'} className={selectedMuseum === 'okinawa' ? 'active' : ''} onClick={() => chooseMuseum('okinawa')}><span>02 / 沖繩・日本</span><strong>沖繩美麗海水族館</strong></button>
+        </div>
+        {selectedMuseum === 'taiwan' && <div className="sea-museum-panel" aria-label="國立海洋生物博物館探勘內容">
         <div className="sea-museum-heading" id="sea-taiwan"><span>EXPEDITION 01 / PINGTUNG</span><h3>國立海洋生物博物館</h3><p>限期展、當日節目與海洋生物線索，從不同角度認識同一座館。</p><a href="/guides/nmmba.html">閱讀海生館館所介紹 ↗</a></div>
         <section className="sea-exhibitions" aria-labelledby="sea-exhibitions-title">
           <div className="sea-subheading"><span>EXHIBITIONS / 01</span><h4 id="sea-exhibitions-title">海生館展覽</h4><p>由現有展覽資料庫讀取未結束的限期展；日期與是否仍開放請逐筆核對館方。</p></div>
@@ -272,7 +295,8 @@ function DeepSeaExpedition() {
               <figcaption>{species.imageNote} · <a href={species.imageSource} target="_blank" rel="noopener noreferrer">照片來源 ↗</a></figcaption></figure>
             <span>SPECIMEN / {String(index + 1).padStart(2, '0')}</span><h5>{species.name}</h5><small>{species.habitat}</small><p>{species.clue}</p><a href={species.url} target="_blank" rel="noopener noreferrer">閱讀館方介紹 ↗</a>
           </article>)}</div></section>
-        <section className="sea-okinawa" id="sea-okinawa" aria-labelledby="sea-okinawa-title">
+        </div>}
+        {selectedMuseum === 'okinawa' && <section className="sea-okinawa" id="sea-okinawa" aria-labelledby="sea-okinawa-title">
           <div className="sea-museum-heading"><span>EXPEDITION 02 / OKINAWA</span><h3 id="sea-okinawa-title">沖繩美麗海水族館</h3><p>官網動線由珊瑚礁、黑潮之海走向深海。這裡先整理館方展區和節目頁，時間為人工核對紀錄，尚未接入每日自動匯入。</p><a href="/guides/okinawa-churaumi.html">閱讀沖繩館所介紹 ↗</a></div>
           <div className="sea-okinawa-layout"><img src="/assets/okinawa-churaumi-commons.jpg" alt="沖繩美麗海水族館黑潮之海的大水槽，鯨鯊從觀眾前方游過" loading="lazy"/><div><span>CHURAUMI / 2026.10.16 核對</span><h4>從珊瑚走入黑潮</h4><p>3F 珊瑚礁、2F 黑潮之海與 1F 深海展區，依<a href={churaumiSource} target="_blank" rel="noopener noreferrer">館方樓層圖 ↗</a>安排閱讀路線。照片為 2015 年展場紀錄，<a href="/photo-credits.html">查看授權 ↗</a>。</p></div></div>
           <section className="sea-core" id="sea-okinawa-core" aria-labelledby="sea-okinawa-core-title">
@@ -293,7 +317,7 @@ function DeepSeaExpedition() {
               <span>SPECIMEN / {String(index + 1).padStart(2, '0')}</span><h5>{species.name}</h5><small>{species.scientificName} · {species.habitat}</small><p>{species.clue}</p><a href={species.url} target="_blank" rel="noopener noreferrer">閱讀館方生物條目 ↗</a>
             </article>)}</div></section>
           <div className="sea-floor"><span aria-hidden="true">✧</span><p>兩座海洋現場，都值得親自去看。</p><a href="/guides/okinawa-churaumi.html">查看沖繩參觀資訊 ↗</a></div>
-        </section>
+        </section>}
       </div>
     </div>
   </section>;
