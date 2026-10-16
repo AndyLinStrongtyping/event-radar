@@ -26,7 +26,10 @@ const venues: Venue[] = [
     ],
     fossils: [
       { name: '潘氏澎湖鱷', period: '中新世・約 1,500–1,700 萬年前', clue: '澎湖化石館的焦點。先觀察狹長頭骨與完整骨架，再由館方介紹了解修復與研究。',
-        imageNote: '輪廓示意｜非標本照片；實物請看館方頁', sourceUrl: 'https://www.penghu.gov.tw/phhcc/home.jsp?id=115' },
+        image: '/assets/fossil-penghu-crocodile-gov.jpg', alt: '澎湖縣政府 2025 年拍攝的潘氏澎湖鱷骨架展場照片',
+        imageNote: '澎湖縣政府 2025 年展場照片｜非今日展件保證',
+        imageSource: 'https://www.penghu.gov.tw/ch/home.jsp?act=view&dataserno=202503120002&id=10087',
+        sourceUrl: 'https://www.penghu.gov.tw/phhcc/home.jsp?id=115' },
       { name: '澎湖水道古菱齒象', period: '更新世・澎湖水道相關化石', clue: '以齒化石辨識古代長鼻類；照片攝於臺北的他館，僅作澎湖水道出土化石示例。',
         image: '/assets/fossil-penghu-elephant-commons.jpg', alt: '澎湖水道出土的古菱齒象齒化石，攝於臺北他館',
         imageNote: '相關化石示例｜攝於他館，非澎湖化石館展品紀錄',

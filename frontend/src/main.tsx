@@ -48,7 +48,7 @@ const guides = [
   { id: 'ntmofa', city: '臺中', name: '國立臺灣美術館', line: '從典藏與當期展覽閱讀臺灣美術', tag: '美術', image: '/assets/ntmofa-building-commons.jpg', alt: '2009 年拍攝的國立臺灣美術館建築外觀' },
   { id: 'ntt', city: '臺中', name: '臺中國家歌劇院', line: '沿著曲牆與三座劇場走進表演藝術', tag: '表演場館', image: '/assets/ntt-building-commons.jpg', alt: '臺中國家歌劇院的曲面外牆與玻璃立面，2024 年攝影' },
   { id: 'okinawa-churaumi', city: '沖繩', name: '沖繩美麗海水族館', line: '從珊瑚礁、黑潮游向沖繩深海', tag: '海洋・日本', image: '/assets/okinawa-churaumi-commons.jpg', alt: '沖繩美麗海水族館黑潮之海大水槽的鯨鯊與觀眾' },
-  { id: 'penghu-fossil', city: '澎湖', name: '澎湖化石館', line: '從澎湖水道走近潘氏澎湖鱷', tag: '化石・古生物', image: '/assets/fossil-penghu-elephant-commons.jpg', alt: '澎湖水道出土的古菱齒象齒化石，攝於臺北他館，非澎湖化石館展品紀錄' },
+  { id: 'penghu-fossil', city: '澎湖', name: '澎湖化石館', line: '從澎湖水道走近潘氏澎湖鱷', tag: '化石・古生物', image: '/assets/fossil-penghu-crocodile-gov.jpg', alt: '澎湖縣政府 2025 年拍攝的潘氏澎湖鱷骨架展場照片' },
   { id: 'zuojhen-fossil', city: '臺南', name: '臺南左鎮化石園區', line: '沿菜寮溪尋找早坂犀與古鱷', tag: '化石・地層', image: '/assets/fossil-zuojhen-building-commons.jpg', alt: '臺南左鎮化石園區過往館舍外觀照片' },
 ];
 

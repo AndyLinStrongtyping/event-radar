@@ -95,6 +95,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/assets/species-churaumi-whale-shark-commons.jpg', ['../web/assets/species-churaumi-whale-shark-commons.jpg', 'image/jpeg']],
   ['/assets/species-giant-manta-commons.jpg', ['../web/assets/species-giant-manta-commons.jpg', 'image/jpeg']],
   ['/assets/fossil-penghu-elephant-commons.jpg', ['../web/assets/fossil-penghu-elephant-commons.jpg', 'image/jpeg']],
+  ['/assets/fossil-penghu-crocodile-gov.jpg', ['../web/assets/fossil-penghu-crocodile-gov.jpg', 'image/jpeg']],
   ['/assets/fossil-zuojhen-rhino-commons.jpg', ['../web/assets/fossil-zuojhen-rhino-commons.jpg', 'image/jpeg']],
   ['/assets/fossil-zuojhen-crocodile-commons.jpg', ['../web/assets/fossil-zuojhen-crocodile-commons.jpg', 'image/jpeg']],
   ['/assets/fossil-zuojhen-building-commons.jpg', ['../web/assets/fossil-zuojhen-building-commons.jpg', 'image/jpeg']],
