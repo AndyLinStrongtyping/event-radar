@@ -567,6 +567,18 @@
 - **決策**：React 建置時從 `GOOGLE_SITE_VERIFICATION` 環境變數加入首頁 `<head>` 的 Google 驗證標記，僅接受英數、連字號與底線；未設定時不產生標記。驗證值只填入部署環境，不提交到 Git。網站準備收錄後另設 `PUBLIC_BASE_URL`，由現有 HTTP 服務取消 `noindex` 並提供 canonical 與 sitemap。Search Console 只量測 Google 自然搜尋，朋友直接點連結或限時動態流量須另有分析工具。
 - **驗證／界線**：2026-10-17 本機以測試值建置，產物正確包含驗證標記；未設定時建置亦通過。Render 部署 `b265c1b` 顯示 Live，公開站 smoke 驗證 `robots.txt`、sitemap 與無 `noindex` 標頭。Search Console 以 HTML 標記確認擁有權，網站地圖已順利處理並辨識 15 個固定頁面；首頁即時測試判定「可編入索引」，建立索引要求已加入 Google 佇列。這不代表已編入索引、有搜尋曝光／點擊／直接分享流量或 Google 收錄保證。Render 免費服務休眠仍可能妨礙後續爬蟲。
 
+### ER-90｜GA4 用於觀察公開站的實際造訪（即時事件已驗證）
+
+- **問題**：Search Console 只量測 Google 搜尋曝光與點擊，朋友直接打開分享連結不會出現在該報表。
+- **處理**：線上部署 `d8ca01b` 的 `src/server.ts` 在首頁及館所介紹 HTML 輸出同一組 GA4 標籤；不將資料庫密鑰傳給分析服務。2026-10-17 以公開首頁及海生館介紹頁各造訪一次，GA4 即時總覽收到 `page_view=2`、`session_start=1`，且顯示兩個頁面標題。
+- **界線**：這只證明即時事件可送達，不代表歷史報表已完成處理、朋友造訪人數、自然搜尋流量或轉換率。尚須確認隱私說明、適用的同意管理及後續實際報表；不得把測試造訪計成外部使用者成果。
+
+### ER-91｜雲端來源按館隔離，故宮北院暫停自動抓取（部分線上驗證）
+
+- **問題**：第一次手動 Actions 執行七館工作都因舊 `DATABASE_URL` 而出現 PostgreSQL `28P01`。本機下載設定中的 `PGPASSWORD` 可連線，但原連線網址仍含舊密碼。修正後的手動執行 #3 中，六個工作成功；故宮北院官方 `odapi.npm.gov.tw` 來源在 GitHub runner 連續三次 `fetch failed`，該工作進入 `dead`。Render 的首次部署也曾無法抓取同一來源，故不能假設換 runner 或重試次數就會成功。
+- **決策**：以已驗證的本機密碼修正本機 Git 忽略檔、Render Secret 及 GitHub Actions Secret，沒有重設 Neon 角色。`EVENT_RADAR_SYNC_ENABLED` 控制已成功的六個工作；故宮北院另由 `EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 控制，預設不設為 true；奇美只讀檢查改用獨立的 `EVENT_RADAR_CHIMEI_CHECK_ENABLED`。北院保留既有人工官方同步、最近成功時間與失敗提示，不把舊展期當成剛更新，也不把失敗 job 偽裝成成功。
+- **驗證與後續**：2026-10-17 手動執行 [#3](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39032657980) 中，科博館、故宮南院、海生館、科工館、國美館、歌劇院六個工作成功；北院 `fetch failed`。Render 重新部署後 `/health` 回報網站與資料庫皆 `ok`。此筆紀錄尚不能證明修改後的六工作排程或跨週穩定；需再手動執行新 workflow，接著觀察真實週排程，並查證北院可用的雲端官方來源後才重新啟用該館。
+
 ## 後續更新方式
 
 每次功能或技術決策有變動，**同一個提交**更新對應的 ER 編號：將「規劃」改為實際狀態，寫明實作方法、取捨、失敗情境與可重現的驗證，附程式／測試路徑；若改變資料來源或對外承諾，同步更新 [STATUS](../STATUS.md)、[API 契約](api.md)、[架構](architecture.md)或[運作設計](operations.md)。新增技術點接續編號，不要刪除曾影響設計的決策；被取代的做法標註原因與日期。**只有測試通過或實際連線核對過的項目，才能寫「已驗證」。**

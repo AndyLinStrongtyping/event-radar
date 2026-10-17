@@ -1,8 +1,12 @@
 # Event Radar｜目前進度
 
+2026-10-17 **流量監測與資料庫憑證核對**：線上首頁和館所介紹頁均載入 GA4；公開站兩次測試造訪在即時總覽產生 `page_view=2`、`session_start=1`。這是自己的測試流量，尚不能當成真實訪客數；Search Console 已處理 15 個固定頁面，但仍待正式索引。已用本機有效密碼修正 GitHub Actions、Render 及 Git 忽略檔中的舊資料庫連線網址，不需重設 Neon 密碼；Render 重新部署後 `/health` 為 `status=ok, database=ok`。見 [ER-90／91](docs/technical-decisions.md)。
+
+2026-10-17 **每週來源部分可運作**：手動 Actions [#3](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39032657980) 中，科博館、故宮南院、海生館、科工館、國美館與歌劇院六個獨立工作成功。故宮北院的官方開放資料網址從 GitHub runner 連續三次 `fetch failed`，而本機先前可匯入；北院將以獨立開關暫停雲端排程，保留人工同步與來源狀態提示。奇美檢查也改用獨立開關。新工作流程仍待再次手動驗證，實際每週排程及跨週穩定尚未證明；見 [ER-91](docs/technical-decisions.md)。
+
 2026-10-17 **Google Search Console 已完成連接**：以首頁 HTML 標記驗證 `https://event-radar-preview.onrender.com/` 的網站擁有權。Render 部署 `b265c1b` 顯示 Live，`PUBLIC_BASE_URL` 已啟用，公開站 smoke 確認沒有 `noindex` 且 `robots.txt`、`sitemap.xml` 可用。Google 已順利處理 sitemap，發現 15 個固定頁面；首頁即時測試判定可編入索引，已接受建立索引要求，但 Google 索引中仍未有此頁。**尚無搜尋曝光、點擊或直接分享流量的數據**；見[ER-89](docs/technical-decisions.md)。
 
-2026-10-17 **每週線上更新接線中，尚未啟用**：六個限期展來源（含國美館）已接入各自的 PostgreSQL 來源工作；臺中國家歌劇院另有獨立的每週節目同步工作。科博館 API Key 與 Neon `DATABASE_URL` 已存 GitHub Actions Secrets，`EVENT_RADAR_SYNC_ENABLED` 開關目前仍關閉；尚未有線上排程成功證據。型別及 72 項單元測試、workflow 格式檢查與 GitHub CI #28 均通過；本機隔離 PostgreSQL 未啟動，新增 Queue 整合案例由 CI 驗證。奇美仍是人工核對候選來源，海生館當日節目不能用每週資料當成今日資訊；見[ER-88](docs/technical-decisions.md)與[運作設計](docs/operations.md)。
+2026-10-17 **每週線上更新首次接線時的狀態（已由上方新紀錄更新）**：六個限期展來源（含國美館）已接入各自的 PostgreSQL 來源工作；臺中國家歌劇院另有獨立的每週節目同步工作。當時科博館 API Key 與 Neon `DATABASE_URL` 已存 GitHub Actions Secrets，`EVENT_RADAR_SYNC_ENABLED` 仍關閉；其後的實際手動執行與來源例外見上方 2026-10-17 紀錄。型別及 72 項單元測試、workflow 格式檢查與 GitHub CI #28 均通過；本機隔離 PostgreSQL 未啟動，新增 Queue 整合案例由 CI 驗證。奇美仍是人工核對候選來源，海生館當日節目不能用每週資料當成今日資訊；見[ER-88／91](docs/technical-decisions.md)與[運作設計](docs/operations.md)。
 
 2026-10-17 **Phase 9 免費技術預覽已上線並完成單次驗收**：[預覽站](https://event-radar-preview.onrender.com/)部署 `8d78297`，Render 顯示 Live；Neon production 已套用 25 份 migration。首次建置時 Render 對故宮北院來源連續三次 `fetch failed`，故改由本機以既有同步命令連到 Neon，完成故宮北／南院、科博館、科工館、海生館、國美館六個限期展來源，以及海生館當日節目 9 筆、歌劇院清單 20 筆；奇美人工核對活動快照 10 筆存入候選表。線上 smoke 通過：11 間館所、27 筆可搜尋且未結束的特展，React、API、照片與健康檢查正常。**目前仍是 `noindex` 的公開預覽，不代表搜尋收錄、真實流量、跨日穩定或正式排程已完成**；北院 15、海生館 25、科工館 1 筆資料待審。憑證存在 Render Secret 與本機 Git 忽略的 `private/`；見[ER-86／87](docs/technical-decisions.md)與[部署手冊](docs/deployment.md)。
 
