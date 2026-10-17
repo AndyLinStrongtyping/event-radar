@@ -561,11 +561,11 @@
 - **界線**：奇美官網內部端點未通過穩定來源門檻，不列入自動匯入；海生館**當日**餵食／解說節目不是每週有效資料，維持獨立手動觀察日與過期提示。Actions 排程有延遲或失敗可能；第一次手動觸發及下週排程成功之前不能宣稱穩定線上更新。未新增主動告警。
 - **驗證**：`src/source-jobs.ts`、`.github/workflows/weekly-sync.yml` 與 `test/ingest.integration.cjs`。2026-10-17 型別、72 項單元及 workflow YAML 解析通過；本機隔離 PostgreSQL 未啟動，新增整合案例及實際 Actions 執行結果待驗收。
 
-### ER-89｜Search Console 以建置環境注入驗證標記（接線中）
+### ER-89｜Search Console 以建置環境注入驗證標記（線上已驗證）
 
 - **問題**：預覽站已可公開瀏覽，但仍以 `noindex` 回應，Google Search Console 尚未完成網站擁有權驗證，不能量測自然搜尋曝光與點擊。驗證值若直接寫入 Git，之後更換網站或擁有者會留下不必要的公開設定。
 - **決策**：React 建置時從 `GOOGLE_SITE_VERIFICATION` 環境變數加入首頁 `<head>` 的 Google 驗證標記，僅接受英數、連字號與底線；未設定時不產生標記。驗證值只填入部署環境，不提交到 Git。網站準備收錄後另設 `PUBLIC_BASE_URL`，由現有 HTTP 服務取消 `noindex` 並提供 canonical 與 sitemap。Search Console 只量測 Google 自然搜尋，朋友直接點連結或限時動態流量須另有分析工具。
-- **驗證／界線**：2026-10-17 本機以測試值建置，產物正確包含驗證標記；未設定時建置亦通過。線上部署、Search Console 擁有權驗證、索引及實際流量尚待完成。Render 免費服務休眠仍可能妨礙爬蟲，Google 收錄不能保證。
+- **驗證／界線**：2026-10-17 本機以測試值建置，產物正確包含驗證標記；未設定時建置亦通過。Render 部署 `b265c1b` 顯示 Live，公開站 smoke 驗證 `robots.txt`、sitemap 與無 `noindex` 標頭。Search Console 以 HTML 標記確認擁有權，網站地圖已順利處理並辨識 15 個固定頁面；首頁即時測試判定「可編入索引」，建立索引要求已加入 Google 佇列。這不代表已編入索引、有搜尋曝光／點擊／直接分享流量或 Google 收錄保證。Render 免費服務休眠仍可能妨礙後續爬蟲。
 
 ## 後續更新方式
 
