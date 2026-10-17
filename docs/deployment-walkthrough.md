@@ -97,3 +97,5 @@ Remove-Item Env:DATABASE_URL
 - **帳號與費用**：兩個資源目前選免費方案；實際限制與未來費率依 Neon、Render 帳號頁為準。Render 免費服務會在閒置後休眠，首次讀取可能較慢，未完成跨週穩定性觀察。
 
 資料流、故障回復及部署限制見[完整部署手冊](deployment.md)；設計原因見[ER-85～87](technical-decisions.md)。
+
+若要向面試官說明這次部署的實際排錯與資料品質決策，可接著讀[部署問題與資料處理紀錄](deployment-lessons-2026-10-17.md)。

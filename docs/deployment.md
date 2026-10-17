@@ -4,6 +4,8 @@
 
 想照畫面逐步操作，可看[Neon → Render 圖解設定手順](deployment-walkthrough.md)；本頁保留技術邊界、首次部署紀錄與故障回復。
 
+首次部署中實際碰到的問題及資料清洗、待審、去重與異動處理，整理在[部署問題與資料處理紀錄](deployment-lessons-2026-10-17.md)。
+
 ## 2026-10-17 首次部署紀錄
 
 - Neon 專案 `event-radar`（production 分支，新加坡）；Render Blueprint `event-radar-preview`、免費 Web Service `srv-db9hkpfavr4c73e40ahg`，Git 部署 SHA `8d78297`。Render 顯示 `Deploy succeeded | Live`，首次建置套用 25 份 migration。
