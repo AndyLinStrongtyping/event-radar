@@ -28,7 +28,7 @@ npm run build:web
 
 ## 需要站長登入後執行的步驟
 
-1. 在 Neon 建立**獨立** PostgreSQL 專案，選離 Render `singapore` 較近的可用區域。此步已建立 `event-radar` 免費專案；後續從該專案取得**直接連線** `DATABASE_URL`（含 `sslmode=require`），只保存在 Render Secret，不要貼進對話、Git、issue 或截圖。保留資料庫備份與權限設定。
+1. 在 Neon 建立**獨立** PostgreSQL 專案，選離 Render `singapore` 較近的可用區域。此步已建立 `event-radar` 免費專案；後續從該專案取得**直接連線** `DATABASE_URL`（含 `sslmode=require`），保存在 Render Secret，並依站長要求在 Git 忽略的本機 `private/` 留一份。不要貼進對話、已追蹤文件、Git、issue 或截圖；保留資料庫備份與權限設定。
 2. 在 Render 連結此 GitHub repo 並匯入 `render.yaml`。檢查方案仍是 `free`、region 為 `singapore`、自動部署為關閉，並將 Neon 連線字串填進 `DATABASE_URL` Secret。Blueprint 建立服務時會提供公開的 `onrender.com` 網址；目前 `PUBLIC_BASE_URL` 留空以免未驗收就被索引。不要把 `NMNS_API_KEY` 放進 Git。
 3. 首次建置會在**同一個新建資料庫**執行有 checksum 帳本及 advisory lock 的 migration，再嘗試官方來源匯入。這是免費方案沒有獨立 pre-deploy command 的折衷：migration 可能在後續建置／啟動失敗前已套用，故資料庫 schema 變更需維持向後相容，後續部署前應先備份。核對 Render log 中的套用版本、來源成功與可展示筆數，但不要記錄連線字串。逐館核對待審、來源健康和實際內容。第一版允許手動重跑匯入；不要開啟每週 workflow 閘門。
 4. 確認 `/health` 回 `status=ok`、`database=ok`；前端、館所介紹、照片與 API 正常。使用以下唯讀命令跑**不開放索引**的技術預覽冒煙檢查：

@@ -544,7 +544,7 @@
 ### ER-86｜免費預覽的資料庫初始化移到受控建置步驟（待遠端驗證）
 
 - **問題**：Render 免費 Web Service 沒有獨立 pre-deploy command 或 dashboard shell；Neon 新資料庫無 schema／展覽，若直接匯入既有 Blueprint，服務即使啟動也會提供空白特展。Neon MCP 的第二段 OAuth 要求整個帳號的專案與組織建立／刪除權限，超出單一專案授權需求，因此沒有核准。
-- **決策**：免費技術預覽先於 `render.yaml` 建置順序完成 React build，再執行有 checksum 帳本及 advisory lock 的 `npm run migrate`，最後執行 `scripts/bootstrap-preview.mjs`。此腳本只有在資料庫沒有可公開、未結束限期展時，才依序嘗試故宮北院、科工館、故宮南院現有官方 Adapter；每個來源失敗與下一個隔離，取得至少一筆合規資料便停止。全數失敗時拒絕發布空白站。Neon 連線字串僅交給 Render Secret；不在 Git、文件或對話傳遞。後續資料更新仍由手動同步，不宣稱已上線定時排程。
+- **決策**：免費技術預覽先於 `render.yaml` 建置順序完成 React build，再執行有 checksum 帳本及 advisory lock 的 `npm run migrate`，最後執行 `scripts/bootstrap-preview.mjs`。此腳本只有在資料庫沒有可公開、未結束限期展時，才依序嘗試故宮北院、科工館、故宮南院現有官方 Adapter；每個來源失敗與下一個隔離，取得至少一筆合規資料便停止。全數失敗時拒絕發布空白站。Neon 連線字串只交給 Render Secret，另依站長要求存一份在 Git 忽略的本機 `private/`，不在已追蹤文件、Git 或對話傳遞。後續資料更新仍由手動同步，不宣稱已上線定時排程。
 - **取捨／故障模式**：免費建置可能在 migration 套用後因來源或服務啟動失敗，因此 schema 變更要向後相容，後續部署前仍須備份；此做法不是正式環境的長期 migration 流程。已有展覽時建置不自動更新來源，需另行檢查資料新鮮度。首次匯入的三個來源不保證永遠有未結束的合規展覽，失敗時保持未發布狀態。
 - **驗證**：本機可檢查腳本語法及型別、單元、建置、文件；遠端 migration、來源匯入與公開 smoke 尚待 Render 實際建置後記錄。Render 免費方案限制以[官方部署文件](https://render.com/docs/deploys)核對。
 
