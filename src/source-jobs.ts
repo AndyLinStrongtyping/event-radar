@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import pg from 'pg';
 import { retryDelaysMs } from './retry-policy.ts';
 
-export const queuedSources = ['nmns', 'npm-south', 'npm-north', 'nmmba', 'nstm'] as const;
+export const queuedSources = ['nmns', 'npm-south', 'npm-north', 'nmmba', 'nstm', 'ntmofa'] as const;
 export type QueuedSource = typeof queuedSources[number];
 export type SourceJob = {
   id: string; museum_id: QueuedSource; status: string; attempts: number;

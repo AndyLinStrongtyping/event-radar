@@ -109,3 +109,41 @@ jobs:
         run: npm ci --ignore-scripts --no-audit --no-fund
       - name: 排程匯入科工館官方展覽
         run: npm run jobs:scheduled -- --source nstm
+
+  sync-ntmofa:
+    name: 同步國美館
+    if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: 取得專案程式碼
+        uses: actions/checkout@v7
+      - name: 設定 Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: 安裝專案依賴
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: 排程匯入國美館官方展覽
+        run: npm run jobs:scheduled -- --source ntmofa
+
+  sync-ntt:
+    name: 同步歌劇院節目與場次
+    if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+    steps:
+      - name: 取得專案程式碼
+        uses: actions/checkout@v7
+      - name: 設定 Node.js 24
+        uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+      - name: 安裝專案依賴
+        run: npm ci --ignore-scripts --no-audit --no-fund
+      - name: 排程匯入歌劇院官方節目
+        run: npm run sync:domain -- --source ntt

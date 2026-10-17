@@ -1,8 +1,8 @@
 # 每週同步運作設計
 
-## 國美館本機手動同步（Phase 2）
+## 國美館來源與每週接線
 
-先在本機套用 `npm run migrate`，再以 `npm run probe:ntmofa` 只讀核對官方當期／預告清單與館內限期展，確認沒有異常待審後執行 `npm run sync -- --source ntmofa`。本來源讀國美館公開 HTML 及其連出的文化部 NTMOFA 詳情頁，沒有 API Key；目前不在五館 Queue 與每週 workflow 內。首次成功只建立 coverage 基準，下一次須比對來源鍵與館方頁，不能因清單缺席就自動認定展覽取消。
+先在本機套用 `npm run migrate`，再以 `npm run probe:ntmofa` 只讀核對官方當期／預告清單與館內限期展，確認沒有異常待審後執行 `npm run sync -- --source ntmofa`。本來源讀國美館公開 HTML 及其連出的文化部 NTMOFA 詳情頁，沒有 API Key；已加入六館 Queue 與每週 workflow 的程式路徑，線上開關尚未啟用。首次成功只建立 coverage 基準，下一次須比對來源鍵與館方頁，不能因清單缺席就自動認定展覽取消。
 
 ## 表演與海洋節目手動同步（Phase 3／4）
 
@@ -12,7 +12,7 @@
 
 第 024 migration 起，海生館官方當日清單成功批次會保存排序後的來源鍵。若相對上次成功清單突然少於一半（基準至少 4 筆），或前後至少各 4 筆且重疊來源鍵少於較小清單的一半，`sync:domain` 會以 `SOURCE_ANOMALY` 拒收，保留最近成功資料與快照。**先打開[館方當日節目頁](https://www.nmmba.gov.tw/ActiveShow_D_Cus.aspx?n=33D045D1594ED637&sms=00C15C8CDECA96C3)逐項核對**：若確認是正常特殊日／換季變動，再執行 `npm run sync:domain -- --source nmmba --review-daily-change "20–500 字核對說明" --review-evidence "<實際官方 HTTPS 證據網址>" --reviewer "核對者"`。覆核只接受官方 HTTPS 網址，不能與 `--snapshot` 並用；沒有達到異常條件時不得附覆核參數。成功批次留下說明、證據網址、核對者、來源鍵與完整快照。程式驗證網址屬館方網域，**不會自動驗證該頁內容確實支持覆核結論**，操作人必須人工查證。先前成功批次沒有來源鍵時，下一次正常官方同步才建立首次鍵基準；不得回填或猜測。
 
-這是獨立於限期特展的 `sync:domain` 路徑，尚未接入五館 Queue 或每週 workflow。先核對來源頁與 [Phase 3／4 階段紀錄](stage-2026-10-12-phase3-4.md)，再用 `npm run sync:domain -- --source ntt` 或 `--source nmmba` 手動執行。歌劇院涵蓋官網 `place=1` 清單 HTML 的可辨識詳情，包含 MORE 預藏卡片；單批最多 30 筆，MORE 行為改變時停止，不能當作全站所有節目。單一詳情或人工快照另有 `--detail`／`--snapshot` 模式，不能當作完整清單。海生館只取得館方當日節目，日期、場次數、時刻與地點必須可核對；筆數突然大幅縮水會以 `SOURCE_ANOMALY` 停止，先到官網確認，不應反覆重跑來消除異常。公開 `/marine-programmes` 只顯示最近一次成功匯入批次；觀察日不是今天時不能當作今日節目。相關單元測試及隔離 PostgreSQL／真實 HTTP 整合案例已於 2026-10-14 通過；當日第二次歌劇院真實手動同步接受 20 筆（新增 1、未變 19）。
+這是獨立於限期特展的 `sync:domain` 路徑；歌劇院已加入獨立的每週 workflow 工作，但尚未線上啟用。海生館當日節目仍手動同步，兩者均不進限期展 Queue。先核對來源頁與 [Phase 3／4 階段紀錄](stage-2026-10-12-phase3-4.md)，再用 `npm run sync:domain -- --source ntt` 或 `--source nmmba` 手動執行。歌劇院涵蓋官網 `place=1` 清單 HTML 的可辨識詳情，包含 MORE 預藏卡片；單批最多 30 筆，MORE 行為改變時停止，不能當作全站所有節目。單一詳情或人工快照另有 `--detail`／`--snapshot` 模式，不能當作完整清單。海生館只取得館方當日節目，日期、場次數、時刻與地點必須可核對；筆數突然大幅縮水會以 `SOURCE_ANOMALY` 停止，先到官網確認，不應反覆重跑來消除異常。公開 `/marine-programmes` 只顯示最近一次成功匯入批次；觀察日不是今天時不能當作今日節目。相關單元測試及隔離 PostgreSQL／真實 HTTP 整合案例已於 2026-10-14 通過；當日第二次歌劇院真實手動同步接受 20 筆（新增 1、未變 19）。
 
 `sync:domain` 的官方 HTML 請求每次逾時 15 秒，只對逾時／網路錯誤與 HTTP 5xx 最多再試兩次，間隔 2 秒、8 秒；404、429、非館方網址／回應主機、解析失敗或資料過大立即失敗。歌劇院不同詳情之間仍另有兩秒間隔。失敗訊息包含官方失敗網址與嘗試次數，便於人工核對；重試耗盡仍不寫入不完整批次。
 
@@ -53,7 +53,7 @@
 
 ## 本機 PostgreSQL 來源工作佇列
 
-此功能需先 `npm run migrate`；本機可手動呼叫，每週 workflow 也已接入，但仍由閘門關閉，沒有線上運行證據。`npm run jobs:enqueue -- --source all` 以臺灣日期建立五館工作，也可指定單一館別和 `--date YYYY-MM-DD`；同館同日重送只回既有工作。`npm run jobs:work` 執行一筆到期工作；加 `-- --loop` 才會持續每五秒輪詢。可在不同終端機啟動多個 worker，PostgreSQL `SKIP LOCKED` 避免領到同一筆。`npm run jobs:status` 查看最近 100 筆。`dead` 工作先查錯誤和館方來源，再用 `npm run jobs:replay -- --id <UUID>` 建立新工作，原紀錄不刪。
+此功能需先 `npm run migrate`；本機可手動呼叫，每週 workflow 也已接入，但仍由閘門關閉，沒有線上運行證據。`npm run jobs:enqueue -- --source all` 以臺灣日期建立六館工作，也可指定單一館別和 `--date YYYY-MM-DD`；同館同日重送只回既有工作。`npm run jobs:work` 執行一筆到期工作；加 `-- --loop` 才會持續每五秒輪詢。可在不同終端機啟動多個 worker，PostgreSQL `SKIP LOCKED` 避免領到同一筆。`npm run jobs:status` 查看最近 100 筆。`dead` 工作先查錯誤和館方來源，再用 `npm run jobs:replay -- --id <UUID>` 建立新工作，原紀錄不刪。
 
 每次工作最長執行官方匯入 90 秒，持有三分鐘租約；單次 `jobs:work` 若工作失敗會回傳非零碼。`npm run jobs:scheduled -- --source nstm` 只處理科工館當日工作，最長等待八分鐘並回報最終狀態；暫時失敗依退避時間等待，成功的同館同日工作不重抓，`dead` 回傳非零碼且不自動重播。等待逾時後用 `jobs:status` 查狀態；成功工作需要重新抓取時，明確改用 `npm run sync -- --source <館別>` 手動處理。暫時錯誤最多三次，間隔 30 秒、2 分鐘，非暫時錯誤直接進 `dead`。worker 異常中止時，下次領取會把過期租約記成失敗並安排退避；沒有常駐 worker 時不會自動恢復。這個 Queue 只處理 `FETCH_SOURCE`，資料解析、正規化、去重、異動仍在一次匯入交易內；不含訂閱通知或圖片處理。不要將「有 Queue」誤寫成已經有線上排程或 AWS 工作服務。
 

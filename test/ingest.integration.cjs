@@ -1223,6 +1223,11 @@ async function main() {
   assert.equal(queuedSea.created, true);
   assert.deepEqual(duplicateSea, { id: queuedSea.id, created: false },
     '同館同日重送只能有一個原始工作');
+  const queuedArt = await enqueueSourceJob(testDb, 'ntmofa', '2026-10-10');
+  assert.equal(queuedArt.created, true, '國美館應可建立獨立來源工作');
+  assert.deepEqual(await enqueueSourceJob(testDb, 'ntmofa', '2026-10-10'),
+    { id: queuedArt.id, created: false }, '國美館同日重送不可重複匯入');
+  await testDb.query('DELETE FROM source_jobs WHERE id=$1', [queuedArt.id]);
   await enqueueSourceJob(testDb, 'npm-south', '2026-10-10');
   const [claimedA, claimedB] = await Promise.all([
     claimSourceJob(testDb), claimSourceJob(testDb),

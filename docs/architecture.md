@@ -66,7 +66,7 @@ flowchart LR
 
 網站由 `src/server.ts` 提供靜態頁面與 `/museums`、`/exhibitions`、`/exhibitions/:id/changes`、`/visit-status`、`/performances`、`/marine-programmes` 與 `/marine-observation-days` 等公開唯讀 API。特展可依城市、館所、日期、狀態及**明確標示免費**的資料查詢；關鍵字目前使用 `ILIKE`。14 篇館所／場館導覽是人工編寫的靜態頁，不是自動同步的展件清單。
 
-本機 `sync:status` 與登入後的 `/health` 頁從同步嘗試、官方成功時間與待審量計算來源健康狀態；重試依 `sync_id` 歸為同一工作。手動 PostgreSQL Queue 已能讓五館成為獨立來源工作，租約到期後由下一次 worker 領取流程回收；**每週 workflow 已接入單館 Queue，但閘門仍關閉**。這是本機排查與手動執行工具，沒有主動告警。GitHub Actions 的 CI 已執行型別、單元與 PostgreSQL 整合測試。2026-10-17 已有 Neon 遠端資料庫與 Render `noindex` 公開技術預覽站，資料由本機命令手動同步；每週 workflow 仍受 `EVENT_RADAR_SYNC_ENABLED` 關閉，**沒有線上定期更新或主動告警**。詳見[目前進度](../STATUS.md)、[首次部署紀錄](deployment-lessons-2026-10-17.md)與[運作設計](operations.md)。
+本機 `sync:status` 與登入後的 `/health` 頁從同步嘗試、官方成功時間與待審量計算來源健康狀態；重試依 `sync_id` 歸為同一工作。手動 PostgreSQL Queue 已能讓六館成為獨立來源工作，租約到期後由下一次 worker 領取流程回收；**每週 workflow 已接入單館 Queue，但閘門仍關閉**。這是本機排查與手動執行工具，沒有主動告警。GitHub Actions 的 CI 已執行型別、單元與 PostgreSQL 整合測試。2026-10-17 已有 Neon 遠端資料庫與 Render `noindex` 公開技術預覽站，資料由本機命令手動同步；每週 workflow 仍受 `EVENT_RADAR_SYNC_ENABLED` 關閉，**沒有線上定期更新或主動告警**。詳見[目前進度](../STATUS.md)、[首次部署紀錄](deployment-lessons-2026-10-17.md)與[運作設計](operations.md)。
 
 奇美活動候選走獨立的 `programme_events`，不寫入有非空展期約束的 `exhibitions`。目前只以本機人工命令從快照匯入資料庫（本次部署已匯入 Neon）；網站活動卡片仍讀靜態快照，並沒有從候選表對外提供活動 API。這讓後續美術館、表演與海生館 Domain 能以真實資料驗證模型後再收斂，不把來源特有欄位先硬塞共用表。
 
