@@ -541,12 +541,18 @@
 - **取捨／故障模式**：Render 免費 Web Service 閒置休眠，休眠時平台代回 `Disallow: /` 的 `robots.txt`，爬蟲可能看不到本站的 `noindex`；預覽並非私有環境，因此不宣稱絕對不收錄、自然搜尋或持續可用。此階段原規劃由站長在本機執行 migration 與第一次官方匯入，2026-10-17 因免費 Render 不提供獨立部署前指令而由 ER-86 改為建置時執行。`render.yaml` 匯入後才會建立公開服務。程式版本以 Render 部署 SHA 核對，沒有內建公開 SHA 端點；資料庫 schema 回退需另行備份與計畫。
 - **驗證**：2026-10-16 型別、72 項單元、React build、隔離 PostgreSQL／HTTP 整合及本機 smoke 通過；整合測試確認 `PUBLIC_BASE_URL` 下的 canonical、robots、sitemap。詳見[部署手冊](deployment.md)與[階段紀錄](stage-2026-10-16-phase9-prep.md)。尚未建立 Neon／Render 帳號資源、遠端 migration、公開網址或真實流量。
 
-### ER-86｜免費預覽的資料庫初始化移到受控建置步驟（待遠端驗證）
+### ER-86｜免費預覽的資料庫初始化移到受控建置步驟（遠端已驗證）
 
 - **問題**：Render 免費 Web Service 沒有獨立 pre-deploy command 或 dashboard shell；Neon 新資料庫無 schema／展覽，若直接匯入既有 Blueprint，服務即使啟動也會提供空白特展。Neon MCP 的第二段 OAuth 要求整個帳號的專案與組織建立／刪除權限，超出單一專案授權需求，因此沒有核准。
 - **決策**：免費技術預覽先於 `render.yaml` 建置順序完成 React build，再執行有 checksum 帳本及 advisory lock 的 `npm run migrate`，最後執行 `scripts/bootstrap-preview.mjs`。此腳本只有在資料庫沒有可公開、未結束限期展時，才依序嘗試故宮北院、科工館、故宮南院現有官方 Adapter；每個來源失敗與下一個隔離，取得至少一筆合規資料便停止。全數失敗時拒絕發布空白站。Neon 連線字串只交給 Render Secret，另依站長要求存一份在 Git 忽略的本機 `private/`，不在已追蹤文件、Git 或對話傳遞。後續資料更新仍由手動同步，不宣稱已上線定時排程。
 - **取捨／故障模式**：免費建置可能在 migration 套用後因來源或服務啟動失敗，因此 schema 變更要向後相容，後續部署前仍須備份；此做法不是正式環境的長期 migration 流程。已有展覽時建置不自動更新來源，需另行檢查資料新鮮度。首次匯入的三個來源不保證永遠有未結束的合規展覽，失敗時保持未發布狀態。
-- **驗證**：本機可檢查腳本語法及型別、單元、建置、文件；遠端 migration、來源匯入與公開 smoke 尚待 Render 實際建置後記錄。Render 免費方案限制以[官方部署文件](https://render.com/docs/deploys)核對。
+- **驗證**：2026-10-17 Render 對部署 `8d78297` 的建置套用 25 份 migration，科工館已先在 Neon 匯入 7 筆未結束展覽，因此首次資料檢查通過，服務顯示 Live。其後完成更多手動匯入，線上 `smoke:deploy --expect-noindex` 通過，結果為 11 間館所、27 筆可搜尋特展。Render 自身連故宮北院來源三次失敗，不能把本次成功解讀為 Render 可穩定自行同步全部來源；詳見[部署紀錄](deployment.md)及 ER-87。Render 免費方案限制以[官方部署文件](https://render.com/docs/deploys)核對。
+
+### ER-87｜免費預覽先由維運工作站手動同步來源（線上單次驗證）
+
+- **問題**：首次 Render 建置能連 Neon、完成 migration，但對故宮北院來源連續三次 `fetch failed`。若因此把來源改成無驗證的靜態假資料，或把待審紀錄直接公開，會掩蓋來源連線與資料品質問題。
+- **決策**：保留 Render 服務只提供公開 React／讀取 API；在已授權的本機工作站用同一套 `sync`、`sync:domain` CLI 連 Neon，逐來源匯入並保留各次結果、coverage 基準、待審狀態及異動歷史。奇美仍只匯入人工核對快照的候選表，前端快照與來源等級標示不改。`DATABASE_URL` 存 Render Secret 和 Git 忽略的本機 `private/deployment-credentials.env`，不放進命令字串、已追蹤檔或日誌。
+- **驗證與限制**：2026-10-17 六個限期展來源成功同步；海生館當日節目 9 筆、歌劇院官方清單 20 筆、奇美活動候選 10 筆另行匯入。線上頁面顯示 27 筆未結束特展，部署 smoke 通過。北院 15、海生館 25、科工館 1 筆待審，不能說來源資料已完整。此流程需要人工工作站和金鑰，不是 production Queue、排程或無人維運；Render 的來源連線問題及跨日穩定性仍要後續追查。單次成功不能作為搜尋流量、正式 SLA 或營利準備完成的證據。
 
 ## 後續更新方式
 

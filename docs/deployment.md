@@ -1,6 +1,14 @@
 # Phase 9：公開測試版部署手冊
 
-本手冊的第一站採 Render 單一 Web Service（同源提供 React 與 API）和 Neon PostgreSQL。Neon 的 Event Radar 專用免費專案已於 2026-10-17 建在新加坡；截至本次紀錄，尚未完成遠端 migration、正式資料匯入或 Render 公開服務。`render.yaml` 是**免費技術預覽**的設定範本；匯入 Blueprint 會實際建立公開服務。正式面向搜尋流量時再評估常駐方案及費用，無須先導入 AWS。
+本手冊的第一站採 Render 單一 Web Service（同源提供 React 與 API）和 Neon PostgreSQL。2026-10-17 已建立並驗收[免費技術預覽站](https://event-radar-preview.onrender.com/)；此站公開可讀，但目前設 `noindex`，沒有宣稱搜尋流量或正式服務可用性。正式面向搜尋流量時再評估常駐方案及費用，無須先導入 AWS。
+
+## 2026-10-17 首次部署紀錄
+
+- Neon 專案 `event-radar`（production 分支，新加坡）；Render Blueprint `event-radar-preview`、免費 Web Service `srv-db9hkpfavr4c73e40ahg`，Git 部署 SHA `8d78297`。Render 顯示 `Deploy succeeded | Live`，首次建置套用 25 份 migration。
+- Render 建置時故宮北院來源連續三次 `fetch failed`，但本機工作站使用同一套匯入命令連到 Neon 成功。先匯入科工館 7 筆可展示展覽，建置檢查通過後再手動同步故宮北／南院、科博館、海生館與國美館。這證明**本機到來源與 Neon 可用**，不代表 Render 的來源連線問題已解決。
+- 其後手動同步海生館當日節目 9 筆、臺中國家歌劇院清單 20 筆，並把奇美人工核對活動快照 10 筆存入候選表。特展 API 與前端目前可查 27 筆未結束展覽；首次 coverage 只有基準，北院 15 筆、海生館 25 筆、科工館 1 筆仍待審。它們沒有被硬放進搜尋結果。
+- 線上執行 `npm run smoke:deploy -- https://event-radar-preview.onrender.com --expect-noindex` 通過：健康檢查、React 資源、API、館所頁、化石圖片及預覽禁索引皆正常，顯示 11 間館所、27 筆可搜尋特展。這是單次驗收，不等於跨日可用性或使用者流量。
+- Neon 連線資訊已存於 Render 的 `DATABASE_URL` Secret；依站長要求，本機另一份位於 Git 忽略的 `private/deployment-credentials.env`。此 repo 在 OneDrive Desktop 下，私密檔案雖不會被 Git 推送，仍可能同步到個人 OneDrive；應按帳號安全需求決定是否另移至密碼管理器。Render 使用 GitHub 登入，沒有另外取得 Render 帳號密碼。
 
 ## 交付邊界
 
