@@ -150,8 +150,25 @@ const server = createServer(async (request, response) => {
       response.writeHead(200, { 'content-type': asset[1] });
       const content = await readFile(new URL(asset[0], import.meta.url));
       if (publicBaseUrl && asset[1].startsWith('text/html')) {
-        const canonical = `<link rel="canonical" href="${publicBaseUrl.origin}${url.pathname}">`;
-        response.end(content.toString('utf8').replace(/<\/head>/i, `${canonical}</head>`));
+        
+const canonical = `<link rel="canonical" href="${publicBaseUrl.origin}${url.pathname}">`;
+
+const ga4Tag = `
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-HMD9YGX1X3"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-HMD9YGX1X3');
+</script>`;
+
+response.end(
+  content.toString('utf8').replace(
+    /<\/head>/i,
+    `${canonical}${ga4Tag}</head>`
+  )
+);
+
       } else response.end(content);
       return;
     }
