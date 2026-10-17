@@ -40,21 +40,5 @@ jobs:
         run: npm run typecheck
       - name: 執行單元測試
         run: npm test
-      - name: 故宮北院連線診斷（僅此 PR）
-        if: github.event_name == 'pull_request' && github.head_ref == 'codex/npm-north-fetch-diagnostics'
-        continue-on-error: true
-        run: |
-          node --input-type=module -e "
-            try {
-              const response = await fetch('https://odapi.npm.gov.tw/data/open/api/v1/exhibition/current.json', {
-                headers: { 'User-Agent': 'EventRadar/0.1 (+https://github.com/AndyLinStrongtyping)', Accept: 'application/json' },
-                signal: AbortSignal.timeout(15000),
-              });
-              console.log(JSON.stringify({ status: response.status, bytes: (await response.arrayBuffer()).byteLength }));
-            } catch (error) {
-              console.log(JSON.stringify({ error: error?.name, code: error?.cause?.code ?? 'UNKNOWN' }));
-              process.exitCode = 1;
-            }
-          "
       - name: 驗證資料庫匯入與公開 API 的 OpenAPI 回應格式
         run: npm run test:integration
