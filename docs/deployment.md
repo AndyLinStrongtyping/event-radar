@@ -1,6 +1,8 @@
 # Phase 9：公開測試版部署手冊
 
-本手冊的第一站採 Render 單一 Web Service（同源提供 React 與 API）和 Neon PostgreSQL。2026-10-17 已建立並驗收[免費技術預覽站](https://event-radar-preview.onrender.com/)；此站公開可讀，但目前設 `noindex`，沒有宣稱搜尋流量或正式服務可用性。正式面向搜尋流量時再評估常駐方案及費用，無須先導入 AWS。
+本手冊的第一站採 Render 單一 Web Service（同源提供 React 與 API）和 Neon PostgreSQL。2026-10-17 已建立並驗收[免費公開站](https://event-radar-preview.onrender.com/)；目前已設定 `PUBLIC_BASE_URL`、Search Console 驗證與 sitemap，並移除預覽期 `noindex`，但 Google 仍未確認正式收錄或搜尋流量。免費服務的休眠限制仍在；無須先導入 AWS。
+
+2026-10-18 最新手動部署主分支 `52d803c`，公開站首頁與澎湖導覽的浮動回頂操作、React 資源及 `/health` 均已驗證。`render.yaml` 關閉自動部署；合併 PR 後應由站長在 Render 手動選 **Deploy latest commit**，再核對部署 SHA、網站功能與健康檢查。此紀錄只證明兩頁的瀏覽器操作，手機實機與跨週可用性尚待驗證。
 
 想照畫面逐步操作，可看[Neon → Render 圖解設定手順](deployment-walkthrough.md)；本頁保留技術邊界、首次部署紀錄與故障回復。
 

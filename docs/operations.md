@@ -53,7 +53,7 @@
 
 ## 本機 PostgreSQL 來源工作佇列
 
-此功能需先 `npm run migrate`；本機可手動呼叫，每週 workflow 也已接入，但仍由閘門關閉，沒有線上運行證據。`npm run jobs:enqueue -- --source all` 以臺灣日期建立六館工作，也可指定單一館別和 `--date YYYY-MM-DD`；同館同日重送只回既有工作。`npm run jobs:work` 執行一筆到期工作；加 `-- --loop` 才會持續每五秒輪詢。可在不同終端機啟動多個 worker，PostgreSQL `SKIP LOCKED` 避免領到同一筆。`npm run jobs:status` 查看最近 100 筆。`dead` 工作先查錯誤和館方來源，再用 `npm run jobs:replay -- --id <UUID>` 建立新工作，原紀錄不刪。
+此功能需先 `npm run migrate`；本機可手動呼叫，每週 workflow 已啟用已驗證來源，2026-10-17 線上手動執行六個工作成功，但真實週排程尚待觀察。故宮北院雲端抓取失敗，另由預設關閉的 `EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 隔離，不算入六個成功工作。`npm run jobs:enqueue -- --source all` 以臺灣日期建立六館工作，也可指定單一館別和 `--date YYYY-MM-DD`；同館同日重送只回既有工作。`npm run jobs:work` 執行一筆到期工作；加 `-- --loop` 才會持續每五秒輪詢。可在不同終端機啟動多個 worker，PostgreSQL `SKIP LOCKED` 避免領到同一筆。`npm run jobs:status` 查看最近 100 筆。`dead` 工作先查錯誤和館方來源，再用 `npm run jobs:replay -- --id <UUID>` 建立新工作，原紀錄不刪。
 
 每次工作最長執行官方匯入 90 秒，持有三分鐘租約；單次 `jobs:work` 若工作失敗會回傳非零碼。`npm run jobs:scheduled -- --source nstm` 只處理科工館當日工作，最長等待八分鐘並回報最終狀態；暫時失敗依退避時間等待，成功的同館同日工作不重抓，`dead` 回傳非零碼且不自動重播。等待逾時後用 `jobs:status` 查狀態；成功工作需要重新抓取時，明確改用 `npm run sync -- --source <館別>` 手動處理。暫時錯誤最多三次，間隔 30 秒、2 分鐘，非暫時錯誤直接進 `dead`。worker 異常中止時，下次領取會把過期租約記成失敗並安排退避；沒有常駐 worker 時不會自動恢復。這個 Queue 只處理 `FETCH_SOURCE`，資料解析、正規化、去重、異動仍在一次匯入交易內；不含訂閱通知或圖片處理。不要將「有 Queue」誤寫成已經有線上排程或 AWS 工作服務。
 
