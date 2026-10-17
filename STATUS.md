@@ -1,6 +1,6 @@
 # Event Radar｜目前進度
 
-2026-10-17 **每週線上更新接線中，尚未啟用**：六個限期展來源（含國美館）已接入各自的 PostgreSQL 來源工作；臺中國家歌劇院另有獨立的每週節目同步工作。科博館 API Key 與 Neon `DATABASE_URL` 須以 GitHub Actions Secrets 提供，`EVENT_RADAR_SYNC_ENABLED` 開關目前仍關閉；尚未有線上排程成功證據。型別及 72 項單元測試通過，workflow 格式檢查通過；本機隔離 PostgreSQL 未啟動，新增 Queue 整合案例待 CI 驗證。奇美仍是人工核對候選來源，海生館當日節目不能用每週資料當成今日資訊。公開預覽站目前仍設 `noindex`，沒有 Search Console 或流量分析數據；見[ER-88](docs/technical-decisions.md)與[運作設計](docs/operations.md)。
+2026-10-17 **每週線上更新接線中，尚未啟用**：六個限期展來源（含國美館）已接入各自的 PostgreSQL 來源工作；臺中國家歌劇院另有獨立的每週節目同步工作。科博館 API Key 與 Neon `DATABASE_URL` 已存 GitHub Actions Secrets，`EVENT_RADAR_SYNC_ENABLED` 開關目前仍關閉；尚未有線上排程成功證據。型別及 72 項單元測試、workflow 格式檢查與 GitHub CI #28 均通過；本機隔離 PostgreSQL 未啟動，新增 Queue 整合案例由 CI 驗證。奇美仍是人工核對候選來源，海生館當日節目不能用每週資料當成今日資訊。公開預覽站目前仍設 `noindex`；Search Console 驗證標記已在本機建置測試，尚未部署／驗證，沒有搜尋或流量分析數據；見[ER-88／89](docs/technical-decisions.md)與[運作設計](docs/operations.md)。
 
 2026-10-17 **Phase 9 免費技術預覽已上線並完成單次驗收**：[預覽站](https://event-radar-preview.onrender.com/)部署 `8d78297`，Render 顯示 Live；Neon production 已套用 25 份 migration。首次建置時 Render 對故宮北院來源連續三次 `fetch failed`，故改由本機以既有同步命令連到 Neon，完成故宮北／南院、科博館、科工館、海生館、國美館六個限期展來源，以及海生館當日節目 9 筆、歌劇院清單 20 筆；奇美人工核對活動快照 10 筆存入候選表。線上 smoke 通過：11 間館所、27 筆可搜尋且未結束的特展，React、API、照片與健康檢查正常。**目前仍是 `noindex` 的公開預覽，不代表搜尋收錄、真實流量、跨日穩定或正式排程已完成**；北院 15、海生館 25、科工館 1 筆資料待審。憑證存在 Render Secret 與本機 Git 忽略的 `private/`；見[ER-86／87](docs/technical-decisions.md)與[部署手冊](docs/deployment.md)。
 

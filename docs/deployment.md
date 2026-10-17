@@ -49,7 +49,7 @@ npm run build:web
    npm run smoke:deploy -- https://你的服務.onrender.com --expect-noindex
    ```
 
-5. 要正式公開給搜尋引擎時，先決定唯一對外網址及常駐方案，在 Render Secret／Environment 設 `PUBLIC_BASE_URL=https://你的正式網域`，重新部署。確認 `/robots.txt`、`/sitemap.xml`、canonical 與 Search Console 網站擁有權驗證，再執行 `npm run smoke:deploy -- https://你的正式網域`。不要把 Search Console 驗證憑證提交到 repo。
+5. 要正式公開給搜尋引擎時，先決定唯一對外網址及常駐方案，在 Render Environment 設 `PUBLIC_BASE_URL=https://你的正式網域`，並將 Search Console「HTML 標記」的 `content` 值存為 `GOOGLE_SITE_VERIFICATION`。重新部署後確認首頁原始 HTML 中有驗證標記、`/robots.txt`、`/sitemap.xml`、canonical 與 Search Console 擁有權驗證，再執行 `npm run smoke:deploy -- https://你的正式網域`。不要把 Search Console 驗證值提交到 repo。Search Console 不會統計朋友直接點分享連結的流量，若需要此數據須另接網站分析。
 
 每次發版先確認 Git commit SHA、CI 結果與 migration 版本；部署後記錄 Render 實際部署的 SHA 和 smoke 結果。網站的來源版本目前以 Render 部署紀錄核對，**尚無公開 SHA API**。
 
