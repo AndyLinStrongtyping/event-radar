@@ -1,6 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Noto+Sans+TC:wght@400;500;600;700&family=Noto+Serif+TC:wght@500;600;700&display=swap');
 
 :root{font-family:'DM Sans','Noto Sans TC',sans-serif;color:#213638;background:#ece7da;font-synthesis:none}
+.back-to-top{position:fixed;z-index:50;right:clamp(16px,3vw,28px);bottom:calc(16px + env(safe-area-inset-bottom,0px));width:50px;height:50px;border:1px solid #d9b77d;border-radius:50%;background:#182a23;color:#f6e7c6;box-shadow:0 6px 20px #09151266;font-size:1.55rem;line-height:1}.back-to-top:hover{background:#2e4939}.back-to-top[hidden]{display:none}.back-to-top:focus-visible{outline:3px solid #ce9156;outline-offset:3px}@media print{.back-to-top{display:none!important}}
 *{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0}button,input,select{font:inherit}button{cursor:pointer}a{color:inherit}
 .skip{position:absolute;left:1rem;top:-5rem;background:#fff;padding:.7rem 1rem;z-index:10}.skip:focus{top:1rem}
 .topbar{height:76px;background:#0d1d22;color:#efeadb;display:flex;align-items:center;justify-content:space-between;padding:0 clamp(1.2rem,5vw,5.5rem);border-bottom:1px solid #55615c}

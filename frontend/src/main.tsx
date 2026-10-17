@@ -140,6 +140,8 @@ function ExhibitionCard({ item, number, museum, expanded, onToggle }: { item: Ex
 }
 
 function App() {
+  const [showBackToTop, setShowBackToTop] = useState(false);
+  const returningToTop = useRef(false);
   const [museums, setMuseums] = useState<Museum[]>([]);
   const [museumError, setMuseumError] = useState('');
   const [filters, setFilters] = useState<Filters>({ q: '', city: '', museum: '', status: 'active', admission: 'all', asOf: '', includeSample: false });
@@ -163,6 +165,16 @@ function App() {
   const [activityError, setActivityError] = useState(false);
 
   useEffect(() => () => { if (demoTimer.current) clearTimeout(demoTimer.current); }, []);
+
+  useEffect(() => {
+    const update = () => {
+      if (window.scrollY <= 1) returningToTop.current = false;
+      setShowBackToTop(window.scrollY >= 600 || returningToTop.current);
+    };
+    update();
+    window.addEventListener('scroll', update, { passive: true });
+    return () => window.removeEventListener('scroll', update);
+  }, []);
 
   useEffect(() => {
     if (location.hash === '#explore-title') {
@@ -301,6 +313,13 @@ function App() {
       <DomainProgrammes/>
       <FossilExpedition/>
     </main><footer className="site-footer"><div><span className="footer-brand">✧ EVENT RADAR</span><p>沿著真實資料，繼續探索未知。</p></div><p>資訊取自各博物館與政府公開資料；展期、票價、休館與入場規定，以館方公告為準。</p><a href="#hero-title">回到頂端 ↑</a></footer>
+    <button className="back-to-top" type="button" hidden={!showBackToTop} aria-label="回到頂部" title="回到頂部"
+      onClick={() => {
+        returningToTop.current = true;
+        window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
+      }}>
+      <span aria-hidden="true">↑</span>
+    </button>
   </>;
 }
 

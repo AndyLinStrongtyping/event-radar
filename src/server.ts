@@ -82,6 +82,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/styles.css', ['../web/styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['../web/app.js', 'text/javascript; charset=utf-8']],
   ['/transport.js', ['../web/transport.js', 'text/javascript; charset=utf-8']],
+  ['/back-to-top.js', ['../web/back-to-top.js', 'text/javascript; charset=utf-8']],
   ['/assets/hero-ruins.png', ['../web/assets/hero-ruins.png', 'image/png']],
   ['/assets/egypt-writing-user.jpg', ['../web/assets/egypt-writing-user.jpg', 'image/jpeg']],
   ['/assets/nstm-switchboard.jpg', ['../web/assets/nstm-switchboard.jpg', 'image/jpeg']],
