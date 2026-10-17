@@ -2,6 +2,8 @@
 
 本手冊的第一站採 Render 單一 Web Service（同源提供 React 與 API）和 Neon PostgreSQL。2026-10-17 已建立並驗收[免費技術預覽站](https://event-radar-preview.onrender.com/)；此站公開可讀，但目前設 `noindex`，沒有宣稱搜尋流量或正式服務可用性。正式面向搜尋流量時再評估常駐方案及費用，無須先導入 AWS。
 
+想照畫面逐步操作，可看[Neon → Render 圖解設定手順](deployment-walkthrough.md)；本頁保留技術邊界、首次部署紀錄與故障回復。
+
 ## 2026-10-17 首次部署紀錄
 
 - Neon 專案 `event-radar`（production 分支，新加坡）；Render Blueprint `event-radar-preview`、免費 Web Service `srv-db9hkpfavr4c73e40ahg`，Git 部署 SHA `8d78297`。Render 顯示 `Deploy succeeded | Live`，首次建置套用 25 份 migration。
