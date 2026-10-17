@@ -55,7 +55,9 @@ jobs:
 
   sync-npm-north:
     name: 同步故宮北院
-    if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
+    # Cloud runners currently cannot fetch the official North Branch endpoint.
+    # Keep this source independently gated until a cloud run succeeds.
+    if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' && vars.EVENT_RADAR_NPM_NORTH_SYNC_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:

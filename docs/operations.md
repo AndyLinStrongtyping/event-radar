@@ -2,7 +2,7 @@
 
 ## 國美館來源與每週接線
 
-先在本機套用 `npm run migrate`，再以 `npm run probe:ntmofa` 只讀核對官方當期／預告清單與館內限期展，確認沒有異常待審後執行 `npm run sync -- --source ntmofa`。本來源讀國美館公開 HTML 及其連出的文化部 NTMOFA 詳情頁，沒有 API Key；已加入六館 Queue 與每週 workflow 的程式路徑，線上開關尚未啟用。首次成功只建立 coverage 基準，下一次須比對來源鍵與館方頁，不能因清單缺席就自動認定展覽取消。
+先在本機套用 `npm run migrate`，再以 `npm run probe:ntmofa` 只讀核對官方當期／預告清單與館內限期展，確認沒有異常待審後執行 `npm run sync -- --source ntmofa`。本來源讀國美館公開 HTML 及其連出的文化部 NTMOFA 詳情頁，沒有 API Key；已加入來源 Queue 與每週 workflow，2026-10-17 的線上手動執行成功。首次成功只建立 coverage 基準，下一次須比對來源鍵與館方頁，不能因清單缺席就自動認定展覽取消。
 
 ## 表演與海洋節目手動同步（Phase 3／4）
 
@@ -12,7 +12,7 @@
 
 第 024 migration 起，海生館官方當日清單成功批次會保存排序後的來源鍵。若相對上次成功清單突然少於一半（基準至少 4 筆），或前後至少各 4 筆且重疊來源鍵少於較小清單的一半，`sync:domain` 會以 `SOURCE_ANOMALY` 拒收，保留最近成功資料與快照。**先打開[館方當日節目頁](https://www.nmmba.gov.tw/ActiveShow_D_Cus.aspx?n=33D045D1594ED637&sms=00C15C8CDECA96C3)逐項核對**：若確認是正常特殊日／換季變動，再執行 `npm run sync:domain -- --source nmmba --review-daily-change "20–500 字核對說明" --review-evidence "<實際官方 HTTPS 證據網址>" --reviewer "核對者"`。覆核只接受官方 HTTPS 網址，不能與 `--snapshot` 並用；沒有達到異常條件時不得附覆核參數。成功批次留下說明、證據網址、核對者、來源鍵與完整快照。程式驗證網址屬館方網域，**不會自動驗證該頁內容確實支持覆核結論**，操作人必須人工查證。先前成功批次沒有來源鍵時，下一次正常官方同步才建立首次鍵基準；不得回填或猜測。
 
-這是獨立於限期特展的 `sync:domain` 路徑；歌劇院已加入獨立的每週 workflow 工作，但尚未線上啟用。海生館當日節目仍手動同步，兩者均不進限期展 Queue。先核對來源頁與 [Phase 3／4 階段紀錄](stage-2026-10-12-phase3-4.md)，再用 `npm run sync:domain -- --source ntt` 或 `--source nmmba` 手動執行。歌劇院涵蓋官網 `place=1` 清單 HTML 的可辨識詳情，包含 MORE 預藏卡片；單批最多 30 筆，MORE 行為改變時停止，不能當作全站所有節目。單一詳情或人工快照另有 `--detail`／`--snapshot` 模式，不能當作完整清單。海生館只取得館方當日節目，日期、場次數、時刻與地點必須可核對；筆數突然大幅縮水會以 `SOURCE_ANOMALY` 停止，先到官網確認，不應反覆重跑來消除異常。公開 `/marine-programmes` 只顯示最近一次成功匯入批次；觀察日不是今天時不能當作今日節目。相關單元測試及隔離 PostgreSQL／真實 HTTP 整合案例已於 2026-10-14 通過；當日第二次歌劇院真實手動同步接受 20 筆（新增 1、未變 19）。
+這是獨立於限期特展的 `sync:domain` 路徑；歌劇院已加入獨立的每週 workflow 工作，2026-10-17 線上手動執行成功；跨週排程仍待觀察。海生館當日節目仍手動同步，兩者均不進限期展 Queue。先核對來源頁與 [Phase 3／4 階段紀錄](stage-2026-10-12-phase3-4.md)，再用 `npm run sync:domain -- --source ntt` 或 `--source nmmba` 手動執行。歌劇院涵蓋官網 `place=1` 清單 HTML 的可辨識詳情，包含 MORE 預藏卡片；單批最多 30 筆，MORE 行為改變時停止，不能當作全站所有節目。單一詳情或人工快照另有 `--detail`／`--snapshot` 模式，不能當作完整清單。海生館只取得館方當日節目，日期、場次數、時刻與地點必須可核對；筆數突然大幅縮水會以 `SOURCE_ANOMALY` 停止，先到官網確認，不應反覆重跑來消除異常。公開 `/marine-programmes` 只顯示最近一次成功匯入批次；觀察日不是今天時不能當作今日節目。相關單元測試及隔離 PostgreSQL／真實 HTTP 整合案例已於 2026-10-14 通過；當日第二次歌劇院真實手動同步接受 20 筆（新增 1、未變 19）。
 
 `sync:domain` 的官方 HTML 請求每次逾時 15 秒，只對逾時／網路錯誤與 HTTP 5xx 最多再試兩次，間隔 2 秒、8 秒；404、429、非館方網址／回應主機、解析失敗或資料過大立即失敗。歌劇院不同詳情之間仍另有兩秒間隔。失敗訊息包含官方失敗網址與嘗試次數，便於人工核對；重試耗盡仍不寫入不完整批次。
 
@@ -26,14 +26,14 @@
 
 目標頻率為臺灣時間每週二 04:15；博物館特展不需要每天讀取。排程在非整點，降低 GitHub Actions 整點壅塞機率；它仍可能延遲或漏跑，不能承諾準點更新。重要展期變動可手動執行單館同步。來源資料本身若未更新，重跑只刷新最後看見時間。
 
-`.github/workflows/weekly-sync.yml` 已備妥，但**尚未啟用**。預設所有同步工作與奇美每週檢查都由 `EVENT_RADAR_SYNC_ENABLED` 閘門關閉；推送程式碼只執行 CI 驗證，不會連接外部資料庫。啟用條件：
+`.github/workflows/weekly-sync.yml` 已有 2026-10-17 線上手動執行證據：六個來源成功，故宮北院從雲端抓取失敗。`EVENT_RADAR_SYNC_ENABLED` 啟用已驗證來源；北院另由 `EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 控制（目前應維持非 true），奇美只讀檢查另由 `EVENT_RADAR_CHIMEI_CHECK_ENABLED` 控制（目前應維持非 true）。GitHub Actions 週期執行及跨週可靠性仍待觀察。初次啟用或重建環境的檢查條件：
 
 1. 專案放到獨立 GitHub repo 的預設分支。
-2. 建立可從 GitHub Actions 連線的 PostgreSQL；**空白庫**執行 `npm run migrate` 即可。既有且已有 migration 帳本的資料庫也直接執行此命令，會套用尚未執行的版本（目前至 019）。若沿用早期手動建表、完全沒有帳本的舊庫，先備份並核對所有 migration 都已套用，再執行一次 `npm run migrate -- --baseline-existing`；結構缺漏會拒絕，不能用基線命令跳過真正缺少的 migration。
+2. 建立可從 GitHub Actions 連線的 PostgreSQL；**空白庫**執行 `npm run migrate` 即可。既有且已有 migration 帳本的資料庫也直接執行此命令，會套用尚未執行的版本（目前至 025）。若沿用早期手動建表、完全沒有帳本的舊庫，先備份並核對所有 migration 都已套用，再執行一次 `npm run migrate -- --baseline-existing`；結構缺漏會拒絕，不能用基線命令跳過真正缺少的 migration。
 3. Repository secrets 設 `DATABASE_URL` 與 `NMNS_API_KEY`。後者只在決定啟用線上同步時設定，切勿寫入程式碼、文件或 workflow 日誌；`NMNS_OPEN_DATA_URL` 可作展覽匯入的無金鑰備援，不能提供逐日開放時間。
 4. Repository variable 設 `EVENT_RADAR_SYNC_ENABLED=true`，先手動執行一次並確認 `ingestion_runs` 與 `/health`，才依排程運作。
 
-每週同步 workflow 定義五個相互獨立的工作，每個工作使用 jobs:scheduled 建立同館當日 Queue 工作，只領取自己的 job ID，等待重試後的最終結果；這條執行路徑已寫入 workflow，但尚未在線上啟用或驗證。五個來源為：科博館官方 OpenAPI（有 Key 時優先；公開 JSON 備援）、故宮南院官方當期／預告頁、故宮北院公開 JSON、海生館公開 JSON、科工館公開 JSON 加官方特展列表核對。文化部奇美資料目前只在本機手動匯入，因官方 OpenAPI 未確認分頁及完整涵蓋率。匯入先驗證來源，再在交易中寫入；來源為空、頁面格式改變或寫入錯誤時記失敗，`last_success_at` 不前進。逐筆可隔離的品質問題會存原始紀錄；若整批 **0 筆可公開展覽**，保留原始／待審資料、記失敗並回傳非零碼，不把這次嘗試當成成功同步。有有效展覽但部分待審時仍可成功。故宮南院只收有起訖日期的展覽，跨當期與預告頁以官方詳情網址合併。
+每週同步 workflow 定義六個限期展工作與一個歌劇院工作；北院工作另有獨立閘門。每個限期展工作使用 `jobs:scheduled` 建立同館當日 Queue 工作，只領取自己的 job ID，等待重試後的最終結果；這條執行路徑已於 2026-10-17 在線上手動執行，其中北院失敗。六個限期展來源為：科博館官方 OpenAPI（有 Key 時優先；公開 JSON 備援）、故宮南院官方當期／預告頁、故宮北院公開 JSON、海生館公開 JSON、科工館公開 JSON 加官方特展列表核對、國美館公開 HTML 與文化部詳情頁。文化部奇美資料目前只在本機手動匯入，因官方 OpenAPI 未確認分頁及完整涵蓋率。匯入先驗證來源，再在交易中寫入；來源為空、頁面格式改變或寫入錯誤時記失敗，`last_success_at` 不前進。逐筆可隔離的品質問題會存原始紀錄；若整批 **0 筆可公開展覽**，保留原始／待審資料、記失敗並回傳非零碼，不把這次嘗試當成成功同步。有有效展覽但部分待審時仍可成功。故宮南院只收有起訖日期的展覽，跨當期與預告頁以官方詳情網址合併。
 
 本機 `npm run sync:status` 可查最新嘗試、最近官方成功時間、七日來源工作數／最終失敗率／有重試的工作數、待審與新缺席待核對量。七日統計按 `sync_id` 的最後一次嘗試計，一次工作重試後成功只算一次成功。登入本機管理頁可開 `/health` 看中文摘要；兩者都是只讀報告。`npm run sync:failed -- --source <館別>` 只在該來源最近嘗試失敗時重跑。`sync_attempts` 是持久化嘗試日誌，直接 sync 仍可供本機手動使用，每週 workflow 改用來源 Queue；目前沒有主動告警。沒有嘗試紀錄也不能當作成功。
 
@@ -59,6 +59,6 @@
 
 ## 奇美每週變更檢查
 
-`npm run check:chimei` 讀取官方 `robots.txt` 與公開特展頁，從初始 HTML 中的館方個別特展連結比對 `data/chimei-known-links.json`；另以間隔請求核對 `data/chimei-known-details.json` 內已知展覽的官方展名與完整展期。可用 `npm run check:chimei -- --file <本機HTML>` 離線驗證連結（離線模式不核對詳情）。`.github/workflows/chimei-check.yml` 設定每週一臺灣時間 09:20；目前受同一 `EVENT_RADAR_SYNC_ENABLED` 閘門保護，未啟用線上排程。新連結、既有連結消失、已知詳情不符、來源錯誤或解析不到連結都會讓檢查失敗；人工核對官方頁與資料庫後，才更新基準清單。
+`npm run check:chimei` 讀取官方 `robots.txt` 與公開特展頁，從初始 HTML 中的館方個別特展連結比對 `data/chimei-known-links.json`；另以間隔請求核對 `data/chimei-known-details.json` 內已知展覽的官方展名與完整展期。可用 `npm run check:chimei -- --file <本機HTML>` 離線驗證連結（離線模式不核對詳情）。`.github/workflows/chimei-check.yml` 設定每週一臺灣時間 09:20；目前由獨立的 `EVENT_RADAR_CHIMEI_CHECK_ENABLED` 閘門保護，未驗證線上排程。新連結、既有連結消失、已知詳情不符、來源錯誤或解析不到連結都會讓檢查失敗；人工核對官方頁與資料庫後，才更新基準清單。
 
 此檢查只能發現初始 HTML 明確連出的特展網址及已知展覽詳情變化，不能涵蓋由奇美官網內部介面動態載入的完整清單，也不能替代正式資料授權與匯入流程。不要將成功的檢查結果顯示為「奇美資料已同步」。

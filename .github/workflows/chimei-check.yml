@@ -12,7 +12,7 @@ permissions:
 jobs:
   check:
     name: 奇美官方連結核對
-    if: ${{ vars.EVENT_RADAR_SYNC_ENABLED == 'true' }}
+    if: ${{ vars.EVENT_RADAR_CHIMEI_CHECK_ENABLED == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
