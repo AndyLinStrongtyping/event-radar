@@ -22,10 +22,20 @@ function arg(name: string): string | undefined {
 }
 
 async function fetchSource(url: string, host: string): Promise<string> {
-  const response = await fetch(url, {
-    headers: { 'User-Agent': 'EventRadar/0.1 (+https://github.com/AndyLinStrongtyping)', Accept: 'text/html, application/json' },
-    signal: AbortSignal.timeout(15_000),
-  });
+  let response: Response;
+  try {
+    response = await fetch(url, {
+      headers: { 'User-Agent': 'EventRadar/0.1 (+https://github.com/AndyLinStrongtyping)', Accept: 'text/html, application/json' },
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch (error) {
+    const cause = error instanceof Error ? error.cause : null;
+    const rawCode = cause && typeof cause === 'object' && 'code' in cause ? cause.code : null;
+    const code = typeof rawCode === 'string' && /^[A-Z][A-Z0-9_]{1,40}$/.test(rawCode)
+      ? rawCode : error instanceof Error && error.name === 'TimeoutError' ? 'TIMEOUT' : 'UNKNOWN';
+    // Log only the allowlisted host and a network code. Source URLs can contain credentials.
+    throw new Error(`來源連線失敗 (${host}; ${code})`);
+  }
   if (!response.ok) throw new Error(`來源回應 HTTP ${response.status}: ${url}`);
   if (new URL(response.url).hostname !== host) throw new Error('來源重新導向到非官方網域');
   if (Number(response.headers.get('content-length')) > 10_000_000) throw new Error('來源回應過大');

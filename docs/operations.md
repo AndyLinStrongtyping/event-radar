@@ -1,5 +1,11 @@
 # 每週同步運作設計
 
+## 故宮北院雲端連線失敗時的更新
+
+2026-10-18 本機從故宮官方 JSON 同步線上資料庫成功；GitHub runner 與 Render 先前仍只回報 `fetch failed`。在雲端官方來源通過實測前，`EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 維持非 true。需要更新北院時，在已核對館方資料、已安全載入線上 `DATABASE_URL` 的維運工作站執行 `npm run sync -- --source npm-north`，再以 `npm run sync:status` 核對該館最後成功時間、來源列數與待審數。不要將連線字串或密碼貼進終端紀錄、文件或 Git。若來源突然縮水，沿用 coverage 隔離程序；不能以一次失敗推斷展覽取消。這是人工更新，不能宣稱每週北院排程已恢復。
+
+程式現在會記錄受限格式的網路錯誤代碼。下次雲端測試先辨識 `ENOTFOUND`、`UND_ERR_CONNECT_TIMEOUT`、TLS 類代碼或 HTTP 狀態，再決定是否需向資料提供機關確認伺服器來源的存取方式。文化部展覽資料可用於交叉核對，但 2026-10-18 僅找到一筆相關展覽且未附故宮逐筆網址，不可直接替代故宮完整資料。
+
 ## 國美館來源與每週接線
 
 先在本機套用 `npm run migrate`，再以 `npm run probe:ntmofa` 只讀核對官方當期／預告清單與館內限期展，確認沒有異常待審後執行 `npm run sync -- --source ntmofa`。本來源讀國美館公開 HTML 及其連出的文化部 NTMOFA 詳情頁，沒有 API Key；已加入來源 Queue 與每週 workflow，2026-10-17 的線上手動執行成功。首次成功只建立 coverage 基準，下一次須比對來源鍵與館方頁，不能因清單缺席就自動認定展覽取消。
