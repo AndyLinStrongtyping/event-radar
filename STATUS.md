@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-17 **Phase 9 雲端準備進行中，尚未公開上線**：GitHub `main` 已同步至 `c40a15b`，CI [run 39010245767](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39010245767) 成功。Neon 已建立獨立 `event-radar` 免費專案（新加坡、production 分支）；Render 已透過既有 GitHub 連線找到本 repo，Blueprint 尚未提交。Neon MCP 第二段授權要求整個帳號的建立／刪除專案與組織權限，已拒絕，後續使用專案直連字串交給 Render Secret。因免費 Render 沒有獨立 pre-deploy command，本輪新增建置階段的 migration 與只在沒有可展示展覽時執行的首次匯入；**尚未驗證遠端 migration、官方資料匯入、公開網址或 smoke**。見[ER-86](docs/technical-decisions.md)與[部署手冊](docs/deployment.md)。
+
 2026-10-16 **Phase 9 部署前本機準備完成，尚未部署**：已加入 Render 免費技術預覽範本、Node 版本固定、正式啟動命令、可控的 `HOST`／`PORT`、首頁與館所頁的 canonical／sitemap、預覽禁索引，以及唯讀部署後 smoke 腳本。型別、72 項單元、React build、隔離 PostgreSQL／HTTP 整合與本機 smoke 通過。Neon／Render 建立、遠端 migration 與官方資料匯入、公開網址、線上觀測及搜尋收錄都尚待站長登入後執行；**不能把本機驗證當成線上運作證據**。見[部署手冊](docs/deployment.md)、[Phase 9 準備紀錄](docs/stage-2026-10-16-phase9-prep.md)與[ER-85](docs/technical-decisions.md)。
 
 2026-10-16 **Phase 8 文件與作品集整理完成**：README 以現有領域及來源等級重寫入口，架構圖補表演／海洋節目路徑，新增主要實際外鍵的[ERD](docs/erd.md)與[面試用專案介紹](docs/portfolio-brief.md)；來源盤點、API 路由清單、路線圖及技術決策同步。這是文件階段，**未新增公開部署、線上流量、自動沖繩來源或 production Queue**。驗證及殘留限制見[Phase 8 驗收](docs/stage-2026-10-16-phase8.md)和[ER-84](docs/technical-decisions.md)。

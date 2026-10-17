@@ -538,8 +538,15 @@
 
 - **問題**：原 `start` 會在啟動前重建 React，HTTP 只綁本機位址，沒有可重現的部署後檢查。若免費預覽服務被搜尋引擎誤收錄，或新資料庫只有館所資料卻對外宣稱展覽可查，也會造成作品集與訪客的錯誤期待。
 - **決策**：第一版以單一 Node Web Service 同源提供 React 與既有 API，資料庫用獨立 PostgreSQL；保留本機 `127.0.0.1` 預設，部署時明設 `HOST=0.0.0.0`，由平台注入 `PORT`。`start:prod` 只啟動已建好的頁面；`render.yaml` 固定免費技術預覽、手動部署及外部 `DATABASE_URL` Secret，不建立管理服務或 Queue。`PUBLIC_BASE_URL` 未設時，回應 `X-Robots-Tag: noindex`，並允許爬蟲讀取該標頭、不提供 sitemap；設定成最終 HTTPS 根網址後才為首頁及既有靜態館所介紹輸出 canonical 和 sitemap。動態展覽沒有獨立 HTML 頁，不加入 sitemap。`smoke:deploy` 唯讀檢查 health、bundle、資料 API、介紹頁及照片，預覽時以 `--expect-noindex` 另檢查標頭。
-- **取捨／故障模式**：Render 免費 Web Service 閒置休眠，休眠時平台代回 `Disallow: /` 的 `robots.txt`，爬蟲可能看不到本站的 `noindex`；預覽並非私有環境，因此不宣稱絕對不收錄、自然搜尋或持續可用。migration 與第一次官方匯入須由站長連遠端資料庫執行；只建 schema 不會產生展覽，冒煙檢查因此要求至少一筆可公開特展。`render.yaml` 只是範本，匯入後才會建立公開服務。程式版本以 Render 部署 SHA 核對，沒有內建公開 SHA 端點；資料庫 schema 回退需另行備份與計畫。
+- **取捨／故障模式**：Render 免費 Web Service 閒置休眠，休眠時平台代回 `Disallow: /` 的 `robots.txt`，爬蟲可能看不到本站的 `noindex`；預覽並非私有環境，因此不宣稱絕對不收錄、自然搜尋或持續可用。此階段原規劃由站長在本機執行 migration 與第一次官方匯入，2026-10-17 因免費 Render 不提供獨立部署前指令而由 ER-86 改為建置時執行。`render.yaml` 匯入後才會建立公開服務。程式版本以 Render 部署 SHA 核對，沒有內建公開 SHA 端點；資料庫 schema 回退需另行備份與計畫。
 - **驗證**：2026-10-16 型別、72 項單元、React build、隔離 PostgreSQL／HTTP 整合及本機 smoke 通過；整合測試確認 `PUBLIC_BASE_URL` 下的 canonical、robots、sitemap。詳見[部署手冊](deployment.md)與[階段紀錄](stage-2026-10-16-phase9-prep.md)。尚未建立 Neon／Render 帳號資源、遠端 migration、公開網址或真實流量。
+
+### ER-86｜免費預覽的資料庫初始化移到受控建置步驟（待遠端驗證）
+
+- **問題**：Render 免費 Web Service 沒有獨立 pre-deploy command 或 dashboard shell；Neon 新資料庫無 schema／展覽，若直接匯入既有 Blueprint，服務即使啟動也會提供空白特展。Neon MCP 的第二段 OAuth 要求整個帳號的專案與組織建立／刪除權限，超出單一專案授權需求，因此沒有核准。
+- **決策**：免費技術預覽先於 `render.yaml` 建置順序完成 React build，再執行有 checksum 帳本及 advisory lock 的 `npm run migrate`，最後執行 `scripts/bootstrap-preview.mjs`。此腳本只有在資料庫沒有可公開、未結束限期展時，才依序嘗試故宮北院、科工館、故宮南院現有官方 Adapter；每個來源失敗與下一個隔離，取得至少一筆合規資料便停止。全數失敗時拒絕發布空白站。Neon 連線字串僅交給 Render Secret；不在 Git、文件或對話傳遞。後續資料更新仍由手動同步，不宣稱已上線定時排程。
+- **取捨／故障模式**：免費建置可能在 migration 套用後因來源或服務啟動失敗，因此 schema 變更要向後相容，後續部署前仍須備份；此做法不是正式環境的長期 migration 流程。已有展覽時建置不自動更新來源，需另行檢查資料新鮮度。首次匯入的三個來源不保證永遠有未結束的合規展覽，失敗時保持未發布狀態。
+- **驗證**：本機可檢查腳本語法及型別、單元、建置、文件；遠端 migration、來源匯入與公開 smoke 尚待 Render 實際建置後記錄。Render 免費方案限制以[官方部署文件](https://render.com/docs/deploys)核對。
 
 ## 後續更新方式
 

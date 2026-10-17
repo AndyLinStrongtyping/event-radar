@@ -7,7 +7,7 @@ services:
     region: singapore
     plan: free
     autoDeployTrigger: off
-    buildCommand: npm ci --include=dev --ignore-scripts --no-audit --no-fund && npm run build:web
+    buildCommand: npm ci --include=dev --ignore-scripts --no-audit --no-fund && npm run build:web && npm run migrate && node scripts/bootstrap-preview.mjs
     startCommand: npm run start:prod
     healthCheckPath: /health
     envVars:
