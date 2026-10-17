@@ -2,7 +2,9 @@
 
 2026-10-17 **流量監測與資料庫憑證核對**：線上首頁和館所介紹頁均載入 GA4；公開站兩次測試造訪在即時總覽產生 `page_view=2`、`session_start=1`。這是自己的測試流量，尚不能當成真實訪客數；Search Console 已處理 15 個固定頁面，但仍待正式索引。已用本機有效密碼修正 GitHub Actions、Render 及 Git 忽略檔中的舊資料庫連線網址，不需重設 Neon 密碼；Render 重新部署後 `/health` 為 `status=ok, database=ok`。見 [ER-90／91](docs/technical-decisions.md)。
 
-2026-10-17 **每週來源部分可運作**：手動 Actions [#3](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39032657980) 中，科博館、故宮南院、海生館、科工館、國美館與歌劇院六個獨立工作成功。故宮北院的官方開放資料網址從 GitHub runner 連續三次 `fetch failed`，而本機先前可匯入；北院將以獨立開關暫停雲端排程，保留人工同步與來源狀態提示。奇美檢查也改用獨立開關。新工作流程仍待再次手動驗證，實際每週排程及跨週穩定尚未證明；見 [ER-91](docs/technical-decisions.md)。
+2026-10-17 **每週來源已通過手動驗證，尚待實際週排程**：手動 Actions [#3](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39032657980) 中，科博館、故宮南院、海生館、科工館、國美館與歌劇院六個獨立工作成功。故宮北院官方開放資料網址從 GitHub runner 連續三次 `fetch failed`，而本機先前可匯入；已用獨立開關暫停北院雲端排程，保留人工同步與來源狀態提示。奇美檢查也改用獨立開關。合併後手動 Actions [#4](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39033250246) 六工作成功、北院依設定略過。**實際週二觸發與跨週穩定尚未證明**；見 [ER-91](docs/technical-decisions.md)。
+
+2026-10-18 **手機長頁面操作改善待公開站驗收**：首頁與 14 篇館所介紹頁已加入下滑後出現的浮動回頂按鈕。本機 Chrome 實測首頁、海生館與澎湖化石館介紹頁；修正平滑捲動半途停下的問題後，從長頁面回到頂端且按鈕隱藏。型別、React 建置與文件檢查通過；手機實機與公開站仍待部署後驗收。見 [ER-92](docs/technical-decisions.md)。
 
 2026-10-17 **Google Search Console 已完成連接**：以首頁 HTML 標記驗證 `https://event-radar-preview.onrender.com/` 的網站擁有權。Render 部署 `b265c1b` 顯示 Live，`PUBLIC_BASE_URL` 已啟用，公開站 smoke 確認沒有 `noindex` 且 `robots.txt`、`sitemap.xml` 可用。Google 已順利處理 sitemap，發現 15 個固定頁面；首頁即時測試判定可編入索引，已接受建立索引要求，但 Google 索引中仍未有此頁。**尚無搜尋曝光、點擊或直接分享流量的數據**；見[ER-89](docs/technical-decisions.md)。
 

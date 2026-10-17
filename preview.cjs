@@ -25,6 +25,7 @@ const files = {
   '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
   '/app.js': ['app.js', 'text/javascript; charset=utf-8'],
   '/transport.js': ['transport.js', 'text/javascript; charset=utf-8'],
+  '/back-to-top.js': ['back-to-top.js', 'text/javascript; charset=utf-8'],
   '/assets/hero-ruins.png': ['assets/hero-ruins.png', 'image/png'],
   '/assets/egypt-writing-user.jpg': ['assets/egypt-writing-user.jpg', 'image/jpeg'],
   '/assets/nstm-switchboard.jpg': ['assets/nstm-switchboard.jpg', 'image/jpeg'],
