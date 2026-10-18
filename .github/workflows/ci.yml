@@ -42,3 +42,25 @@ jobs:
         run: npm test
       - name: 驗證資料庫匯入與公開 API 的 OpenAPI 回應格式
         run: npm run test:integration
+      - name: 準備 PostgreSQL 17 備份與還原工具
+        run: |
+          mkdir -p "$RUNNER_TEMP/pg-client"
+          cat > "$RUNNER_TEMP/pg-client/pg-tool" <<'EOF'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          tool="$(basename "$0")"
+          exec docker run --rm --network host --user "$(id -u):$(id -g)" \
+            -e PGHOST -e PGPORT -e PGDATABASE -e PGUSER -e PGPASSWORD \
+            -e PGSSLMODE -e PGCHANNELBINDING -e HOME=/tmp \
+            -v "$GITHUB_WORKSPACE:$GITHUB_WORKSPACE" -w "$GITHUB_WORKSPACE" \
+            postgres:17-alpine "$tool" "$@"
+          EOF
+          chmod +x "$RUNNER_TEMP/pg-client/pg-tool"
+          ln -s pg-tool "$RUNNER_TEMP/pg-client/pg_dump"
+          ln -s pg-tool "$RUNNER_TEMP/pg-client/pg_restore"
+          echo "PG_DUMP_BIN=$RUNNER_TEMP/pg-client/pg_dump" >> "$GITHUB_ENV"
+          echo "PG_RESTORE_BIN=$RUNNER_TEMP/pg-client/pg_restore" >> "$GITHUB_ENV"
+      - name: 備份並還原到隔離資料庫
+        run: |
+          npm run migrate
+          npm run test:backup
