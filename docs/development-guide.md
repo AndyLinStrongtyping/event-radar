@@ -5,7 +5,7 @@
 ## 建議閱讀順序
 
 1. [STATUS](../STATUS.md)：哪些來源可匯入、哪些只有人工資料、哪些仍待驗證。
-2. [本頁](development-guide.md)、[目前架構](architecture.md#目前實作本機-mvp)與[ERD](erd.md)：資料如何進入、分流、建立關聯與被查詢。
+2. [本頁](development-guide.md)、[目前架構](architecture.md#目前實作公開技術預覽)與[ERD](erd.md)：資料如何進入、分流、建立關聯與被查詢。
 3. [API 說明](api.md)和 [OpenAPI 3.0](openapi.yaml)：公開唯讀端點的語意、參數、回應與錯誤。
 4. [來源盤點](sources.md)及[技術決策](technical-decisions.md)：每館證據、資料品質規則與取捨。
 5. [運作設計](operations.md)、[Phase 3](stage-2026-10-15-phase3.md)與[Phase 4](stage-2026-10-15-phase4.md)階段紀錄：逐場／逐日核對、手動同步、測試證據及未完成事項。
@@ -15,7 +15,7 @@
 | 路徑 | 入口與轉換 | 保存與公開方式 | 不能推論的事 |
 | --- | --- | --- | --- |
 | 限期特展 | `src/ingest.ts`／`src/sync-source.ts` → 來源 adapter → 日期與官方連結驗證 → 正規化 | `exhibitions`、原始／待審紀錄、來源別名與異動；`/exhibitions` 搜尋 | 缺結束日不等於常設展；來源清單消失不等於取消 |
-| 表演與海洋節目 | 手動 `src/sync-domain.ts` → `src/sources/ntt-events.ts` 或 `nmmba-programmes.ts` → `src/domain-events.ts` | `domain_events` 加 `event_sessions` 或 `recurring_schedules`；`/performances`、`/marine-programmes` | 歌劇院有場次不等於仍有票；海生館今日時段不保證未來時段或開館 |
+| 表演與海洋節目 | `src/sync-domain.ts` → `src/sources/ntt-events.ts` 或 `nmmba-programmes.ts` → `src/domain-events.ts`；歌劇院已接獨立每週 Actions 工作，海生館當日節目仍按觀察日人工同步 | `domain_events` 加 `event_sessions` 或 `recurring_schedules`；`/performances`、`/marine-programmes` | 歌劇院有場次不等於仍有票；海生館今日時段不保證未來時段或開館 |
 | 奇美活動候選 | 官網內部 JSON 的人工刷新／本機快照 → 奇美 adapter | 候選 `programme_events` 與靜態 `/chimei-activities.json`；沒有公開活動搜尋 API | 候選不等於已確認特展；內部端點不是公開文件化 API |
 
 導覽頁在 `web/guides/`，由人工編寫並附官方核對連結；它們不是上述任何一條自動同步資料流。React 首頁在 `frontend/`，公開查詢由 `src/server.ts` 提供；登入後的本機審查工具由 `src/admin-server.ts` 提供，不列入公開 OpenAPI。

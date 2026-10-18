@@ -12,17 +12,17 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 
 首頁採 React + Vite，提供城市與館所連動、展覽狀態／明確免費資訊篩選、表演、深海與化石專區；載入展覽的發掘動畫支援「減少動態效果」。下圖是開發時的介面紀錄；線上現況以[預覽站](https://event-radar-preview.onrender.com/)為準。
 
-想快速評估專案，可依序閱讀：[目前進度](STATUS.md) → [面試用專案介紹](docs/portfolio-brief.md) → [面試技術學習手冊](docs/interview-study-guide.md) → [開發導覽](docs/development-guide.md) → [API 契約](docs/api.md)／[OpenAPI](docs/openapi.yaml) → [來源盤點](docs/sources.md) → [技術決策](docs/technical-decisions.md)。[Phase 8 文件驗收](docs/stage-2026-10-16-phase8.md)記錄當時的整理範圍與限制。
+想快速評估專案，可依序閱讀：[目前進度](STATUS.md) → [技術難點與解決決策報告](docs/technical-challenges-report.md) → [面試用專案介紹](docs/portfolio-brief.md) → [面試技術學習手冊](docs/interview-study-guide.md) → [開發導覽](docs/development-guide.md) → [API 契約](docs/api.md)／[OpenAPI](docs/openapi.yaml) → [來源盤點](docs/sources.md) → [技術決策](docs/technical-decisions.md)。[Phase 8 文件驗收](docs/stage-2026-10-16-phase8.md)記錄當時的整理範圍與限制。
 
 ![Event Radar React 考古主視覺](docs/screenshots/event-radar-react-hero.jpg)
 
 [早期首頁畫面](docs/screenshots/event-radar-showcase.png)保留作設計歷程。
 
-[目前系統架構圖](docs/architecture.md#目前實作本機-mvp)、[資料庫 ERD](docs/erd.md)及[領域模型對照](docs/domain-model.md)分別說明執行流程、資料關聯與不同時間語意。長期概念圖中的多階段 Queue、通知與遠端監控仍未實作。
+[目前系統架構圖](docs/architecture.md#目前實作公開技術預覽)、[資料庫 ERD](docs/erd.md)及[領域模型對照](docs/domain-model.md)分別說明執行流程、資料關聯與不同時間語意。長期概念圖中的多階段 Queue、通知與遠端監控仍未實作。
 
 原始產品核心是臺灣博物館的特展與期間限定展；後續為驗證不同時間模型，另開表演藝術與海洋節目專區。三種資料各有查詢端點，不把演出、每日活動或市集混入特展結果。所有頁面均提供官方入口供訪客出發前核對。
 
-目前是 **免費技術預覽**：React、讀取 API 與 Neon PostgreSQL 已公開運作，2026-10-17 線上 smoke 檢查通過，當時可搜尋 27 筆未結束特展。六個來源的雲端手動同步已成功；故宮北院官方資料網址從雲端抓取失敗，暫由本機工作站人工同步。六個來源的每週排程仍須經新 workflow 手動驗證及跨週觀察。本機 PostgreSQL Queue 不等於多階段 production Queue。一般入館票價與購票入口是人工核對資料，不等於每檔展覽票價；免費篩選只認來源明確標示。見[部署紀錄](docs/deployment.md)、[ER-91](docs/technical-decisions.md)及[票務來源與維護](docs/ticketing.md)。
+目前是 **免費技術預覽**：React、讀取 API 與 Neon PostgreSQL 已公開運作，2026-10-17 線上 smoke 檢查通過，當時可搜尋 27 筆未結束特展。科博館、故宮南院、海生館、科工館、國美館及歌劇院六個獨立工作已通過線上手動 Actions 驗證；故宮北院官方資料網址從雲端連線逾時，暫由本機工作站人工同步。**真正的週二排程與跨週穩定仍待驗證**。現有 PostgreSQL Queue 只執行 `FETCH_SOURCE`，沒有多階段解析／通知工作。一般入館票價與購票入口是人工核對資料，不等於每檔展覽票價；免費篩選只認來源明確標示。見[部署紀錄](docs/deployment.md)、[ER-91](docs/technical-decisions.md)及[票務來源與維護](docs/ticketing.md)。
 
 ## 來源與展示範圍
 
@@ -31,7 +31,7 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 - **首批來源目標**：奇美博物館、國立自然科學博物館、國立臺灣博物館、國立故宮博物院（北／南院）、國立臺灣歷史博物館。
 - **第二批**：國立科學工藝博物館、國立臺灣科學教育館、國立臺灣美術館、臺南市美術館。
 - 奇美已列入資料來源表。官網有特展頁；目前未查到館方公開活動 API 文件。文化部 iCulture 展覽 JSON 可作不完整的補充來源，分段展期須與奇美官方逐筆頁交叉核對；既有人工整理資料保留。
-- 科博館的[官方 OpenAPI](https://www.nmns.edu.tw/ch/about/info-central/opendata/index.html)個人金鑰已核發並在本機驗證。`NMNS_API_KEY` 優先供展覽與未來一週開放時間使用；無金鑰時展覽匯入仍可使用原 `NMNS_OPEN_DATA_URL`，開放時間只顯示官網核對入口。金鑰只存在 Git 忽略的本機 `.env`，不提交到 Git。
+- 科博館的[官方 OpenAPI](https://www.nmns.edu.tw/ch/about/info-central/opendata/index.html)個人金鑰已核發並在本機驗證。`NMNS_API_KEY` 優先供展覽與未來一週開放時間使用；無金鑰時展覽匯入仍可使用原 `NMNS_OPEN_DATA_URL`，開放時間只顯示官網核對入口。金鑰只放在 Git 忽略的本機設定及執行環境的 Secret，不提交到 Git。
 - 故宮南院的[當期展覽](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3112)與[展覽預告](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?Pindex=1&SearchAdvanced=False&appname=Exhibition3111)是第三個真實來源。匯入有起訖日期的特別展覽與限期輪替展，保留官方詳情連結；無結束日的常設展與年度期程不列入搜尋。這是官方網頁同步，不是館方提供的公開 API。
 - 故宮北院[公開展覽 JSON](https://odapi.npm.gov.tw/data/open/api/v1/exhibition/current.json)與海生館[公開特展 JSON](https://www.nmmba.gov.tw/OpenData.aspx?SN=BF6D6EB9CB6876BB)已接入本機。逐筆保留原始值，分流有效、待審與略過資料；故宮按院區與展期保守篩選。海生館若日期欄空白，僅對介紹文字明載完整展期的少數紀錄，再與同筆館方詳情頁的展名及日期核對；其他紀錄仍待審，不推測為常設展。用 `npm run review -- --source nmmba` 或 `--source npm-north` 查看待審原因。
 - 首頁的「館所圖鑑」目前連到 14 篇人工編寫的介紹：十間原有博物館／美術館，加上臺中國家歌劇院、沖繩美麗海水族館、澎湖化石館與臺南左鎮化石園區。各頁的展示路線、平常開館資訊、照片來源與交通入口採人工核對，**不等於逐日開館或當期展件保證**；館方公告仍是出發前依據。臺博館、臺史博與科教館的近期特展尚未接入資料庫；沖繩與兩座化石館目前也只有靜態導覽。見[來源盤點](docs/sources.md)、[開館時間](docs/opening-hours.md)與[照片署名](web/photo-credits.html)。
@@ -57,7 +57,7 @@ test/                 測試與官方資訊範例
 
 ## 本機執行
 
-需要 Node.js 22.10+、PostgreSQL 17 或 Docker。本機已用 Node.js 24 與 Docker Desktop 的 PostgreSQL 17 驗證資料匯入和 API。此電腦的 Docker 執行檔位於使用者目錄，若終端機找不到 `docker`，可呼叫 `C:\Users\user\AppData\Local\Programs\DockerDesktop\resources\bin\docker.exe`。
+需要 Node.js 22.10+、PostgreSQL 17 或 Docker。本機已用 Node.js 24 與 Docker Desktop 的 PostgreSQL 17 驗證資料匯入和 API。若終端機找不到 `docker`，請先確認 Docker Desktop 已啟動，並把其執行檔目錄加入本機 `PATH`。
 
 若要先看介面，先執行 `npm ci`，再執行 `npm run preview`，開啟 `.env` 中 `PORT` 指定的本機網址；預設值請看 `.env.example`。`preview` 與 `start` 都會先建置 React 首頁；請擇一使用同一連接埠。預覽不需資料庫，頁面使用快照／示例資料，**不是即時同步**。
 
