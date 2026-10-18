@@ -7,7 +7,7 @@ import { fileURLToPath } from 'node:url';
 import pg from 'pg';
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..');
-const backupDir = join(root, 'private', 'backups');
+const backupDir = resolve(process.env.EVENT_RADAR_BACKUP_DIR || join(root, 'private', 'backups'));
 const requiredTables = ['schema_migrations', 'museums', 'exhibitions', 'ingestion_runs'];
 
 export function connectionParts(connectionString) {
