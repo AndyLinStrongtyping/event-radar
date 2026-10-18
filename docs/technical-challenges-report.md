@@ -75,11 +75,11 @@ Event Radar 不只是把博物館網頁抓下來。真正的問題是：不同�
 
 | 發現 | 對展示的影響 | 本輪處理／後續 |
 | --- | --- | --- |
-| [GitHub 個人頁](https://github.com/AndyLinStrongtyping)原未展示 Event Radar | 面試官先看到課堂作業，可能錯過目前最完整的公開產品 | 個人 README 已將 Event Radar 置於第一個專案，附預覽站、證據與界線；若個人頁釘選仍未更新，後續再補。 |
+| [GitHub 個人頁](https://github.com/AndyLinStrongtyping)原未展示 Event Radar | 面試官先看到課堂作業，可能錯過目前最完整的公開產品 | 個人 README 已將 Event Radar 置於第一個專案，附預覽站、證據與界線；也已將專案釘選在第一位。 |
 | [公開專案 README](https://github.com/AndyLinStrongtyping/event-radar/blob/main/README.md)原寫「六個來源每週排程需新 workflow 手動驗證」 | 與較新的 STATUS「Actions #4 六工作手動成功」不一致 | 本輪改成「手動 Actions 已成功，真正週排程與跨週穩定待驗證」。 |
 | 公開 README 原包含個人電腦的 Docker Desktop 絕對路徑 | 不是秘密，但降低跨平台可重現性 | 本輪改為通用 Docker Desktop／`PATH` 指引。 |
 | 專案介紹與架構／部署歷史敘述原落後於線上現況 | 面試官可能讀到「未部署」或「noindex」的過去狀態 | 本輪更新介紹、架構及開發導覽；歷史部署手順加上日期與最新狀態連結，原驗證紀錄仍保留。 |
-| Event Radar GitHub repo 尚未設 Homepage 與 topics；許多週作業沒有描述 | 專案入口與作品層次不夠明確 | 建議設公開網站為 Homepage 並補 topics；週作業可保留，不必放在主展示路徑。 |
+| Event Radar GitHub repo 原未設 Homepage 與 topics；許多週作業沒有描述 | 專案入口與作品層次不夠明確 | 已設定公開網站為 Homepage，並補上技術 topics；週作業可保留，不必放在主展示路徑。 |
 
 目前檢查公開樹與可見歷史，**未發現已提交的正式 API Key、資料庫密碼、私鑰或正式備份檔**；`.env.example` 中的本機資料庫值是示例。公開展示前仍應保留 Secret 掃描、截圖遮罩與圖片授權檢查。Git 忽略的本機 `private/` 雖不推送，若放在 OneDrive 資料夾仍可能被個人雲端同步，需另外管理。
 
