@@ -1,6 +1,6 @@
 # Event Radar｜目前進度
 
-2026-10-18 **Phase 10 備份／還原流程開發中**：新增 PostgreSQL custom-format 備份命令與隔離空白庫還原檢查；程式拒絕正式資料庫或非空白目標，備份留在 Git 忽略的 `private/backups/`。單元測試 74 項及型別、文件檢查通過；CI 已加入 PostgreSQL 17 工具與隔離還原演練步驟，實際 CI 結果尚待執行。工作站目前沒有可用的 `pg_dump`、Docker Engine 未啟動，**尚未產生正式 Neon 備份，更不能宣稱完成正式還原演練**。首次真實週二排程仍待 10/20 驗收；詳見[運作手冊](docs/operations.md)及[ER-94](docs/technical-decisions.md)。
+2026-10-18 **Phase 10 備份／還原流程通過 CI 隔離演練**：新增 PostgreSQL custom-format 備份命令與隔離空白庫還原檢查；程式拒絕正式資料庫或非空白目標，備份留在 Git 忽略的 `private/backups/`。單元測試 74 項及型別、文件檢查通過；[CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 用 PostgreSQL 17 實際備份並還原合成資料，25 份 migration、11 間館、1 筆展覽、1 筆匯入及展覽來源／異動關係比對成功。工作站目前沒有可用的 `pg_dump`、Docker Engine 未啟動，**尚未產生正式 Neon 備份，更不能宣稱完成正式資料的還原演練**。首次真實週二排程仍待 10/20 驗收；詳見[運作手冊](docs/operations.md)及[ER-94](docs/technical-decisions.md)。
 
 2026-10-18 **故宮北院已由本機重新同步線上資料庫，雲端自動抓取仍隔離**：同一個 Node 官方 JSON 來源在本機回 HTTP 200；重跑 `sync -- --source npm-north` 取得 22 筆，1 筆可公開且內容未變、15 筆待審、6 筆略過，coverage 與 22 筆基準一致。GitHub runner 的一次性唯讀診斷確定 `UND_ERR_CONNECT_TIMEOUT`，即連線逾時；不能據此斷定館方封鎖。文化部公開展覽資料當日僅比對到 1 筆同名同展期故宮展，且未附故宮逐筆網址，不能直接取代故宮完整官方清單。已加入安全的網路錯誤代碼診斷，北院獨立排程開關繼續關閉。見 [ER-93](docs/technical-decisions.md)。
 

@@ -595,7 +595,7 @@
 
 - **問題**：公開站已使用 Neon PostgreSQL，而 Render 建置會執行 migration；只有資料庫連得上及 CI 通過，不能保證資料遺失或錯誤 migration 後可復原。本機也沒有現成 `pg_dump`／`pg_restore` 工具。
 - **決策**：使用 PostgreSQL 原生 custom-format `pg_dump`，把密碼放在子程序環境變數而非命令列；備份檔只存 Git 忽略的 `private/backups/`，留下大小與 SHA-256。還原只接受明確命名的獨立空白庫，`pg_restore --single-transaction --exit-on-error` 後查 migration 帳本及主要資料表。CI 以 PostgreSQL 17 用戶端和本機測試庫執行完整備份／還原；測試在本機庫插入一筆合成展覽、來源與異動關係，核對還原後的筆數及關聯，不把正式 Neon 內容上傳 CI artifact。
-- **驗證與界線**：`test/db-backup.test.mjs` 的連線解析及還原目標防護通過，連同既有單元測試共 74 項，型別與文件檢查亦通過。CI 真正執行與正式 Neon 備份／隔離還原**尚待驗收**；當前 Windows 工作站缺少原生用戶端且 Docker Engine 未啟動。不得把腳本存在視為已備份，正式還原也不能直接覆寫原庫。操作見[運作手冊](operations.md)。
+- **驗證與界線**：`test/db-backup.test.mjs` 的連線解析及還原目標防護通過，連同既有單元測試共 74 項，型別與文件檢查亦通過。[GitHub CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 使用 PostgreSQL 17 實際產生 76,421 bytes 的測試備份、還原到獨立空白庫，核對 25 份 migration、11 間館、1 筆合成展覽、1 筆匯入及展覽來源／異動關係成功。**正式 Neon 備份／隔離還原仍未驗收**；當前 Windows 工作站缺少原生用戶端且 Docker Engine 未啟動。不得把 CI 合成資料演練冒充線上資料已備份，正式還原也不能直接覆寫原庫。操作見[運作手冊](operations.md)。
 
 ## 後續更新方式
 
