@@ -2,11 +2,11 @@
 
 ## 線上資料庫備份與隔離還原
 
-在會改動正式 Neon 結構的部署前，先從已核對的 `DATABASE_URL` 建立 PostgreSQL custom-format 備份。工作站須有與伺服器主版本相容的 `pg_dump`／`pg_restore`；Windows 可用 PostgreSQL 官方連結的 EDB binaries，CI 使用 `postgres:17-alpine` 工具。執行 `npm run backup:db` 後，程式把 `.dump` 寫到 Git 忽略的 `private/backups/`，輸出檔案大小與 SHA-256；檔案不可推送、貼到對話或上傳公開儲存空間。本機 `private/` 位於 OneDrive 路徑，需留意個人雲端同步及帳號權限。
+在會改動正式 Neon 結構的部署前，先從已核對的 `DATABASE_URL` 建立 PostgreSQL custom-format 備份。工作站須有與伺服器主版本相容的 `pg_dump`／`pg_restore`；目前 Neon 是 PostgreSQL 18.6，不能使用 17.x 的 `pg_dump`。Windows 可用 PostgreSQL 官方連結的 EDB binaries，CI 的合成資料測試則使用 `postgres:17-alpine`。執行 `npm run backup:db` 後，程式預設將 `.dump` 寫到 Git 忽略的 `private/backups/`；本機專案位於 OneDrive，正式資料應先設定 `EVENT_RADAR_BACKUP_DIR` 為非 OneDrive 的個人本機目錄，例如 `%LOCALAPPDATA%\EventRadar\backups`。工具路徑可分別以 `PG_DUMP_BIN`、`PG_RESTORE_BIN` 指定。程式輸出檔案大小與 SHA-256；備份檔不可推送、貼到對話或上傳公開儲存空間。
 
-**備份完成不等於可還原。**另建立空白且命名為 `event_radar_restore_*` 的隔離資料庫，將其連線設為 `RESTORE_DATABASE_URL`，執行 `npm run restore:check -- private/backups/<備份檔>.dump`。程式拒絕正式庫名稱與非空白目標，使用單一交易還原，再核對 migration 帳本、館所、展覽與匯入批次的可讀筆數；不要對正式庫執行還原。演練後應另與備份時的來源筆數比對，記錄日期、檔案 SHA、還原結果及清理隔離庫的結果。`npm run test:backup` 只在本機 PostgreSQL／CI 隔離環境使用，會自建並刪除測試庫，**絕不可指向 Neon**。
+**備份完成不等於可還原。**另建立空白且命名為 `event_radar_restore_*` 的隔離資料庫，將其連線設為 `RESTORE_DATABASE_URL`，執行 `npm run restore:check -- <備份檔路徑>`。程式僅接受所設備份目錄內的 `.dump`，拒絕正式庫名稱與非空白目標，使用單一交易還原，再核對 migration 帳本、館所、展覽與匯入批次的可讀筆數；不要對正式庫執行還原。演練後應另與備份時的來源筆數比對，記錄日期、檔案 SHA、還原結果及清理隔離庫的結果。`npm run test:backup` 只在本機 PostgreSQL／CI 隔離環境使用，會自建並刪除測試庫，**絕不可指向 Neon**。
 
-2026-10-18 [CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 已實際備份並還原合成展覽、來源與異動關係；本機當時沒有可用的 `pg_dump`，Docker Engine 也未啟動，因此**尚未完成正式 Neon 備份與還原演練**。正式備份仍需在具備工具的維運工作站獨立執行。任何正式還原必須另行確認停寫、目標、資料版本及回退方案，不能套用上述測試命令覆寫原庫。
+2026-10-18 [CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 先備份並還原合成展覽、來源與異動關係。同日後續使用 PostgreSQL 18.6 原生工具完成正式 Neon 的**本機備份與隔離還原演練**：146,102 bytes、SHA-256 `8074b679838dc3ad83eb797db2540e9ad4403d2e4ddcddd366af67cbcf532222`，還原後 25 份 migration、11 間館、30 筆展覽及 18 筆匯入紀錄與來源唯讀筆數一致。臨時本機資料庫已停止並清除，備份保留在 `%LOCALAPPDATA%\EventRadar\backups`。這仍是一份單機、未加密、未驗證異地保存的備份；電腦或磁碟故障時可能一併遺失。詳見[演練紀錄](stage-2026-10-18-neon-backup-drill.md)。任何正式還原仍須另行確認停寫、目標、資料版本及回退方案，不能套用測試命令覆寫原庫。
 
 ## 週二排程驗收
 

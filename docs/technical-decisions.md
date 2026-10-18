@@ -591,11 +591,11 @@
 - **處理**：`fetchSource` 捕捉連線錯誤，只輸出預期來源主機與格式受限的網路錯誤代碼，不輸出可能含憑證的原始 URL 或錯誤訊息；既有有限重試仍辨識此類錯誤。保留 `EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 為非 true，並以本機人工執行作為暫時更新流程。文化部資料只用於交叉核對，沒有冒充故宮完整來源、建立重複展覽或推進故宮最後成功時間。
 - **驗證與界線**：PR #3 的一次性 GitHub Actions 唯讀探測，使用同一 Node 24 `fetch`、User-Agent 與 15 秒逾時設定，得到 `TypeError`／`UND_ERR_CONNECT_TIMEOUT`；CI 其他型別、單元與 PostgreSQL 整合檢查通過。已移除一次性探測步驟，避免以館方可用性決定正常 CI 成敗。此結果只證明 GitHub runner 到該主機建立連線逾時，不能斷言館方封鎖或判定 Render 完全相同原因。若需要無人值守北院來源，應向資料提供機關確認可供雲端使用的官方出口，並再做跨週實測；否則維持明確標示的人工更新。不得以繞過保護措施、未驗證的第三方鏡像或文化部不完整清單偽裝成自動同步。**目前沒有恢復故宮北院每週自動更新**。
 
-### ER-94｜先驗證備份能還原，再進行後續正式資料庫變更（CI 待驗）
+### ER-94｜先驗證備份能還原，再進行後續正式資料庫變更（正式資料已完成單次本機演練）
 
-- **問題**：公開站已使用 Neon PostgreSQL，而 Render 建置會執行 migration；只有資料庫連得上及 CI 通過，不能保證資料遺失或錯誤 migration 後可復原。本機也沒有現成 `pg_dump`／`pg_restore` 工具。
-- **決策**：使用 PostgreSQL 原生 custom-format `pg_dump`，把密碼放在子程序環境變數而非命令列；備份檔只存 Git 忽略的 `private/backups/`，留下大小與 SHA-256。還原只接受明確命名的獨立空白庫，`pg_restore --single-transaction --exit-on-error` 後查 migration 帳本及主要資料表。CI 以 PostgreSQL 17 用戶端和本機測試庫執行完整備份／還原；測試在本機庫插入一筆合成展覽、來源與異動關係，核對還原後的筆數及關聯，不把正式 Neon 內容上傳 CI artifact。
-- **驗證與界線**：`test/db-backup.test.mjs` 的連線解析及還原目標防護通過，連同既有單元測試共 74 項，型別與文件檢查亦通過。[GitHub CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 使用 PostgreSQL 17 實際產生 76,421 bytes 的測試備份、還原到獨立空白庫，核對 25 份 migration、11 間館、1 筆合成展覽、1 筆匯入及展覽來源／異動關係成功。**正式 Neon 備份／隔離還原仍未驗收**；當前 Windows 工作站缺少原生用戶端且 Docker Engine 未啟動。不得把 CI 合成資料演練冒充線上資料已備份，正式還原也不能直接覆寫原庫。操作見[運作手冊](operations.md)。
+- **問題**：公開站已使用 Neon PostgreSQL，而 Render 建置會執行 migration；只有資料庫連得上及 CI 通過，不能保證資料遺失或錯誤 migration 後可復原。Windows 工作站原本沒有原生備份工具，專案資料夾又位於 OneDrive。
+- **決策**：使用與伺服器主版本相容的 PostgreSQL 原生 custom-format `pg_dump`，把密碼放在子程序環境變數而非命令列；預設備份目錄是 Git 忽略的 `private/backups/`，正式備份改由 `EVENT_RADAR_BACKUP_DIR` 指向非 OneDrive 的本機 AppData。留下大小與 SHA-256。還原只接受明確命名的獨立空白庫及所設備份目錄內的 `.dump`，`pg_restore --single-transaction --exit-on-error` 後查 migration 帳本及主要資料表。CI 使用 PostgreSQL 17 和合成資料測試，不把正式 Neon 內容上傳 CI artifact。
+- **驗證與界線**：`test/db-backup.test.mjs` 的連線解析及還原目標防護通過，連同既有單元測試共 74 項；[GitHub CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 還原合成展覽、來源及異動關係。2026-10-18 Neon 實測版本為 18.6，17.11 的 `pg_dump` 因主版本不相容而失敗；換用 18.6 後產生 146,102 bytes 備份，SHA-256 `8074b679838dc3ad83eb797db2540e9ad4403d2e4ddcddd366af67cbcf532222`。本機隔離還原後，25 份 migration、11 間館、30 筆展覽及 18 筆匯入紀錄與 Neon 唯讀筆數一致，臨時庫已停止並清除。這是**單次本機驗證**，尚無加密異地副本、定期輪替或正式復原演練；不能視為完整災難復原。正式還原不得直接覆寫原庫。操作及環境問題見[演練紀錄](stage-2026-10-18-neon-backup-drill.md)。
 
 ## 後續更新方式
 
