@@ -280,9 +280,20 @@ function App() {
 
   return <>
     <a className="skip-link" href="#results">跳到展覽結果</a>
-    <header className="site-header"><div className="header-inner"><a className="brand" href="/" aria-label="Event Radar 首頁"><span className="brand-glyph">✧</span><span>EVENT <b>RADAR</b><small>博物館探索檔案</small></span></a><nav aria-label="主要導覽"><a href="#explore-title">探索特展</a><a href="#activities">奇美活動</a><a href="#performances">表演節目</a><a href="#deep-sea">深海探勘</a><a href="#fossils">化石探勘</a><a href="#guides">博物館圖鑑</a><a href="#tickets">票務索引</a></nav><span className="header-edition">FIELD JOURNAL <i>01 / TAIWAN</i></span></div></header>
+    <header className="site-header"><div className="header-inner"><a className="brand" href="/" aria-label="展館雷達首頁"><span className="brand-glyph">✧</span><span>展館 <b>雷達</b><small>博物館・美術館・表演與自然探索</small></span></a><nav aria-label="主要導覽"><a href="#explore-title">探索特展</a><a href="#activities">奇美活動</a><a href="#performances">表演節目</a><a href="#deep-sea">深海探勘</a><a href="#fossils">化石探勘</a><a href="#guides">博物館圖鑑</a><a href="#tickets">票務索引</a></nav><span className="header-edition">EXHIBITION &amp; VENUE <i>TAIWAN</i></span></div></header>
+    <nav className="desktop-section-nav" aria-label="頁面快速跳轉" hidden={!showBackToTop}>
+      <span>快速跳轉</span>
+      <a href="#explore-title">特展搜尋</a>
+      <a href="#activities">奇美活動</a>
+      <a href="#performances">表演節目</a>
+      <a href="#deep-sea">深海探勘</a>
+      <a href="#fossils">化石探勘</a>
+      <a href="#guides">館所圖鑑</a>
+      <a href="#tickets">票務索引</a>
+      <a className="desktop-section-nav-top" href="#hero-title">↑ 回到上方</a>
+    </nav>
     <main>
-      <section className="hero" aria-labelledby="hero-title"><div className="hero-grain" aria-hidden="true"/><div className="hero-inner"><div className="hero-copy-block"><p className="eyebrow"><span className="eyebrow-line"/> A LIVING ARCHIVE OF DISCOVERY</p><h1 id="hero-title">翻開地層，<br/>遇見<span>未知的故事。</span></h1><p className="hero-lede">從古埃及的文字、遠古生命的化石，到藏在博物館裡的當期特展。跟著官方資料留下的線索，選一站，開始你的探索。</p><div className="hero-actions"><a className="primary-cta" href="#explore-title">開始發掘展覽 <span aria-hidden="true">↗</span></a><a className="text-cta" href="#guides">先認識博物館 <span aria-hidden="true">→</span></a></div><div className="hero-coordinate">25° N — 22° N <span>／</span> FOURTEEN FIELD GUIDES</div></div><div className="hero-art" aria-label="古文明展品的考古檔案視覺"><span className="art-corner art-corner-top"/><img src="/assets/egypt-writing-user.jpg" alt="博物館內的羅塞塔石碑複製品展示，表面刻有古代文字"/><span className="art-corner art-corner-bottom"/><div className="artifact-tag"><span>FIELD NOTE / 001</span><strong>文字留下的線索</strong><small>古文明 · 自攝展品照片</small></div><div className="art-seal" aria-hidden="true"><CompassIcon/></div></div></div><div className="hero-bottom"><span>SCROLL TO DISCOVER</span><span className="hero-bottom-line"/><span>考古不是回到過去，而是重新看見現在。</span></div></section>
+      <section className="hero" aria-labelledby="hero-title"><div className="hero-grain" aria-hidden="true"/><div className="hero-inner"><div className="hero-copy-block"><p className="eyebrow"><span className="eyebrow-line"/> 展館雷達 ／ EXHIBITION &amp; VENUE RADAR</p><h1 id="hero-title">全台博物館、<br/><span>美術館與藝文展覽資訊。</span></h1><p className="hero-lede">從古埃及的文字、遠古生命的化石，到博物館與表演場館的當期展覽。跟著官方資料留下的線索，選一站，開始你的探索。</p><div className="hero-actions"><a className="primary-cta" href="#explore-title">開始發掘展覽 <span aria-hidden="true">↗</span></a><a className="text-cta" href="#guides">先認識博物館 <span aria-hidden="true">→</span></a></div><div className="hero-coordinate">25° N — 22° N <span>／</span> TAIWAN VENUE GUIDES</div></div><div className="hero-art" aria-label="古文明展品的考古檔案視覺"><span className="art-corner art-corner-top"/><img src="/assets/egypt-writing-user.jpg" alt="博物館內的羅塞塔石碑複製品展示，表面刻有古代文字"/><span className="art-corner art-corner-bottom"/><div className="artifact-tag"><span>FIELD NOTE / 001</span><strong>文字留下的線索</strong><small>古文明 · 自攝展品照片</small></div><div className="art-seal" aria-hidden="true"><CompassIcon/></div></div></div><div className="hero-bottom"><span>SCROLL TO DISCOVER</span><span className="hero-bottom-line"/><span>考古不是回到過去，而是重新看見現在。</span></div></section>
 
       <section className="discover-intro" aria-labelledby="discover-title"><div className="section-kicker"><span>01</span> START WITH A CLUE</div><div className="intro-heading"><h2 id="discover-title">每座博物館，<em>都是一處新現場。</em></h2><p>先從兩條熟悉的線索出發，再走進你自己的探索路線。照片是展品現場紀錄；詳細展覽與開放資訊請以館方為準。</p></div><div className="story-grid"><a className="story-card" href="/?museum=chimei#explore-title"><div className="story-image"><img src="/assets/egypt-writing-user.jpg" alt="古埃及文字展示品" loading="lazy"/></div><div className="story-content"><span>CLUE 01 / ANCIENT WORLDS</span><h3>文字與古文明</h3><p>自攝古文明展品作為探索主題示意；點入查看奇美相關展覽，照片並非奇美館藏介紹。</p><b>探索奇美相關展覽 ↗</b></div></a><a className="story-card" href="#fossils"><div className="story-image"><img src="/assets/nmns-dinosaur-user.jpg" alt="科博館展櫃內的恐龍骨骼，作為化石主題示意" loading="lazy"/></div><div className="story-content"><span>CLUE 02 / DEEP TIME</span><h3>化石與遠古生命</h3><p>從澎湖與左鎮兩座化石館開始，沿地層讀古生物的線索。</p><b>進入化石探勘 ↗</b></div></a></div></section>
 
@@ -312,7 +323,7 @@ function App() {
       </section>
       <DomainProgrammes/>
       <FossilExpedition/>
-    </main><footer className="site-footer"><div><span className="footer-brand">✧ EVENT RADAR</span><p>沿著真實資料，繼續探索未知。</p></div><p>資訊取自各博物館與政府公開資料；展期、票價、休館與入場規定，以館方公告為準。</p><a href="#hero-title">回到頂端 ↑</a></footer>
+    </main><footer className="site-footer"><div><span className="footer-brand">✧ 展館雷達</span><p>沿著真實資料，繼續探索未知。</p></div><p>資訊取自各博物館與政府公開資料；展期、票價、休館與入場規定，以館方公告為準。</p><a href="#hero-title">回到頂端 ↑</a></footer>
     <button className="back-to-top" type="button" hidden={!showBackToTop} aria-label="回到頂部" title="回到頂部"
       onClick={() => {
         returningToTop.current = true;
