@@ -33,12 +33,15 @@
     "probe:ntmofa": "node --experimental-strip-types src/probe-ntmofa.ts",
     "refresh:chimei:activities": "node --experimental-strip-types src/refresh-chimei-activities.ts",
     "import:chimei:programmes": "node --env-file-if-exists=.env --experimental-strip-types src/import-chimei-programmes.ts",
-    "test": "node --experimental-strip-types --test test/*.test.ts",
+    "test": "node --experimental-strip-types --test test/*.test.ts test/*.test.mjs",
     "pretest:integration": "npm run build:web",
     "test:integration": "node --env-file-if-exists=.env test/ingest.integration.cjs",
     "typecheck": "tsc --noEmit && tsc --noEmit -p frontend/tsconfig.json",
     "check:docs": "node scripts/check-docs.mjs",
-    "smoke:deploy": "node scripts/smoke-deploy.mjs"
+    "smoke:deploy": "node scripts/smoke-deploy.mjs",
+    "backup:db": "node --env-file-if-exists=private/deployment-credentials.env scripts/db-backup.mjs backup",
+    "restore:check": "node --env-file-if-exists=private/deployment-credentials.env scripts/db-backup.mjs restore-check",
+    "test:backup": "node test/db-backup.integration.mjs"
   },
   "engines": {
     "node": ">=22.10"

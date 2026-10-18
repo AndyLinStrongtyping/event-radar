@@ -1,5 +1,17 @@
 # 每週同步運作設計
 
+## 線上資料庫備份與隔離還原
+
+在會改動正式 Neon 結構的部署前，先從已核對的 `DATABASE_URL` 建立 PostgreSQL custom-format 備份。工作站須有與伺服器主版本相容的 `pg_dump`／`pg_restore`；Windows 可用 PostgreSQL 官方連結的 EDB binaries，CI 使用 `postgres:17-alpine` 工具。執行 `npm run backup:db` 後，程式把 `.dump` 寫到 Git 忽略的 `private/backups/`，輸出檔案大小與 SHA-256；檔案不可推送、貼到對話或上傳公開儲存空間。本機 `private/` 位於 OneDrive 路徑，需留意個人雲端同步及帳號權限。
+
+**備份完成不等於可還原。**另建立空白且命名為 `event_radar_restore_*` 的隔離資料庫，將其連線設為 `RESTORE_DATABASE_URL`，執行 `npm run restore:check -- private/backups/<備份檔>.dump`。程式拒絕正式庫名稱與非空白目標，使用單一交易還原，再核對 migration 帳本、館所、展覽與匯入批次的可讀筆數；不要對正式庫執行還原。演練後應另與備份時的來源筆數比對，記錄日期、檔案 SHA、還原結果及清理隔離庫的結果。`npm run test:backup` 只在本機 PostgreSQL／CI 隔離環境使用，會自建並刪除測試庫，**絕不可指向 Neon**。
+
+2026-10-18 [CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 已實際備份並還原合成展覽、來源與異動關係；本機當時沒有可用的 `pg_dump`，Docker Engine 也未啟動，因此**尚未完成正式 Neon 備份與還原演練**。正式備份仍需在具備工具的維運工作站獨立執行。任何正式還原必須另行確認停寫、目標、資料版本及回退方案，不能套用上述測試命令覆寫原庫。
+
+## 週二排程驗收
+
+每週二臺灣時間 04:15 後，逐一檢查 GitHub Actions 六個已啟用的來源工作：科博館、故宮南院、海生館限期展、科工館、國美館及歌劇院。對照 `npm run sync:status`、`npm run jobs:status`、網站 `/health` 與公開資料的最後成功時間；來源失敗時記錄工作名稱、錯誤種類、來源列數與待審數，不把前次成功誤記成當週成功。首次真實週排程預定 2026-10-20，第二次跨週完成前不宣稱穩定。故宮北院獨立開關維持關閉，按下節人工更新；海生館當日節目不是每週特展工作，不能用週排程宣稱今日節目已更新。
+
 ## 故宮北院雲端連線失敗時的更新
 
 2026-10-18 本機從故宮官方 JSON 同步線上資料庫成功；GitHub runner 與 Render 先前仍只回報 `fetch failed`。在雲端官方來源通過實測前，`EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 維持非 true。需要更新北院時，在已核對館方資料、已安全載入線上 `DATABASE_URL` 的維運工作站執行 `npm run sync -- --source npm-north`，再以 `npm run sync:status` 核對該館最後成功時間、來源列數與待審數。不要將連線字串或密碼貼進終端紀錄、文件或 Git。若來源突然縮水，沿用 coverage 隔離程序；不能以一次失敗推斷展覽取消。這是人工更新，不能宣稱每週北院排程已恢復。

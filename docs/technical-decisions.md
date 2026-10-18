@@ -591,6 +591,12 @@
 - **處理**：`fetchSource` 捕捉連線錯誤，只輸出預期來源主機與格式受限的網路錯誤代碼，不輸出可能含憑證的原始 URL 或錯誤訊息；既有有限重試仍辨識此類錯誤。保留 `EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 為非 true，並以本機人工執行作為暫時更新流程。文化部資料只用於交叉核對，沒有冒充故宮完整來源、建立重複展覽或推進故宮最後成功時間。
 - **驗證與界線**：PR #3 的一次性 GitHub Actions 唯讀探測，使用同一 Node 24 `fetch`、User-Agent 與 15 秒逾時設定，得到 `TypeError`／`UND_ERR_CONNECT_TIMEOUT`；CI 其他型別、單元與 PostgreSQL 整合檢查通過。已移除一次性探測步驟，避免以館方可用性決定正常 CI 成敗。此結果只證明 GitHub runner 到該主機建立連線逾時，不能斷言館方封鎖或判定 Render 完全相同原因。若需要無人值守北院來源，應向資料提供機關確認可供雲端使用的官方出口，並再做跨週實測；否則維持明確標示的人工更新。不得以繞過保護措施、未驗證的第三方鏡像或文化部不完整清單偽裝成自動同步。**目前沒有恢復故宮北院每週自動更新**。
 
+### ER-94｜先驗證備份能還原，再進行後續正式資料庫變更（CI 待驗）
+
+- **問題**：公開站已使用 Neon PostgreSQL，而 Render 建置會執行 migration；只有資料庫連得上及 CI 通過，不能保證資料遺失或錯誤 migration 後可復原。本機也沒有現成 `pg_dump`／`pg_restore` 工具。
+- **決策**：使用 PostgreSQL 原生 custom-format `pg_dump`，把密碼放在子程序環境變數而非命令列；備份檔只存 Git 忽略的 `private/backups/`，留下大小與 SHA-256。還原只接受明確命名的獨立空白庫，`pg_restore --single-transaction --exit-on-error` 後查 migration 帳本及主要資料表。CI 以 PostgreSQL 17 用戶端和本機測試庫執行完整備份／還原；測試在本機庫插入一筆合成展覽、來源與異動關係，核對還原後的筆數及關聯，不把正式 Neon 內容上傳 CI artifact。
+- **驗證與界線**：`test/db-backup.test.mjs` 的連線解析及還原目標防護通過，連同既有單元測試共 74 項，型別與文件檢查亦通過。[GitHub CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 使用 PostgreSQL 17 實際產生 76,421 bytes 的測試備份、還原到獨立空白庫，核對 25 份 migration、11 間館、1 筆合成展覽、1 筆匯入及展覽來源／異動關係成功。**正式 Neon 備份／隔離還原仍未驗收**；當前 Windows 工作站缺少原生用戶端且 Docker Engine 未啟動。不得把 CI 合成資料演練冒充線上資料已備份，正式還原也不能直接覆寫原庫。操作見[運作手冊](operations.md)。
+
 ## 後續更新方式
 
 每次功能或技術決策有變動，**同一個提交**更新對應的 ER 編號：將「規劃」改為實際狀態，寫明實作方法、取捨、失敗情境與可重現的驗證，附程式／測試路徑；若改變資料來源或對外承諾，同步更新 [STATUS](../STATUS.md)、[API 契約](api.md)、[架構](architecture.md)或[運作設計](operations.md)。新增技術點接續編號，不要刪除曾影響設計的決策；被取代的做法標註原因與日期。**只有測試通過或實際連線核對過的項目，才能寫「已驗證」。**
