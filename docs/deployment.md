@@ -18,7 +18,9 @@ Phase 10 目前以[運作手冊的備份／隔離還原及週二排程驗收](op
 - 線上執行 `npm run smoke:deploy -- https://event-radar-preview.onrender.com --expect-noindex` 通過：健康檢查、React 資源、API、館所頁、化石圖片及預覽禁索引皆正常，顯示 11 間館所、27 筆可搜尋特展。這是單次驗收，不等於跨日可用性或使用者流量。
 - Neon 連線資訊已存於 Render 的 `DATABASE_URL` Secret；依站長要求，本機另一份位於 Git 忽略的 `private/deployment-credentials.env`。此 repo 在 OneDrive Desktop 下，私密檔案雖不會被 Git 推送，仍可能同步到個人 OneDrive；應按帳號安全需求決定是否另移至密碼管理器。Render 使用 GitHub 登入，沒有另外取得 Render 帳號密碼。
 
-## 交付邊界
+## 首次部署時的交付邊界（歷史紀錄）
+
+以下記錄 2026-10-17 首次上線時的設定。後續已開放索引、六個來源工作通過手動線上驗證，並完成一次正式資料庫備份與隔離還原；最新狀態請看[目前進度](../STATUS.md)。
 
 - Web Service 啟動命令是 `npm run start:prod`；build 命令安裝依賴、執行 `npm run build:web`、`npm run migrate`，再執行首次資料檢查。`.node-version` 鎖定本輪驗證的 Node 24.14.1。
 - `bootstrap-preview.mjs` 只在資料庫沒有當期／未來可公開限期展時，依序嘗試故宮北院、科工館、故宮南院官方來源；有一筆可展示資料便停止。三個來源均未提供合規資料時，建置失敗，不發布空白站。已有資料時不自動同步，後續更新仍要手動執行既有同步流程。

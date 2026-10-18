@@ -1,4 +1,4 @@
-# Event Radar｜資料庫 ERD（本機已實作）
+# Event Radar｜資料庫 ERD（已實作）
 
 最後核對：2026-10-16。此圖依 `db/001`～`025` migration 描述主要資料關係，省略純查詢索引、時間戳、部分審查輔助欄位與 migration 帳本。箭頭只代表**實際外鍵**；來源 Adapter 到資料表的程式關係不畫成外鍵。領域時間語意另見[模型對照](domain-model.md)，執行路徑見[架構圖](architecture.md)。
 
