@@ -284,13 +284,13 @@ function App() {
     <header className="site-header"><div className="header-inner"><a className="brand" href={appUrl()} aria-label="展館雷達首頁"><span className="brand-glyph">✧</span><span>展館 <b>雷達</b><small>博物館・美術館・表演與自然探索</small></span></a><nav aria-label="主要導覽"><a href="#explore-title">探索特展</a><a href="#activities">奇美活動</a><a href="#performances">表演節目</a><a href="#deep-sea">深海探勘</a><a href="#fossils">化石探勘</a><a href="#guides">博物館圖鑑</a><a href="#tickets">票務索引</a></nav><span className="header-edition">EXHIBITION &amp; VENUE <i>TAIWAN</i></span></div></header>
     <nav className="desktop-section-nav" aria-label="頁面快速跳轉" hidden={!showBackToTop}>
       <span>快速跳轉</span>
-      <a href="#explore-title">特展搜尋</a>
-      <a href="#activities">奇美活動</a>
-      <a href="#performances">表演節目</a>
-      <a href="#deep-sea">深海探勘</a>
-      <a href="#fossils">化石探勘</a>
-      <a href="#guides">館所圖鑑</a>
-      <a href="#tickets">票務索引</a>
+      <a className="section-jump exhibitions" href="#explore-title"><i aria-hidden="true">⌕</i><span><b>特展搜尋</b><small>當期展覽</small></span></a>
+      <a className="section-jump chimei" href="#activities"><i aria-hidden="true">♜</i><span><b>奇美活動</b><small>活動與節目</small></span></a>
+      <a className="section-jump performance" href="#performances"><i aria-hidden="true">◒</i><span><b>表演節目</b><small>場次與舞台</small></span></a>
+      <a className="section-jump ocean" href="#deep-sea"><i aria-hidden="true">≈</i><span><b>深海探勘</b><small>海洋生物</small></span></a>
+      <a className="section-jump fossils" href="#fossils"><i aria-hidden="true">◌</i><span><b>化石探勘</b><small>遠古生命</small></span></a>
+      <a className="section-jump guides" href="#guides"><i aria-hidden="true">⌂</i><span><b>館所圖鑑</b><small>認識館舍</small></span></a>
+      <a className="section-jump tickets" href="#tickets"><i aria-hidden="true">↗</i><span><b>票務索引</b><small>出發前核對</small></span></a>
       <a className="desktop-section-nav-top" href="#hero-title">↑ 回到上方</a>
     </nav>
     <main>
