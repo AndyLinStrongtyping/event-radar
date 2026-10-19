@@ -2,7 +2,7 @@
 
 本手冊的第一站採 Render 單一 Web Service（同源提供 React 與 API）和 Neon PostgreSQL。2026-10-17 已建立並驗收[免費公開站](https://event-radar-preview.onrender.com/)；目前已設定 `PUBLIC_BASE_URL`、Search Console 驗證與 sitemap，並移除預覽期 `noindex`，但 Google 仍未確認正式收錄或搜尋流量。免費服務的休眠限制仍在；無須先導入 AWS。
 
-2026-10-18 最新手動部署主分支 `52d803c`，公開站首頁與澎湖導覽的浮動回頂操作、React 資源及 `/health` 均已驗證。`render.yaml` 關閉自動部署；合併 PR 後應由站長在 Render 手動選 **Deploy latest commit**，再核對部署 SHA、網站功能與健康檢查。此紀錄只證明兩頁的瀏覽器操作，手機實機與跨週可用性尚待驗證。
+2026-10-19 新增[GitHub Pages 快速入口](https://andylinstrongtyping.github.io/event-radar/)：由 CDN 提供 React 與公開圖片，跨來源讀取 Render 唯讀 API；Search Console canonical 仍是 Render，Pages 另設 `noindex,follow`。第一次工作因 Pages 尚未啟用而失敗；將儲存庫 Pages Source 設為 **GitHub Actions** 後重跑成功。Render 手動部署主分支 `9de79ed`，公開檢查確認 Pages、圖片、API、CORS、`/health` 及資料庫正常，Chrome 載入 25 筆未結束特展。`render.yaml` 仍關閉自動部署；合併後須手動 **Deploy latest commit**。靜態入口只縮短介面等待，資料查詢仍受免費 Render 休眠影響。
 
 想照畫面逐步操作，可看[Neon → Render 圖解設定手順](deployment-walkthrough.md)；本頁保留技術邊界、首次部署紀錄與故障回復。
 

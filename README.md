@@ -1,6 +1,6 @@
 # Event Radar｜博物館與展演資訊整理平台
 
-Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查詢結果。核心工作是**來源 Adapter、資料驗證、保守去重、異動偵測、待審隔離與來源健康追蹤**；不同領域保留各自的時間模型。[免費公開測試站](https://event-radar-preview.onrender.com/)已於 2026-10-17 上線。Search Console 已讀取網站地圖但尚未收錄首頁；GA4 即時報表已收到本站測試造訪，尚無可宣稱的外部訪客或搜尋成效。免費服務的長期可用性仍待觀察。
+Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查詢結果。核心工作是**來源 Adapter、資料驗證、保守去重、異動偵測、待審隔離與來源健康追蹤**；不同領域保留各自的時間模型。[快速公開入口](https://andylinstrongtyping.github.io/event-radar/)由 GitHub Pages 提供介面與圖片，[主要網址／API](https://event-radar-preview.onrender.com/)則由 Render 連接 Neon。免費後端休眠時，快速入口仍會先顯示可操作介面，但展覽資料可能要等待後端喚醒。Search Console 以 Render 為 canonical；GA4 已收到本站測試造訪，尚無可宣稱的外部訪客或搜尋成效。
 
 | 領域 | 現有能力 | 資料邊界 |
 | --- | --- | --- |
@@ -10,7 +10,7 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 | 靜態導覽 | 沖繩美麗海、澎湖化石館、左鎮化石園區等館所／圖鑑資訊 | 人工整理、有來源連結；不冒充自動匯入 |
 | 奇美活動 | 官網內部 JSON 候選 Adapter、人工刷新快照及本機候選表 | 官網端點**不是公開文件化 API**；尚無自動活動同步或公開活動搜尋 |
 
-首頁採 React + Vite，提供城市與館所連動、展覽狀態／明確免費資訊篩選、表演、深海與化石專區；載入展覽的發掘動畫支援「減少動態效果」。下圖是開發時的介面紀錄；線上現況以[預覽站](https://event-radar-preview.onrender.com/)為準。
+首頁採 React + Vite，提供城市與館所連動、展覽狀態／明確免費資訊篩選、表演、深海與化石專區；載入展覽的發掘動畫支援「減少動態效果」。下圖是開發時的介面紀錄；訪客可使用[快速公開入口](https://andylinstrongtyping.github.io/event-radar/)，館所介紹與 canonical 仍使用[主要網址](https://event-radar-preview.onrender.com/)。
 
 想快速評估專案，可依序閱讀：[目前進度](STATUS.md) → [技術難點與解決決策報告](docs/technical-challenges-report.md) → [面試用專案介紹](docs/portfolio-brief.md) → [面試技術學習手冊](docs/interview-study-guide.md) → [開發導覽](docs/development-guide.md) → [API 契約](docs/api.md)／[OpenAPI](docs/openapi.yaml) → [來源盤點](docs/sources.md) → [技術決策](docs/technical-decisions.md)。[Phase 8 文件驗收](docs/stage-2026-10-16-phase8.md)記錄當時的整理範圍與限制。
 
@@ -22,7 +22,7 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 
 原始產品核心是臺灣博物館的特展與期間限定展；後續為驗證不同時間模型，另開表演藝術與海洋節目專區。三種資料各有查詢端點，不把演出、每日活動或市集混入特展結果。所有頁面均提供官方入口供訪客出發前核對。
 
-目前是 **免費技術預覽**：React、讀取 API 與 Neon PostgreSQL 已公開運作，2026-10-17 線上 smoke 檢查通過，當時可搜尋 27 筆未結束特展。科博館、故宮南院、海生館、科工館、國美館及歌劇院六個獨立工作已通過線上手動 Actions 驗證；故宮北院官方資料網址從雲端連線逾時，暫由本機工作站人工同步。**真正的週二排程與跨週穩定仍待驗證**。現有 PostgreSQL Queue 只執行 `FETCH_SOURCE`，沒有多階段解析／通知工作。一般入館票價與購票入口是人工核對資料，不等於每檔展覽票價；免費篩選只認來源明確標示。見[部署紀錄](docs/deployment.md)、[ER-91](docs/technical-decisions.md)及[票務來源與維護](docs/ticketing.md)。
+目前是 **免費技術預覽**：GitHub Pages 靜態介面、Render 唯讀 API 與 Neon PostgreSQL 已公開運作，2026-10-19 跨來源瀏覽器驗收取得 11 間館所、25 筆未結束特展。科博館、故宮南院、海生館、科工館、國美館及歌劇院六個獨立工作已通過線上手動 Actions 驗證；故宮北院官方資料網址從雲端連線逾時，暫由本機工作站人工同步。**真正的週二排程與跨週穩定仍待驗證**。現有 PostgreSQL Queue 只執行 `FETCH_SOURCE`，沒有多階段解析／通知工作。一般入館票價與購票入口是人工核對資料，不等於每檔展覽票價；免費篩選只認來源明確標示。見[部署紀錄](docs/deployment.md)、[ER-91／95](docs/technical-decisions.md)及[票務來源與維護](docs/ticketing.md)。
 
 ## 來源與展示範圍
 

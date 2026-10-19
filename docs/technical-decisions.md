@@ -597,12 +597,12 @@
 - **決策**：使用與伺服器主版本相容的 PostgreSQL 原生 custom-format `pg_dump`，把密碼放在子程序環境變數而非命令列；預設備份目錄是 Git 忽略的 `private/backups/`，正式備份改由 `EVENT_RADAR_BACKUP_DIR` 指向非 OneDrive 的本機 AppData。留下大小與 SHA-256。還原只接受明確命名的獨立空白庫及所設備份目錄內的 `.dump`，`pg_restore --single-transaction --exit-on-error` 後查 migration 帳本及主要資料表。CI 使用 PostgreSQL 17 和合成資料測試，不把正式 Neon 內容上傳 CI artifact。
 - **驗證與界線**：`test/db-backup.test.mjs` 的連線解析及還原目標防護通過，連同既有單元測試共 74 項；[GitHub CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 還原合成展覽、來源及異動關係。2026-10-18 Neon 實測版本為 18.6，17.11 的 `pg_dump` 因主版本不相容而失敗；換用 18.6 後產生 146,102 bytes 備份，SHA-256 `8074b679838dc3ad83eb797db2540e9ad4403d2e4ddcddd366af67cbcf532222`。本機隔離還原後，25 份 migration、11 間館、30 筆展覽及 18 筆匯入紀錄與 Neon 唯讀筆數一致，臨時庫已停止並清除。這是**單次本機驗證**，尚無加密異地副本、定期輪替或正式復原演練；不能視為完整災難復原。正式還原不得直接覆寫原庫。操作及環境問題見[演練紀錄](stage-2026-10-18-neon-backup-drill.md)。
 
-### ER-95｜靜態快速前端與休眠 API 分離，保留同源站為 canonical（本機已驗證，遠端待驗收）
+### ER-95｜靜態快速前端與休眠 API 分離，保留同源站為 canonical（公開環境已驗證）
 
 - **問題**：Render 免費 Web Service 閒置後會休眠；React、CSS、圖片與 API 原本都由同一服務提供，訪客第一次開站會先等待後端喚醒，無法像純 GitHub Pages 網站立即看到介面。
 - **決策**：保留 Render 為 canonical 網址、Node 唯讀 API、靜態館所頁與 Neon 入口；另由 GitHub Pages 發布編譯後的 React 應用外殼及公開圖片。`VITE_BASE_PATH` 處理專案子路徑，`VITE_API_BASE_URL` 只把資料請求與館所介紹導向 Render。公開服務沒有 Cookie、登入或寫入 API，故回應 `Access-Control-Allow-Origin: *` 供 Pages 跨來源 GET；整合測試固定這項契約。Pages 建置注入既有 GA4、`noindex,follow` 並把 canonical 指向 Render，避免兩個入口被當成兩套主要搜尋頁面。現有 Render 同源站維持可用，Pages 失敗不會移除原站。
 - **取捨／限制**：頁面結構、互動程式及圖片能由 CDN 先出現，但展覽、票務館所清單、節目及資料狀態仍需等待 Render API；這改善首次可見畫面，沒有消除免費後端冷啟動，也不是高可用架構。館所介紹仍在 Render，因此點入介紹頁仍可能遇到喚醒等待。未加入代理、付費常駐服務、Service Worker 離線資料或第二套資料庫。若未來加入登入、Cookie 或寫入 API，必須重新收緊 CORS，不能沿用 wildcard。
-- **驗證**：2026-10-19 正常同源 React build、`/event-radar/` 子路徑與外部 API 設定的 Pages build、TypeScript 型別及 74 項單元測試通過；Pages 產物的 JS／CSS 路徑、canonical、GA4 與 Render API 根網址已核對，公開圖片由 workflow 複製進同一 artifact。本機缺少 `DATABASE_URL`，HTTP／PostgreSQL 整合測試未在工作站重跑；新增的 CORS 斷言須由 CI 隔離資料庫驗證。GitHub Pages 啟用、Actions 發布、Render 新版 CORS 與公開瀏覽器操作在本決策首次提交時仍待遠端驗收，不能先寫成已上線。
+- **驗證**：2026-10-19 正常同源 React build、`/event-radar/` 子路徑與外部 API 設定的 Pages build、TypeScript 型別及 74 項單元測試通過；Pages 產物的 JS／CSS 路徑、canonical、GA4、`noindex` 與 Render API 根網址已核對，28 張公開圖片由 workflow 複製進同一 artifact。第一次 Pages 工作因儲存庫尚未啟用而停在 `configure-pages`；將 Source 設為 GitHub Actions 後，[attempt 2](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39191373569) 成功。[CI #64](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39191373507) 以隔離 PostgreSQL 通過新增的 CORS／HTTP 契約。Render 手動部署 `9de79ed` 顯示 Live；公開請求驗證 Pages、主圖、API 均為 200，`Access-Control-Allow-Origin: *`，11 間館所、25 筆未結束特展，health 與 database 皆 `ok`。Chrome 開啟 Pages 後可見介面、圖片與 25 場結果。這是單次發布與瀏覽器驗收，不代表冷啟動已消失、跨日可用性或付費 SLA。
 
 ## 後續更新方式
 
