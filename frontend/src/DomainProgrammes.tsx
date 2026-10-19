@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { compareMarineObservations } from './marine-observation-diff.ts';
+import { appUrl, backendUrl } from './runtime-url';
 
 type Session = { sessionKey: string; startsAt: string; hall: string | null;
   status: 'scheduled' | 'sold_out' | 'cancelled' | 'postponed' | 'unknown';
@@ -85,7 +86,7 @@ function useProgrammes(path: string | null) {
     const controller = new AbortController();
     setData(null); setError(false);
     if (!path) return () => controller.abort();
-    fetch(path, { signal: controller.signal })
+    fetch(backendUrl(path), { signal: controller.signal })
       .then((response) => { if (!response.ok) throw new Error('無法載入'); return response.json(); })
       .then((body: Response) => setData(body))
       .catch((reason: Error) => { if (reason.name !== 'AbortError') setError(true); });
@@ -181,7 +182,7 @@ function DeepSeaExpedition() {
   };
   useEffect(() => {
     const controller = new AbortController();
-    fetch('/exhibitions?museum=nmmba&status=active&limit=100', { signal: controller.signal })
+    fetch(backendUrl('/exhibitions?museum=nmmba&status=active&limit=100'), { signal: controller.signal })
       .then((response) => { if (!response.ok) throw new Error('無法載入展覽'); return response.json(); })
       .then((body: SeaExhibitionResponse) => setExhibitions(body))
       .catch((reason: Error) => { if (reason.name !== 'AbortError') setExhibitionError(true); });
@@ -189,7 +190,7 @@ function DeepSeaExpedition() {
   }, []);
   useEffect(() => {
     const controller = new AbortController();
-    fetch('/marine-observation-days?limit=100', { signal: controller.signal })
+    fetch(backendUrl('/marine-observation-days?limit=100'), { signal: controller.signal })
       .then((response) => response.ok ? response.json() : Promise.reject(new Error('無法載入觀察日期')))
       .then((body: { items: { date: string }[] }) => setObservedDays(body.items.map((item) => item.date)))
       .catch(() => {});
@@ -243,7 +244,7 @@ function DeepSeaExpedition() {
           <button type="button" aria-pressed={selectedMuseum === 'okinawa'} className={selectedMuseum === 'okinawa' ? 'active' : ''} onClick={() => chooseMuseum('okinawa')}><span>02 / 沖繩・日本</span><strong>沖繩美麗海水族館</strong></button>
         </div>
         {selectedMuseum === 'taiwan' && <div className="sea-museum-panel" aria-label="國立海洋生物博物館探勘內容">
-        <div className="sea-museum-heading" id="sea-taiwan"><span>EXPEDITION 01 / PINGTUNG</span><h3>國立海洋生物博物館</h3><p>限期展、當日節目與海洋生物線索，從不同角度認識同一座館。</p><a href="/guides/nmmba.html">閱讀海生館館所介紹 ↗</a></div>
+        <div className="sea-museum-heading" id="sea-taiwan"><span>EXPEDITION 01 / PINGTUNG</span><h3>國立海洋生物博物館</h3><p>限期展、當日節目與海洋生物線索，從不同角度認識同一座館。</p><a href={backendUrl('/guides/nmmba.html')}>閱讀海生館館所介紹 ↗</a></div>
         <section className="sea-exhibitions" aria-labelledby="sea-exhibitions-title">
           <div className="sea-subheading"><span>EXHIBITIONS / 01</span><h4 id="sea-exhibitions-title">海生館展覽</h4><p>由現有展覽資料庫讀取未結束的限期展；日期與是否仍開放請逐筆核對館方。</p></div>
           {exhibitionError ? <p className="sea-message">展覽暫時無法載入，請查看<a href="https://www.nmmba.gov.tw/News.aspx?n=3BA711487C292039" target="_blank" rel="noopener noreferrer">館方展覽頁 ↗</a>。</p>
@@ -291,14 +292,14 @@ function DeepSeaExpedition() {
           })}
         <section className="sea-species" aria-labelledby="sea-species-title"><div className="sea-subheading"><span>FIELD GUIDE / 03</span><h4 id="sea-species-title">海生館生物圖鑑</h4><p>挑三組館方展區介紹提到的生物，作為探索入口；活體與展區配置可能變動，並非當日展示保證。</p></div>
           <div className="sea-species-grid">{marineSpecies.map((species, index) => <article className="sea-species-card" key={species.name}>
-            <figure className="sea-species-image"><img src={species.image} alt={species.imageAlt} loading="lazy" decoding="async"/>
+            <figure className="sea-species-image"><img src={appUrl(species.image)} alt={species.imageAlt} loading="lazy" decoding="async"/>
               <figcaption>{species.imageNote} · <a href={species.imageSource} target="_blank" rel="noopener noreferrer">照片來源 ↗</a></figcaption></figure>
             <span>SPECIMEN / {String(index + 1).padStart(2, '0')}</span><h5>{species.name}</h5><small>{species.habitat}</small><p>{species.clue}</p><a href={species.url} target="_blank" rel="noopener noreferrer">閱讀館方介紹 ↗</a>
           </article>)}</div></section>
         </div>}
         {selectedMuseum === 'okinawa' && <section className="sea-okinawa" id="sea-okinawa" aria-labelledby="sea-okinawa-title">
-          <div className="sea-museum-heading"><span>EXPEDITION 02 / OKINAWA</span><h3 id="sea-okinawa-title">沖繩美麗海水族館</h3><p>官網動線由珊瑚礁、黑潮之海走向深海。這裡先整理館方展區和節目頁，時間為人工核對紀錄，尚未接入每日自動匯入。</p><a href="/guides/okinawa-churaumi.html">閱讀沖繩館所介紹 ↗</a></div>
-          <div className="sea-okinawa-layout"><img src="/assets/okinawa-churaumi-commons.jpg" alt="沖繩美麗海水族館黑潮之海的大水槽，鯨鯊從觀眾前方游過" loading="lazy"/><div><span>CHURAUMI / 2026.10.16 核對</span><h4>從珊瑚走入黑潮</h4><p>3F 珊瑚礁、2F 黑潮之海與 1F 深海展區，依<a href={churaumiSource} target="_blank" rel="noopener noreferrer">館方樓層圖 ↗</a>安排閱讀路線。照片為 2015 年展場紀錄，<a href="/photo-credits.html">查看授權 ↗</a>。</p></div></div>
+          <div className="sea-museum-heading"><span>EXPEDITION 02 / OKINAWA</span><h3 id="sea-okinawa-title">沖繩美麗海水族館</h3><p>官網動線由珊瑚礁、黑潮之海走向深海。這裡先整理館方展區和節目頁，時間為人工核對紀錄，尚未接入每日自動匯入。</p><a href={backendUrl('/guides/okinawa-churaumi.html')}>閱讀沖繩館所介紹 ↗</a></div>
+          <div className="sea-okinawa-layout"><img src={appUrl('/assets/okinawa-churaumi-commons.jpg')} alt="沖繩美麗海水族館黑潮之海的大水槽，鯨鯊從觀眾前方游過" loading="lazy"/><div><span>CHURAUMI / 2026.10.16 核對</span><h4>從珊瑚走入黑潮</h4><p>3F 珊瑚礁、2F 黑潮之海與 1F 深海展區，依<a href={churaumiSource} target="_blank" rel="noopener noreferrer">館方樓層圖 ↗</a>安排閱讀路線。照片為 2015 年展場紀錄，<a href={backendUrl('/photo-credits.html')}>查看授權 ↗</a>。</p></div></div>
           <section className="sea-core" id="sea-okinawa-core" aria-labelledby="sea-okinawa-core-title">
             <div className="sea-subheading"><span>CORE EXHIBITIONS / 03</span><h4 id="sea-okinawa-core-title">核心常設展區</h4><p>依館方樓層圖由 3F 走向 1F。這是長期參觀動線，不是有起訖日期的限期特展；活體與展示內容請以館方當日資訊為準。</p></div>
             <div className="sea-core-grid">{churaumiCoreAreas.map((area, index) => <article className="sea-core-card" key={area.floor}>
@@ -312,11 +313,11 @@ function DeepSeaExpedition() {
           </article>)}</div>
           <section className="sea-species sea-okinawa-species" aria-labelledby="sea-okinawa-species-title"><div className="sea-subheading"><span>FIELD GUIDE / OKINAWA</span><h4 id="sea-okinawa-species-title">美麗海生物圖鑑</h4><p>先挑兩種館方圖鑑介紹的黑潮生物，保留學名與原始條目。這是生物線索，不能據此保證當日展示；<a href="https://churaumi.okinawa/sp/tc/fishbook/" target="_blank" rel="noopener noreferrer">瀏覽館方完整生物圖鑑 ↗</a></p></div>
             <div className="sea-species-grid">{churaumiSpecies.map((species, index) => <article className="sea-species-card" key={species.scientificName}>
-              <figure className="sea-species-image"><img src={species.image} alt={species.imageAlt} loading="lazy" decoding="async"/>
+              <figure className="sea-species-image"><img src={appUrl(species.image)} alt={species.imageAlt} loading="lazy" decoding="async"/>
                 <figcaption>{species.imageNote} · <a href={species.imageSource} target="_blank" rel="noopener noreferrer">照片來源 ↗</a></figcaption></figure>
               <span>SPECIMEN / {String(index + 1).padStart(2, '0')}</span><h5>{species.name}</h5><small>{species.scientificName} · {species.habitat}</small><p>{species.clue}</p><a href={species.url} target="_blank" rel="noopener noreferrer">閱讀館方生物條目 ↗</a>
             </article>)}</div></section>
-          <div className="sea-floor"><span aria-hidden="true">✧</span><p>兩座海洋現場，都值得親自去看。</p><a href="/guides/okinawa-churaumi.html">查看沖繩參觀資訊 ↗</a></div>
+          <div className="sea-floor"><span aria-hidden="true">✧</span><p>兩座海洋現場，都值得親自去看。</p><a href={backendUrl('/guides/okinawa-churaumi.html')}>查看沖繩參觀資訊 ↗</a></div>
         </section>}
       </div>
     </div>

@@ -85,8 +85,10 @@ async function checkPublicApiContract(afterChecks) {
     assert.equal(ready, true, '公開 API 應可啟動並連接測試資料庫');
     assert.deepEqual(await get('/health'), { status: 'ok', database: 'ok' });
 
-    const homepage = await fetch(base + '/');
+    const homepage = await fetch(base + '/', { headers: { origin: 'https://andylinstrongtyping.github.io' } });
     assert.equal(homepage.status, 200);
+    assert.equal(homepage.headers.get('access-control-allow-origin'), '*',
+      '公開唯讀服務須允許 GitHub Pages 跨來源讀取');
     assert.match(homepage.headers.get('content-type') ?? '', /^text\/html/);
     const html = await homepage.text();
     assert.match(html, /id="root"/);

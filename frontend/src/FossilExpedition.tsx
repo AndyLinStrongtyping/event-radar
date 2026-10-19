@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { appUrl, backendUrl } from './runtime-url';
 
 type Fossil = {
   name: string; period: string; clue: string; image?: string; alt?: string;
@@ -66,7 +67,7 @@ const venues: Venue[] = [
 function FossilCard({ fossil, index }: { fossil: Fossil; index: number }) {
   return <article className="fossil-card">
     <div className={`fossil-card-image${fossil.image ? '' : ' fossil-card-illustration'}`}>
-      {fossil.image ? <img src={fossil.image} alt={fossil.alt} loading="lazy"/> : <svg viewBox="0 0 400 220" role="img" aria-label="鱷類頭骨與脊椎的示意線條，非實物照片"><path d="M62 104c34-16 67-27 119-24 38 2 78 19 116 25l48 24-60 17-82-7-55 12-45-6-50 11 29-27-25-25Z"/><path d="m105 149 22 26 30-10 39 12 42-17 43 8 28-17M83 105l33 25m33-44 22 47m37-45 15 43m38-31 5 33"/><circle cx="288" cy="120" r="5"/></svg>}
+      {fossil.image ? <img src={appUrl(fossil.image)} alt={fossil.alt} loading="lazy"/> : <svg viewBox="0 0 400 220" role="img" aria-label="鱷類頭骨與脊椎的示意線條，非實物照片"><path d="M62 104c34-16 67-27 119-24 38 2 78 19 116 25l48 24-60 17-82-7-55 12-45-6-50 11 29-27-25-25Z"/><path d="m105 149 22 26 30-10 39 12 42-17 43 8 28-17M83 105l33 25m33-44 22 47m37-45 15 43m38-31 5 33"/><circle cx="288" cy="120" r="5"/></svg>}
       <span>{fossil.imageNote}</span>
     </div>
     <div className="fossil-card-copy"><small>SPECIMEN / {String(index + 1).padStart(2, '0')}</small><h5>{fossil.name}</h5><b>{fossil.period}</b><p>{fossil.clue}</p><div className="fossil-card-links"><a href={fossil.sourceUrl} target="_blank" rel="noopener noreferrer">查看官方資料 ↗</a>{fossil.imageSource && <a href={fossil.imageSource} target="_blank" rel="noopener noreferrer">照片來源 ↗</a>}</div></div>
@@ -83,14 +84,14 @@ export function FossilExpedition() {
       <div className="fossil-intro"><div><p className="fossil-overline">PENGHU → ZUOJHEN / 兩座化石館</p><h2 id="fossils-title">穿過地層，<em>遇見遠古生命。</em></h2><p>從澎湖水道的古鱷，到菜寮溪的早坂犀。切換兩座館，讀常設展區、化石線索與出發前要確認的資訊。</p></div><div className="fossil-time-mark" aria-hidden="true"><span>DEEP TIME</span><strong>01 / 02</strong><i>化石探勘</i></div></div>
       <p className="fossil-caveat">本區是 2026/10/16 依館方及政府公開頁人工整理的靜態導覽，沒有自動匯入展覽或每日活動。展件輪替、活動日期、票務及特殊開館以各館公告為準。</p>
       <div className="fossil-venue-tabs" role="group" aria-label="切換化石館">{venues.map((item) => <button key={item.id} type="button" aria-pressed={selected === item.id} className={selected === item.id ? 'active' : ''} onClick={() => setSelected(item.id)}><span>{item.number} / {item.region}</span><strong>{item.name}</strong></button>)}</div>
-      <div className="fossil-venue-heading"><div><span>FIELD SITE {venue.number} / {venue.region}</span><h3>{venue.name}</h3><p>{venue.lead}</p></div><a href={venue.guideUrl}>閱讀館所介紹 ↗</a></div>
+      <div className="fossil-venue-heading"><div><span>FIELD SITE {venue.number} / {venue.region}</span><h3>{venue.name}</h3><p>{venue.lead}</p></div><a href={backendUrl(venue.guideUrl)}>閱讀館所介紹 ↗</a></div>
       <div className="fossil-visit"><div><span>行前確認</span><strong>{venue.hours}</strong><p>{venue.hoursNote}</p></div><a href={venue.officialUrl} target="_blank" rel="noopener noreferrer">查看館方最新資訊 ↗</a></div>
       <div className="fossil-subheading"><span>PERMANENT GALLERIES / 01</span><h4>核心常設展區</h4><p>這些是館方介紹的長期展區，不設虛構的結束日，也不當成當期特展。</p></div>
       <div className="fossil-hall-grid">{venue.halls.map((hall, index) => <article key={hall.title} className="fossil-hall"><div><span>{String(index + 1).padStart(2, '0')}</span><b>{hall.floor}</b></div><h5>{hall.title}</h5><p>{hall.detail}</p><a href={hall.url} target="_blank" rel="noopener noreferrer">查看館方介紹 ↗</a></article>)}</div>
       <div className="fossil-subheading"><span>FOSSIL ATLAS / 02</span><h4>化石圖鑑</h4><p>每張圖都標註是否為館內紀錄。圖鑑介紹的是古生物與標本線索，不代表當天一定展出。</p></div>
       <div className="fossil-card-grid">{venue.fossils.map((fossil, index) => <FossilCard key={fossil.name} fossil={fossil} index={index}/>)}</div>
       <aside className="fossil-activity"><div><span>ACTIVITIES / 03</span><h4>導覽與活動，出發前再核對。</h4><p>目前沒有兩館可持續核對的固定活動場次來源；不把過去活動或新聞發布日當成未來場次。</p></div><a href={venue.officialUrl} target="_blank" rel="noopener noreferrer">查看館方公告 ↗</a></aside>
-      <p className="fossil-credit-link">圖像來源、作者與授權見<a href="/photo-credits.html">照片來源頁 ↗</a>。</p>
+      <p className="fossil-credit-link">圖像來源、作者與授權見<a href={backendUrl('/photo-credits.html')}>照片來源頁 ↗</a>。</p>
     </div>
   </section>;
 }

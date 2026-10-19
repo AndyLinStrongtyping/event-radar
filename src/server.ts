@@ -116,6 +116,9 @@ const indexablePaths = ['/', ...[...staticFiles.keys()].filter((path) => path.st
 
 const server = createServer(async (request, response) => {
   try {
+    // The public API is read-only and uses no cookies or authorization headers.
+    // Allow the GitHub Pages application shell (and other public clients) to read it.
+    response.setHeader('access-control-allow-origin', '*');
     if (!publicBaseUrl) response.setHeader('x-robots-tag', 'noindex');
     if (request.method !== 'GET') {
       json(response, 405, { error: { code: 'METHOD_NOT_ALLOWED', message: '只支援 GET' } });

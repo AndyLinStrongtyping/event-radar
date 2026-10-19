@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-19 **快速前端拆分已完成本機接線，遠端發布待驗收**：新增 GitHub Pages 工作流程，將 React、CSS、JavaScript 與公開圖片建置到 `/event-radar/`；資料查詢仍使用既有 Render 唯讀 API，館所介紹仍回到 canonical Render 網址。Node 公開服務加入無 Cookie／無授權標頭之 GET API 所需的跨來源讀取標頭，整合測試同步守住契約。正常同源建置與 Pages 子路徑建置、型別及 74 項單元測試通過；本機沒有 `DATABASE_URL`，因此本次新增的 HTTP 跨來源斷言交由 CI 的隔離 PostgreSQL 驗證。這項拆分能讓頁面骨架與圖片不受 Render 休眠拖延，但展覽資料仍需等待免費後端喚醒，不等於全站高可用。技術取捨見 [ER-95](docs/technical-decisions.md)。
+
 2026-10-18 **正式 Neon 備份及本機隔離還原已驗證**：以與 Neon PostgreSQL 18.6 相容的原生工具產生 custom-format 備份，保存在非 OneDrive 的本機 `%LOCALAPPDATA%\EventRadar\backups`，大小 146,102 bytes、SHA-256 `8074b679838dc3ad83eb797db2540e9ad4403d2e4ddcddd366af67cbcf532222`。還原到僅綁定 `127.0.0.1` 的臨時空白庫後，25 份 migration、11 間館、30 筆展覽、18 筆匯入紀錄與 Neon 即時唯讀筆數相符；臨時庫已停止並清除，備份保留。`EVENT_RADAR_BACKUP_DIR` 可讓備份離開 OneDrive。這是**單次本機還原演練**，尚非加密異地備份或持續復原保障；詳見[演練紀錄](docs/stage-2026-10-18-neon-backup-drill.md)及[ER-94](docs/technical-decisions.md)。
 
 2026-10-18 **Phase 10 備份／還原流程先通過 CI 隔離演練**：新增 PostgreSQL custom-format 備份命令與隔離空白庫還原檢查；程式拒絕正式資料庫或非空白目標。單元測試 74 項及型別、文件檢查通過；[CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 用 PostgreSQL 17 實際備份並還原合成資料，25 份 migration、11 間館、1 筆展覽、1 筆匯入及展覽來源／異動關係比對成功。當時工作站還沒有 `pg_dump`，**此筆 CI 證據不代表正式 Neon 已備份**；正式資料的後續驗收見上方紀錄。首次真實週二排程仍待 10/20 驗收；詳見[運作手冊](docs/operations.md)及[ER-94](docs/technical-decisions.md)。
