@@ -12,7 +12,7 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 
 首頁採 React + Vite，提供城市與館所連動、展覽狀態／明確免費資訊篩選、表演、深海與化石專區；載入展覽的發掘動畫支援「減少動態效果」。下圖是開發時的介面紀錄；訪客可使用[快速公開入口](https://andylinstrongtyping.github.io/event-radar/)，館所介紹與 canonical 仍使用[主要網址](https://event-radar-preview.onrender.com/)。
 
-想快速評估專案，可依序閱讀：[目前進度](STATUS.md) → [技術難點與解決決策報告](docs/technical-challenges-report.md) → [面試用專案介紹](docs/portfolio-brief.md) → [面試技術學習手冊](docs/interview-study-guide.md) → [開發導覽](docs/development-guide.md) → [API 契約](docs/api.md)／[OpenAPI](docs/openapi.yaml) → [來源盤點](docs/sources.md) → [技術決策](docs/technical-decisions.md)。[Phase 8 文件驗收](docs/stage-2026-10-16-phase8.md)記錄當時的整理範圍與限制。
+想快速評估專案，可依序閱讀：[目前進度](STATUS.md) → [完整開發復盤](docs/development-retrospective-2026-10.md) → [技術難點與解決決策報告](docs/technical-challenges-report.md) → [面試用專案介紹](docs/portfolio-brief.md) → [面試技術學習手冊](docs/interview-study-guide.md) → [開發導覽](docs/development-guide.md) → [API 契約](docs/api.md)／[OpenAPI](docs/openapi.yaml) → [來源盤點](docs/sources.md) → [技術決策](docs/technical-decisions.md)。[Phase 8 文件驗收](docs/stage-2026-10-16-phase8.md)記錄當時的整理範圍與限制。
 
 ![Event Radar React 考古主視覺](docs/screenshots/event-radar-react-hero.jpg)
 
