@@ -604,11 +604,11 @@
 - **取捨／限制**：頁面結構、互動程式及圖片能由 CDN 先出現，但展覽、票務館所清單、節目及資料狀態仍需等待 Render API；這改善首次可見畫面，沒有消除免費後端冷啟動，也不是高可用架構。館所介紹仍在 Render，因此點入介紹頁仍可能遇到喚醒等待。未加入代理、付費常駐服務、Service Worker 離線資料或第二套資料庫。若未來加入登入、Cookie 或寫入 API，必須重新收緊 CORS，不能沿用 wildcard。
 - **驗證**：2026-10-19 正常同源 React build、`/event-radar/` 子路徑與外部 API 設定的 Pages build、TypeScript 型別及 74 項單元測試通過；Pages 產物的 JS／CSS 路徑、canonical、GA4、`noindex` 與 Render API 根網址已核對，28 張公開圖片由 workflow 複製進同一 artifact。第一次 Pages 工作因儲存庫尚未啟用而停在 `configure-pages`；將 Source 設為 GitHub Actions 後，[attempt 2](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39191373569) 成功。[CI #64](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39191373507) 以隔離 PostgreSQL 通過新增的 CORS／HTTP 契約。Render 手動部署 `9de79ed` 顯示 Live；公開請求驗證 Pages、主圖、API 均為 200，`Access-Control-Allow-Origin: *`，11 間館所、25 筆未結束特展，health 與 database 皆 `ok`。Chrome 開啟 Pages 後可見介面、圖片與 25 場結果。這是單次發布與瀏覽器驗收，不代表冷啟動已消失、跨日可用性或付費 SLA。
 
-### ER-96｜故宮北院官方清單缺展時保留有效資料，逐筆人工補充（隔離資料庫已驗證）
+### ER-96｜故宮北院官方清單缺展時保留有效資料，逐筆人工補充（已上線）
 
 - **問題**：2026-10-20 官方當期 JSON 回 22 筆，依既有規則僅 1 筆可公開；館方當期頁另有《真知灼見》與《養心》兩檔展覽，不能把 HTTP 200 視為完整清單，也不應因已知漏展阻止其他合格資料更新。
 - **決策**：以 `probe:npm-north` 唯讀比對有時限的已知展覽。官方匯入發現缺漏時仍逐筆匯入合格資料，將涵蓋狀態標為 `deferred_partial`；不建立或更新完整清單基準、不依缺席下架既有展覽，也不推進 `last_official_success_at`。兩檔核對過展名、展期、展廳和館方詳情網址的資料以獨立 `npm-north-manual` 來源補充；人工成功不能冒充官方清單完整。北院雲端週排程維持關閉。
-- **驗證與限制**：故宮[官方新聞](https://www.npm.gov.tw/News-Content.aspx?idstr=MDMwMDAwOTY%3D&l=1&sno=04014651&type=03000096)可核對兩檔展訊。乾淨發布分支的 79 項單元測試、型別與文件檢查通過；隔離 PostgreSQL 整合測試確認人工補充首次新增 2 筆、重跑無重複，且不推進官方同步時間。這只補兩檔已知漏展，不能保證整份清單完整；尚未匯入正式 Neon，也未證明 GitHub runner 可連官方 JSON。詳見[來源稽核](stage-2026-10-20-open-data-audit.md)及[維運手冊](operations.md)。
+- **驗證與限制**：故宮[官方新聞](https://www.npm.gov.tw/News-Content.aspx?idstr=MDMwMDAwOTY%3D&l=1&sno=04014651&type=03000096)可核對兩檔展訊。乾淨發布分支的 79 項單元測試、型別與文件檢查通過；隔離 PostgreSQL 整合測試確認人工補充首次新增 2 筆、重跑無重複，且不推進官方同步時間。2026-10-21 備份後匯入正式 Neon，官方清單標為 `deferred_partial`；Render 部署成功，公開 API 可讀到兩檔人工補充。這只補兩檔已知漏展，不能保證整份清單完整；尚未證明 GitHub runner 可連官方 JSON。詳見[上線驗證紀錄](stage-2026-10-21-npm-north-release.md)、[來源稽核](stage-2026-10-20-open-data-audit.md)及[維運手冊](operations.md)。
 
 ## 後續更新方式
 
