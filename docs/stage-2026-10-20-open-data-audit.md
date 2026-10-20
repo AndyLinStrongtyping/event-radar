@@ -12,7 +12,7 @@
 
 補查 RSS 路線：南院[官方 RSS 專區](https://south.npm.gov.tw/Messages/RSS.htm)的「當期展覽」XML 於 2026-10-20 唯讀回 HTTP 200，119 個項目的連結都指向南院網站，標題沒有上述兩檔北院展覽。因此它可作南院線索，不能填補北院清單。使用者提出的北院[展覽預告](https://www.npm.gov.tw/Exhibition-Preview.aspx?sno=03000061&l=1)及[展覽活動行事曆](https://www.npm.gov.tw/Calendar.aspx?sno=02012623&type=1)可作人工交叉核對，但同日程式直連均回 HTTP 403；不能當成已驗證的無人值守來源。另提供的南院[展覽回顧頁](https://south.npm.gov.tw/ExhibitionsListC003110.aspx?appname=Exhibition3113)是歷史展覽，不是北院當期展覽。
 
-新增 `npm run probe:npm-north`：只讀取官方 JSON、統計三種處理狀態，並核對兩筆有明確來源鍵、展名、展期與詳情網址的已知當期展。發現缺漏時退出碼為 1，提醒人工核對。後依使用者決定調整為部分匯入：正式 `--official` 北院匯入仍寫入合格展覽，但標記 `deferred_partial`，不更新完整清單基準，也不依缺席下架舊展。兩筆已核對資料另存 `data/npm-north-verified-supplement.json`，以獨立人工來源匯入；使用前須再核對官網，且截至本紀錄未寫入正式 Neon。`--snapshot` 與人工 `--file` 可供隔離測試或逐筆核對。已知清單於展期結束後自動失效，不能保證其餘所有展覽完整；未來仍須建立可持續的官方清單對照或向資料提供機關確認差異。故宮北院雲端排程開關保持關閉。
+新增 `npm run probe:npm-north`：只讀取官方 JSON、統計三種處理狀態，並核對兩筆有明確來源鍵、展名、展期與詳情網址的已知當期展。發現缺漏時退出碼為 1，提醒人工核對。後依使用者決定調整為部分匯入：正式 `--official` 北院匯入仍寫入合格展覽，但標記 `deferred_partial`，不更新完整清單基準，也不依缺席下架舊展。兩筆已核對資料另存 `data/npm-north-verified-supplement.json`，以獨立人工來源匯入；使用前須再核對官網。本段記錄 2026-10-20 的稽核時點；2026-10-21 已完成正式匯入與部署，詳見[上線驗證紀錄](stage-2026-10-21-npm-north-release.md)。`--snapshot` 與人工 `--file` 可供隔離測試或逐筆核對。已知清單於展期結束後自動失效，不能保證其餘所有展覽完整；未來仍須建立可持續的官方清單對照或向資料提供機關確認差異。故宮北院雲端排程開關保持關閉。
 
 ## 目錄內其他可研究來源
 
