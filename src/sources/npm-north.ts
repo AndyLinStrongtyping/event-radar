@@ -4,6 +4,34 @@ import type { SourceRecord } from './nmmba.ts';
 
 export const npmNorthDataUrl = 'https://odapi.npm.gov.tw/data/open/api/v1/exhibition/current.json';
 
+// Verified against the museum's current-exhibition page and individual detail pages.
+// This is a time-limited completeness check, not a replacement exhibition feed.
+export const npmNorthKnownCurrent = [
+  { sourceKey: '04014549', title: '真知灼見：美感原則與書法欣賞',
+    startDate: '2026-09-25', endDate: '2026-12-27',
+    sourceUrl: 'https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014549' },
+  { sourceKey: '04014551', title: '養心：巨幅名作展',
+    startDate: '2026-09-22', endDate: '2026-12-27',
+    sourceUrl: 'https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014551' },
+] as const;
+
+export function checkNpmNorthKnownCoverage(rows: ExhibitionDraft[], today: string): string[] {
+  const byKey = new Map(rows.map((row) => [row.sourceKey, row]));
+  return npmNorthKnownCurrent.filter((known) => known.startDate <= today && known.endDate >= today)
+    .flatMap((known) => {
+      const row = byKey.get(known.sourceKey);
+      if (!row) return [`${known.title} (${known.sourceKey}) 未出現在可公開清單`];
+      const url = new URL(row.sourceUrl);
+      if (row.title !== known.title || row.startDate !== known.startDate || row.endDate !== known.endDate
+        || url.hostname !== new URL(known.sourceUrl).hostname
+        || url.pathname !== new URL(known.sourceUrl).pathname
+        || url.searchParams.get('sno') !== known.sourceKey) {
+        return [`${known.title} (${known.sourceKey}) 的標題、展期或詳情網址與官網核對值不符`];
+      }
+      return [];
+    });
+}
+
 function parseRange(value: unknown): [string, string] {
   if (typeof value !== 'string') throw new Error('缺少展期');
   const match = value.trim().match(/^(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})$/);

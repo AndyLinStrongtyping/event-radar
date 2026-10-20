@@ -29,7 +29,8 @@ export function isSuspiciousReplacement(previous: readonly string[], current: re
 }
 
 export async function assessOfficialSourceCoverage(client: pg.PoolClient, museum: string,
-  provider: string, runId: string, rows: ExhibitionDraft[], records: SourceRecord[]): Promise<CoverageResult> {
+  provider: string, runId: string, rows: ExhibitionDraft[], records: SourceRecord[],
+  knownIncomplete = false): Promise<CoverageResult> {
   const identities = new Set([...rows.map((row) => row.sourceKey),
     ...records.map((record) => record.sourceKey)]);
   const identityKeys = [...identities].sort();
@@ -40,6 +41,8 @@ export async function assessOfficialSourceCoverage(client: pg.PoolClient, museum
   const previous = await client.query<{ identity_count: number; row_count: number; identity_keys: string[] | null }>(`SELECT identity_count,row_count,identity_keys
     FROM official_source_baselines WHERE museum_id=$1 AND provider=$2 FOR UPDATE`, [museum, provider]);
   if (!previous.rowCount) {
+    if (knownIncomplete) return { status: 'deferred_partial', identityCount, identityKeys,
+      baselineCount: null, rowCount, baselineRowCount: null };
     await client.query(`INSERT INTO official_source_baselines
       (museum_id,provider,identity_count,row_count,last_run_id,identity_keys) VALUES ($1,$2,$3,$4,$5,$6)`,
     [museum, provider, identityCount, rowCount, runId, identityKeys]);
@@ -48,7 +51,7 @@ export async function assessOfficialSourceCoverage(client: pg.PoolClient, museum
   }
   const baselineCount = previous.rows[0].identity_count;
   const baselineRowCount = previous.rows[0].row_count;
-  if (isSuspiciousDrop(baselineCount, identityCount)
+  if (knownIncomplete || isSuspiciousDrop(baselineCount, identityCount)
     || isSuspiciousDrop(baselineRowCount, rowCount)
     || (previous.rows[0].identity_keys !== null
       && isSuspiciousReplacement(previous.rows[0].identity_keys, identityKeys))) {

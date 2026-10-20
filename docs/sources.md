@@ -52,6 +52,8 @@
 
 ## 常設展靜態導覽的依據
 
+故宮北院 2026-10-20 官方當期 JSON 已知漏展。本機匯入保留其中合格資料，標為部分涵蓋，不因清單缺席下架舊展；`data/npm-north-verified-supplement.json` 記錄兩筆具官方詳情網址與完整展期的人工補充資料，使用前仍須重新核對。這份補充檔尚未寫入正式 Neon，北院雲端週排程仍關閉；見 [來源稽核](stage-2026-10-20-open-data-audit.md)。
+
 第二階段新增故宮北院與海生館兩頁。[故宮北院常設展與參觀路線](https://www.npm.gov.tw/Articles.aspx?l=1&sno=03012836)及館方[玉器](https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04000590)、[青銅器](https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04000576)、[陶瓷](https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04000569)展覽介紹，支撐本站三段閱讀路線；展件可能輪替。[海生館官方展區介紹](https://www.nmmba.gov.tw/cp.aspx?n=3A3E61574AC53193&s=D7F94F9DBC1C6F5D)列出臺灣水域館、珊瑚王國館與世界水域館，本站依此寫靜態導覽；活體展示與設施以館方當日資訊為準。兩頁目前只用文字及官方連結，未複製館方圖片。
 
 首頁的常設展頁面由人工撰寫，不計入上表的特展資料取得狀態。臺博館頁依[「博物臺灣」館方介紹](https://www.ntm.gov.tw/News_Content.aspx?n=5651&s=147780)整理自然臺灣、浮生臺灣兩個展廳；臺史博頁依[官方線上常設展](https://the.nmth.gov.tw/nmth/zh-TW/Home/PermanentExhibition)整理閱讀路線。兩館特展尚未匯入資料庫，頁面因此連回館方查最新展覽。

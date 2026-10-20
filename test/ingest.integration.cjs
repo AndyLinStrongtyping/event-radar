@@ -371,7 +371,7 @@ async function main() {
   assert.equal(ledger.rows[0].count, migrationCount);
   assert.match(migrate(), /新套用 0 份/);
   const { assessOfficialSourceCoverage } = await import('../src/source-coverage.ts');
-  async function checkCoverage(keys, rawKeys = [], provider = 'ntm') {
+  async function checkCoverage(keys, rawKeys = [], provider = 'ntm', knownIncomplete = false) {
     const run = await testDb.query(`INSERT INTO ingestion_runs(museum_id,provider,status)
       VALUES ('ntm',$1,'running') RETURNING id`, [provider]);
     const client = await testDb.connect();
@@ -379,7 +379,7 @@ async function main() {
       await client.query('BEGIN');
       const coverage = await assessOfficialSourceCoverage(client, 'ntm', provider, run.rows[0].id,
         keys.map((sourceKey) => ({ sourceKey })),
-        rawKeys.map((sourceKey) => ({ sourceKey })));
+        rawKeys.map((sourceKey) => ({ sourceKey })), knownIncomplete);
       await client.query('COMMIT');
       return coverage;
     } catch (error) {
@@ -428,6 +428,16 @@ async function main() {
   const smallBaseline = await testDb.query(`SELECT row_count FROM official_source_baselines
     WHERE museum_id='ntm' AND provider='small-list'`);
   assert.equal(smallBaseline.rows[0].row_count, 3, '小清單疑似縮水不得覆寫可信基準');
+  assert.equal((await checkCoverage(['a'], ['a', 'b'], 'known-partial', true)).status,
+    'deferred_partial', '已知漏展可匯入現有資料，但不得建立可信完整度基準');
+  const noPartialBaseline = await testDb.query(`SELECT count(*)::int AS count FROM official_source_baselines
+    WHERE museum_id='ntm' AND provider='known-partial'`);
+  assert.equal(noPartialBaseline.rows[0].count, 0);
+  assert.equal((await checkCoverage(allKeys, [], 'ntm', true)).status, 'deferred_partial');
+  coverageBaseline = await testDb.query(`SELECT identity_count FROM official_source_baselines
+    WHERE museum_id='ntm' AND provider='ntm'`);
+  assert.equal(coverageBaseline.rows[0].identity_count, 5,
+    '已知漏展不得覆寫之前可信的完整度基準');
   directory = await mkdtemp(join(tmpdir(), 'event-radar-it-'));
   const artUrl = 'https://event.culture.tw/mocweb/reg/NTMOFA/Detail.init.ctr?actId=60146';
   const artTitle = '測試藝術教育展';
@@ -641,6 +651,23 @@ async function main() {
     { cwd: project, env: seaEnv, encoding: 'utf8' }), /Command failed/);
   result = await testDb.query("SELECT visible FROM exhibitions WHERE museum_id='npm-north' AND source_key='04012832'");
   assert.equal(result.rows[0].visible, false, '館方連結改變時舊補正展覽必須隱藏');
+  const northSupplementArgs = ['--experimental-strip-types', 'src/ingest.ts', '--source', 'npm-north',
+    '--provider', 'npm-north-manual', '--file', 'data/npm-north-verified-supplement.json'];
+  const northSupplementFirst = JSON.parse(execFileSync(process.execPath, northSupplementArgs,
+    { cwd: project, env: seaEnv, encoding: 'utf8' }));
+  assert.equal(northSupplementFirst.inserted, 2, '逐頁核對的兩檔漏展應能獨立補入');
+  const northSupplementRepeat = JSON.parse(execFileSync(process.execPath, northSupplementArgs,
+    { cwd: project, env: seaEnv, encoding: 'utf8' }));
+  assert.equal(northSupplementRepeat.inserted, 0, '人工補充重跑不得重複新增');
+  assert.equal(northSupplementRepeat.unchanged, 2);
+  const northSupplementRows = await testDb.query(`SELECT source_key,primary_provider,visible
+    FROM exhibitions WHERE museum_id='npm-north' AND source_key IN ('04014549','04014551')`);
+  assert.equal(northSupplementRows.rows.length, 2);
+  assert.ok(northSupplementRows.rows.every((row) => row.primary_provider === 'npm-north-manual'
+    && row.visible === true));
+  result = await testDb.query("SELECT last_official_success_at FROM museums WHERE id='npm-north'");
+  assert.equal(result.rows[0].last_official_success_at, null,
+    '人工補充不能冒充完整官方清單同步');
   const invalidFormerlyValid = {
     Source: 'https://www.nmmba.gov.tw/News_Content.aspx?n=3&s=good',
     '特展名稱': '海洋特展', '展出地點': '特展廳',
