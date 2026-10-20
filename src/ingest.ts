@@ -8,7 +8,7 @@ import { fetchNmnsApi } from './nmns-api.ts';
 import { mergeNpmSouthPages, npmSouthPages } from './sources/npm-south.ts';
 import { classifyNmmbaFeed, nmmbaDataUrl, type SourceRecord } from './sources/nmmba.ts';
 import { verifyNmmbaDetails } from './sources/nmmba-detail.ts';
-import { classifyNpmNorthFeed, npmNorthDataUrl } from './sources/npm-north.ts';
+import { checkNpmNorthKnownCoverage, classifyNpmNorthFeed, npmNorthDataUrl } from './sources/npm-north.ts';
 import { classifyNstmFeed, nstmDataUrl, nstmListUrl } from './sources/nstm.ts';
 import { classifyMocChimei, mocExhibitionsUrl, verifiedMocChimeiRows } from './sources/moc-chimei.ts';
 import { correctedDraft, sourceHash } from './corrections.ts';
@@ -296,6 +296,10 @@ async function main(): Promise<void> {
     runId = run.rows[0].id;
     const { rows, records } = await sourceRows(museum, file, snapshot, official, provider);
     if (rows.length === 0 && records.length === 0) throw new Error('來源回傳 0 筆資料，已停止匯入');
+    const knownGaps = official && museum === 'npm-north'
+      ? checkNpmNorthKnownCoverage(rows, new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Taipei', year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(new Date())) : [];
     await client.query('BEGIN');
     inTransaction = true;
     await client.query('SELECT pg_advisory_xact_lock(hashtext($1))', [museum]);
@@ -308,7 +312,8 @@ async function main(): Promise<void> {
       coverageBaseline: null as number | null,
       sourceRows: null as number | null, coverageBaselineRows: null as number | null };
     if (official && rows.length > 0) {
-      const coverage = await assessOfficialSourceCoverage(client, museum, provider, runId!, rows, records);
+      const coverage = await assessOfficialSourceCoverage(client, museum, provider, runId!, rows, records,
+        knownGaps.length > 0);
       counts.coverageStatus = coverage.status;
       counts.sourceIdentities = coverage.identityCount;
       counts.sourceIdentityKeys = coverage.identityKeys;
@@ -406,7 +411,7 @@ async function main(): Promise<void> {
     if (rows.length > 0 && (official || rows.some((row) => !row.isSample))) {
       await client.query('UPDATE museums SET last_success_at=now() WHERE id=$1', [museum]);
     }
-    if (official && rows.length > 0) {
+    if (official && rows.length > 0 && counts.coverageStatus !== 'deferred_partial') {
       await client.query('UPDATE museums SET last_official_success_at=now() WHERE id=$1', [museum]);
     }
     await client.query('COMMIT');
@@ -414,6 +419,7 @@ async function main(): Promise<void> {
     if (counts.coverageStatus === 'deferred_partial') {
       process.stderr.write(`官方清單疑似不完整或項目大幅變動：${museum}/${provider}，缺席判定已暫緩；請核對來源。\n`);
     }
+    if (knownGaps.length) process.stderr.write(`故宮北院已知漏展：${knownGaps.join('；')}。可用資料已匯入，請另行補足。\n`);
     // Full identity snapshots stay in ingestion_runs for review; routine CLI logs
     // only need counts, so a large source cannot flood CI output.
     process.stdout.write(`${JSON.stringify({ ...counts, sourceIdentityKeys: undefined })}\n`);

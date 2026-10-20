@@ -14,7 +14,7 @@
 
 ## 故宮北院雲端連線失敗時的更新
 
-2026-10-18 本機從故宮官方 JSON 同步線上資料庫成功；GitHub runner 與 Render 先前仍只回報 `fetch failed`。在雲端官方來源通過實測前，`EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 維持非 true。需要更新北院時，在已核對館方資料、已安全載入線上 `DATABASE_URL` 的維運工作站執行 `npm run sync -- --source npm-north`，再以 `npm run sync:status` 核對該館最後成功時間、來源列數與待審數。不要將連線字串或密碼貼進終端紀錄、文件或 Git。若來源突然縮水，沿用 coverage 隔離程序；不能以一次失敗推斷展覽取消。這是人工更新，不能宣稱每週北院排程已恢復。
+2026-10-18 本機從故宮官方 JSON 同步線上資料庫成功；GitHub runner 與 Render 先前仍只回報 `fetch failed`。2026-10-20 確認這份 JSON 已知缺少兩檔北院當期展。`EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 維持非 true。人工更新前先執行唯讀 `npm run probe:npm-north`；即使它因已知缺漏回傳非零碼，仍可在核對來源後用 `npm run ingest -- --source npm-north --official` 匯入合格資料，本次須記 `deferred_partial`，不可視為完整清單。兩筆已核對展覽另放在 `data/npm-north-verified-supplement.json`；使用前重新核對館方詳情與展期，再於已安全載入 `DATABASE_URL` 的維運工作站執行 `npm run ingest -- --source npm-north --provider npm-north-manual --file data/npm-north-verified-supplement.json`。其後用 `npm run sync:status` 及公開 API 核對，不得因其他展覽缺席就下架舊資料。不要將連線字串或密碼貼進終端紀錄、文件或 Git。此人工更新不表示北院週排程已恢復。
 
 程式現在會記錄受限格式的網路錯誤代碼。PR #3 一次性 GitHub runner 唯讀測試得到 `UND_ERR_CONNECT_TIMEOUT`；尚未證明館方主動限制雲端來源。若考慮重新啟用自動同步，先向資料提供機關確認雲端可用的官方出口，再做隔離的雲端連線及跨週驗證。文化部展覽資料可用於交叉核對，但 2026-10-18 僅找到一筆相關展覽且未附故宮逐筆網址，不可直接替代故宮完整資料。
 
