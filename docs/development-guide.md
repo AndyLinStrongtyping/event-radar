@@ -5,7 +5,7 @@
 ## 建議閱讀順序
 
 1. [STATUS](../STATUS.md)：哪些來源可匯入、哪些只有人工資料、哪些仍待驗證。
-2. [本頁](development-guide.md)、[目前架構](architecture.md#目前實作公開技術預覽)與[ERD](erd.md)：資料如何進入、分流、建立關聯與被查詢。
+2. [專案結構地圖](project-structure.md)、[程式導覽](code-reference.md)、[本頁](development-guide.md)、[目前架構](architecture.md#目前實作公開技術預覽)與[ERD](erd.md)：先找到檔案責任，再理解資料如何進入、分流、建立關聯與被查詢。
 3. [API 說明](api.md)和 [OpenAPI 3.0](openapi.yaml)：公開唯讀端點的語意、參數、回應與錯誤。
 4. [來源盤點](sources.md)及[技術決策](technical-decisions.md)：每館證據、資料品質規則與取捨。
 5. [運作設計](operations.md)、[Phase 3](stage-2026-10-15-phase3.md)與[Phase 4](stage-2026-10-15-phase4.md)階段紀錄：逐場／逐日核對、手動同步、測試證據及未完成事項。

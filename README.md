@@ -12,7 +12,7 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 
 首頁採 React + Vite，提供城市與館所連動、展覽狀態／明確免費資訊篩選、表演、深海與化石專區；載入展覽的發掘動畫支援「減少動態效果」。下圖是開發時的介面紀錄；訪客可使用[快速公開入口](https://andylinstrongtyping.github.io/event-radar/)，館所介紹與 canonical 仍使用[主要網址](https://event-radar-preview.onrender.com/)。
 
-想快速評估專案，可依序閱讀：[目前進度](STATUS.md) → [完整開發復盤](docs/development-retrospective-2026-10.md) → [技術難點與解決決策報告](docs/technical-challenges-report.md) → [面試用專案介紹](docs/portfolio-brief.md) → [面試技術學習手冊](docs/interview-study-guide.md) → [開發導覽](docs/development-guide.md) → [API 契約](docs/api.md)／[OpenAPI](docs/openapi.yaml) → [來源盤點](docs/sources.md) → [技術決策](docs/technical-decisions.md)。[Phase 8 文件驗收](docs/stage-2026-10-16-phase8.md)記錄當時的整理範圍與限制。
+想快速評估專案，可依序閱讀：[目前進度](STATUS.md) → [完整開發復盤](docs/development-retrospective-2026-10.md) → [技術難點與解決決策報告](docs/technical-challenges-report.md) → [面試用專案介紹](docs/portfolio-brief.md) → [面試技術學習手冊](docs/interview-study-guide.md) → [專案結構地圖](docs/project-structure.md) → [程式導覽](docs/code-reference.md) → [開發導覽](docs/development-guide.md) → [API 契約](docs/api.md)／[OpenAPI](docs/openapi.yaml) → [來源盤點](docs/sources.md) → [技術決策](docs/technical-decisions.md)。[Phase 8 文件驗收](docs/stage-2026-10-16-phase8.md)記錄當時的整理範圍與限制。
 
 ![Event Radar React 考古主視覺](docs/screenshots/event-radar-react-hero.jpg)
 
@@ -42,19 +42,11 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 
 **奇美來源新線索（2026-10-11）**：官網展覽頁使用未公開文件化的內部 JSON 端點；無 session 請求回 419；公開頁正常匿名流程可由 Node.js 取得 200。`npm run probe:chimei` 可只讀重測；離線適配器分類限期特展、常設展與活動，活動可手動更新快照並匯入本機候選表，**特展候選未接正式匯入**。沒有跨週穩定、自動同步或公開 API 證據。[實測與啟用門檻](docs/stage-2026-10-11-chimei-probe.md)及[候選來源評估](docs/chimei-internal-endpoint.md)記錄細節。
 
-## 結構
+## 專案結構與程式導覽
 
-```text
-db/                    PostgreSQL 初始化與後續 migration
-docs/                 需求、API、來源盤點
-src/normalize.ts      特展資料驗證、正規化與 hash
-src/ingest.ts         JSON／官方來源匯入與整批回滾
-src/server.ts         查詢 API 與網站服務
-frontend/             React + Vite 互動首頁原始碼
-web/                  靜態館所介紹、圖片與建置輸出（react-build/ 不提交）
-test/                 測試與官方資訊範例
-```
+專案的實體資料夾、邏輯分層、每條執行路徑與閱讀順序，請看[專案結構地圖](docs/project-structure.md)。核心環境變數、資料型別、狀態、函式與一次同步如何走完，請看[程式導覽](docs/code-reference.md)。
 
+最短記法是：`src/sources/` 隔離各館格式 → `src/normalize.ts` 驗共通規則 → `src/ingest.ts` 交易式保存 → `src/server.ts` 唯讀公開 → `frontend/src/` 互動呈現；資料表只由 `db/` migration 演進，測試在 `test/`，CI／週同步在 `.github/workflows/`。
 ## 本機執行
 
 需要 Node.js 22.10+、PostgreSQL 17 或 Docker。本機已用 Node.js 24 與 Docker Desktop 的 PostgreSQL 17 驗證資料匯入和 API。若終端機找不到 `docker`，請先確認 Docker Desktop 已啟動，並把其執行檔目錄加入本機 `PATH`。

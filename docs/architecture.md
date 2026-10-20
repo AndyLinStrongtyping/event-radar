@@ -20,6 +20,32 @@ Phase 3／4 的領域匯入：歌劇院官方 `place=1` 清單 HTML 的可辨識
 
 第 024 migration 擴充海生館官方每日清單的來源鍵基準與人工覆核證據。來源鍵大量更換或筆數大幅縮水時，匯入交易在更新事件與快照之前停止；站長核對館方頁並提供理由、官方網址與核對者後才可放行，核對結果存於同一筆 `domain_source_runs`。這是來源品質閘門，不更動公開 API 的節目狀態語意。
 
+## 程式結構圖（目前實作）
+
+下圖是 Repository 中各區域的**實際責任分工**，用來輔助閱讀程式；它和後面的資料流架構、以及最下方「目標架構概念圖」不同。完整檔案清單與閱讀順序見[專案結構地圖](project-structure.md)，核心型別、函式與設定見[程式導覽](code-reference.md)。
+
+```mermaid
+flowchart TB
+  F[frontend/src<br/>React 首頁與互動狀態] --> S[src/server.ts<br/>公開唯讀 API／靜態檔]
+  W[web/<br/>館所導覽、圖片、共用腳本] --> S
+  S --> P[(PostgreSQL / Neon)]
+  A[src/sources/<br/>館別 Adapter] --> N[src/normalize.ts<br/>共通資料品質閘門]
+  N --> I[src/ingest.ts<br/>交易、去重、異動、待審]
+  I --> P
+  D[src/sync-domain.ts + domain-events.ts<br/>表演場次／海洋每日節目] --> P
+  J[src/source-jobs.ts + source-job-cli.ts<br/>FETCH_SOURCE job、lease、retry、dead] --> I
+  M[db/<br/>migration] --> P
+  T[test/<br/>單元、整合、OpenAPI] --> I
+  T --> S
+  C[.github/workflows/ci.yml] --> T
+  Q[.github/workflows/weekly-sync.yml] --> J
+  Q --> D
+  O[scripts/<br/>文件、smoke、備份／還原] --> P
+```
+
+- `src/sources/` 只能放館方格式差異；共通展覽資料必須回到 `ExhibitionDraft`。
+- `src/` 目前同層有 API、CLI 與服務模組，邏輯分組請依[專案結構地圖](project-structure.md#依責任閱讀-src)閱讀；為避免破壞命令、測試和工作流程，尚未進行只為美觀的大搬移。
+- `db/` 是唯一資料庫結構入口；`frontend/` 與 `web/` 分別是互動首頁和人工維護的靜態導覽。
 ## 目前實作（公開技術預覽）
 
 ```mermaid
