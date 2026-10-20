@@ -6,7 +6,7 @@ Phase 6 的[資料模型對照](domain-model.md)列出限期展、美術館、�
 
 公開 OpenAPI 對表演與海洋節目使用分型回應，且各端點只接受自己的領域；契約測試會拒絕觀察日、場次與每日時段放錯位置。這是現有回應的格式驗證，不會把不同時間模型合併為單一時段。
 
-Phase 3／4 的領域匯入：歌劇院官方 `place=1` 清單 HTML 的可辨識詳情（含 MORE 預藏卡片）經 `ntt-events` 轉成節目與多個 `event_sessions`；海生館官網當日節目經 `nmmba-programmes` 轉成節目與 `recurring_schedules`。兩者寫入 `domain_events`，由 `domain_event_changes` 留下變更、`domain_source_runs` 留下匯入結果，再由 `/performances`、`/marine-programmes` 供 React 查詢。歌劇院單批上限 30 筆；若 MORE 不再只展開同頁卡片便停止匯入。海生館大幅縮水批次會整批失敗，API 只顯示最近一次成功觀察到的節目。縮水保護與 19 筆合成歌劇院批次的隔離資料庫整合測試已於 2026-10-14 通過；當日真實手動同步兩次，第二次接受該篩選清單 20 筆（新增 1、未變 19）。歌劇院已接入**獨立 GitHub Actions 同步命令**並通過單次手動線上驗證，但不走 `FETCH_SOURCE` Queue；海生館**當日節目**仍按觀察日人工同步，不在每週工作中冒充今日時刻。特殊開館仍需官方日期證據與人工核對。
+Phase 3／4 的領域匯入：歌劇院官方 `place=1` 清單 HTML 的可辨識詳情（含 MORE 預藏卡片）經 `ntt-events` 轉成節目與多個 `event_sessions`；海生館官網當日節目經 `nmmba-programmes` 轉成節目與 `recurring_schedules`。兩者寫入 `domain_events`，由 `domain_event_changes` 留下變更、`domain_source_runs` 留下匯入結果，再由 `/performances`、`/marine-programmes` 供 React 查詢。歌劇院單批上限 30 筆；若 MORE 不再只展開同頁卡片便停止匯入。海生館大幅縮水批次會整批失敗，API 只顯示最近一次成功觀察到的節目。縮水保護與 19 筆合成歌劇院批次的隔離資料庫整合測試已於 2026-10-14 通過；當日真實手動同步兩次，第二次接受該篩選清單 20 筆（新增 1、未變 19）。歌劇院已接入**獨立 GitHub Actions 同步命令**並通過單次手動線上驗證，但不走 `FETCH_SOURCE` 工作佇列；海生館**當日節目**仍按觀察日人工同步，不在每週工作中冒充今日時刻。特殊開館仍需官方日期證據與人工核對。
 
 第 018 migration 起，歌劇院官方 `place=1` 清單使用獨立 `ntt_place1_list` 範圍；人工詳情與快照不影響官方筆數基準。成功基準至少 10 筆而新批次少於一半時，交易回滾並記錄失敗；人工核對後可附說明放行，理由寫入 `domain_source_runs.review_note`。舊節目不因清單缺席自動刪除或判定取消。
 
@@ -29,11 +29,11 @@ flowchart TB
   F[frontend/src<br/>React 首頁與互動狀態] --> S[src/server.ts<br/>公開唯讀 API／靜態檔]
   W[web/<br/>館所導覽、圖片、共用腳本] --> S
   S --> P[(PostgreSQL / Neon)]
-  A[src/sources/<br/>館別 Adapter] --> N[src/normalize.ts<br/>共通資料品質閘門]
+  A[src/sources/<br/>館別資料轉換器] --> N[src/normalize.ts<br/>共通資料品質閘門]
   N --> I[src/ingest.ts<br/>交易、去重、異動、待審]
   I --> P
   D[src/sync-domain.ts + domain-events.ts<br/>表演場次／海洋每日節目] --> P
-  J[src/source-jobs.ts + source-job-cli.ts<br/>FETCH_SOURCE job、lease、retry、dead] --> I
+  J[src/source-jobs.ts + source-job-cli.ts<br/>FETCH_SOURCE 工作、租約、重試、停止重試] --> I
   M[db/<br/>migration] --> P
   T[test/<br/>單元、整合、OpenAPI] --> I
   T --> S
@@ -50,7 +50,7 @@ flowchart TB
 
 ```mermaid
 flowchart LR
-    A["科博館 API／公開 JSON<br/>故宮南院與國美館官方頁<br/>故宮北院、海生館、科工館公開資料"] --> B["各館來源 adapter"]
+    A["科博館 API／公開 JSON<br/>故宮南院與國美館官方頁<br/>故宮北院、海生館、科工館公開資料"] --> B["各館資料轉換器"]
     C["奇美人工核對資料<br/>文化部補充來源"] --> B
     B --> D["欄位與展期驗證<br/>標準化"]
     D --> E["交易式匯入<br/>同館去重、欄位異動偵測"]
@@ -58,24 +58,24 @@ flowchart LR
     G["本機命令列同步<br/>來源別有限重試"] --> B
     G --> H[("同步嘗試紀錄")]
     S["GitHub Actions 週二排程路徑<br/>五館特展手動線上驗證<br/>真實週排程待觀察"] --> Q
-    Q[("Neon PostgreSQL 來源工作表<br/>冪等、租約、有限重試、dead")] --> W["每館 FETCH_SOURCE worker<br/>單館官方匯入"]
+    Q[("Neon PostgreSQL 來源工作表<br/>冪等、租約、有限重試、dead")] --> W["每館 FETCH_SOURCE 工作執行器<br/>單館官方匯入"]
     W --> B
     W --> H
     F --> I["Render Node REST 查詢 API"]
     I --> J["React 公開預覽站"]
     K["人工編寫的館所／場館導覽<br/>含沖繩與化石館靜態頁"] --> J
     F --> L["待審、缺席核對<br/>與來源健康紀錄"]
-    M["奇美官網內部 JSON<br/>人工觸發匿名取得"] --> N["活動候選 Adapter<br/>保留 raw date 與來源 ID"]
+    M["奇美官網內部 JSON<br/>人工觸發匿名取得"] --> N["活動候選資料轉換器<br/>保留 raw date 與來源 ID"]
     N --> O[("PostgreSQL programme_events<br/>冪等與欄位異動歷史")]
     N --> P["人工 JSON 快照<br/>本機活動卡片"]
 ```
 
-表演與海洋節目另走下列領域路徑；它們和上圖的 `exhibitions` 是分開的資料表及公開查詢端點。歌劇院的週工作直接執行 `sync:domain`，與特展的 `FETCH_SOURCE` Queue 不同。奇美活動候選同樣獨立，不是第三種公開節目 API。
+表演與海洋節目另走下列領域路徑；它們和上圖的 `exhibitions` 是分開的資料表及公開查詢端點。歌劇院的週工作直接執行 `sync:domain`，與特展的 `FETCH_SOURCE` 工作佇列 不同。奇美活動候選同樣獨立，不是第三種公開節目 API。
 
 ```mermaid
 flowchart LR
-    N["臺中國家歌劇院<br/>place=1 官方 HTML"] --> A["ntt-events Adapter<br/>解析節目及多場次"]
-    M["海生館<br/>官方當日活動頁"] --> B["nmmba-programmes Adapter<br/>解析觀察日與每日時段"]
+    N["臺中國家歌劇院<br/>place=1 官方 HTML"] --> A["ntt-events 資料轉換器<br/>解析節目及多場次"]
+    M["海生館<br/>官方當日活動頁"] --> B["nmmba-programmes 資料轉換器<br/>解析觀察日與每日時段"]
     A --> V["來源與領域驗證<br/>冪等、異動比較"]
     B --> V
     V --> D[("PostgreSQL<br/>domain_events<br/>event_sessions／recurring_schedules<br/>domain_source_runs／changes")]
@@ -92,7 +92,7 @@ flowchart LR
 
 網站由 `src/server.ts` 提供靜態頁面與 `/museums`、`/exhibitions`、`/exhibitions/:id/changes`、`/visit-status`、`/performances`、`/marine-programmes` 與 `/marine-observation-days` 等公開唯讀 API。特展可依城市、館所、日期、狀態及**明確標示免費**的資料查詢；關鍵字目前使用 `ILIKE`。14 篇館所／場館導覽是人工編寫的靜態頁，不是自動同步的展件清單。
 
-本機 `sync:status` 與登入後的 `/health` 頁從同步嘗試、官方成功時間與待審量計算來源健康狀態；重試依 `sync_id` 歸為同一工作。PostgreSQL `FETCH_SOURCE` Queue 以同來源同日鍵防重，租約到期後由下一次 worker 領取流程回收；它只處理來源工作，沒有多階段解析或通知。GitHub Actions CI 執行文件、型別、單元、隔離 PostgreSQL 整合、OpenAPI 回應契約及合成資料備份還原檢查。Render／Neon 公開預覽已設定 `PUBLIC_BASE_URL`，網站地圖可讀、Search Console 已驗證、GA4 已收到自己的測試流量；不能稱為已有自然搜尋或外部訪客。六個來源工作雖已手動在線上執行成功，**真正週二排程與跨週穩定仍待觀察**；沒有主動告警。2026-10-18 正式 Neon 曾完成一次本機備份與隔離還原，仍無定期加密異地副本。詳見[目前進度](../STATUS.md)、[技術難點報告](technical-challenges-report.md)與[運作設計](operations.md)。
+本機 `sync:status` 與登入後的 `/health` 頁從同步嘗試、官方成功時間與待審量計算來源健康狀態；重試依 `sync_id` 歸為同一工作。PostgreSQL `FETCH_SOURCE` 工作佇列 以同來源同日鍵防重，租約到期後由下一次工作執行器領取流程回收；它只處理來源工作，沒有多階段解析或通知。GitHub Actions CI 執行文件、型別、單元、隔離 PostgreSQL 整合、OpenAPI 回應契約及合成資料備份還原檢查。Render／Neon 公開預覽已設定 `PUBLIC_BASE_URL`，網站地圖可讀、Search Console 已驗證、GA4 已收到自己的測試流量；不能稱為已有自然搜尋或外部訪客。六個來源工作雖已手動在線上執行成功，**真正週二排程與跨週穩定仍待觀察**；沒有主動告警。2026-10-18 正式 Neon 曾完成一次本機備份與隔離還原，仍無定期加密異地副本。詳見[目前進度](../STATUS.md)、[技術難點報告](technical-challenges-report.md)與[運作設計](operations.md)。
 
 奇美活動候選走獨立的 `programme_events`，不寫入有非空展期約束的 `exhibitions`。目前只以本機人工命令從快照匯入資料庫（本次部署已匯入 Neon）；網站活動卡片仍讀靜態快照，並沒有從候選表對外提供活動 API。這讓後續美術館、表演與海生館 Domain 能以真實資料驗證模型後再收斂，不把來源特有欄位先硬塞共用表。
 
@@ -105,7 +105,7 @@ flowchart LR
 | 概念圖區塊 | 現況與展示方式 |
 | --- | --- |
 | Scheduler | GitHub Actions 週二工作已設定、六個獨立工作手動線上驗證成功；真正定時觸發與跨週穩定未驗證。故宮北院雲端工作獨立停用。 |
-| Queue、Worker 並行、DLQ、Replay | Neon PostgreSQL `FETCH_SOURCE` 工作表有冪等、租約、有限重試、`dead` 狀態與人工重播；多階段 Queue 和通知 worker 未完成。歌劇院走獨立同步命令。 |
+| 工作佇列、並行工作執行器、失敗工作區、人工重播 | Neon PostgreSQL `FETCH_SOURCE` 工作表有冪等、租約、有限重試、`dead` 狀態與人工重播；多階段工作佇列和通知工作執行器未完成。歌劇院走獨立同步命令。 |
 | Retry | 來源工作採有限重試及失敗紀錄；沒有概念圖中完整的多階段退避鏈。 |
 | 原始資料與異動歷史 | 已保存來源原始紀錄與欄位變更；沒有完整 HTML 檔案庫或任意版本重播。 |
 | 搜尋與索引 | 有日期索引及查詢 API；目前關鍵字為 `ILIKE`，不是已啟用的全文搜尋。現有資料量尚不足以證明新增複合索引有收益。 |
@@ -115,6 +115,6 @@ flowchart LR
 
 ## 接下來的工程順序
 
-目前已完成 Phase 9 的免費公開技術預覽，正做 Phase 10 的線上可靠性驗收：觀察第一次真實週排程與跨週來源結果、處理故宮北院的雲端連線例外、補強備份保留與告警、檢查行動版及收錄狀態。沖繩目前只有**人工核對的靜態導覽**，尚無跨國 Adapter；奇美仍是候選／人工來源。多階段 production Queue、通知與 AWS 留待需求和驗證成熟後評估。歷史階段與未完成項見[進度紀錄](../STATUS.md)和[後續路線](future-roadmap.md)。
+目前已完成 Phase 9 的免費公開技術預覽，正做 Phase 10 的線上可靠性驗收：觀察第一次真實週排程與跨週來源結果、處理故宮北院的雲端連線例外、補強備份保留與告警、檢查行動版及收錄狀態。沖繩目前只有**人工核對的靜態導覽**，尚無跨國資料轉換器；奇美仍是候選／人工來源。多階段正式工作佇列、通知與 AWS 留待需求和驗證成熟後評估。歷史階段與未完成項見[進度紀錄](../STATUS.md)和[後續路線](future-roadmap.md)。
 
 每完成一階段，都應更新這份文件的現況、測試證據與概念圖標示，避免把設計目標誤寫成工作經驗。

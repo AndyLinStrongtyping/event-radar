@@ -14,9 +14,9 @@
 
 | 路徑 | 入口與轉換 | 保存與公開方式 | 不能推論的事 |
 | --- | --- | --- | --- |
-| 限期特展 | `src/ingest.ts`／`src/sync-source.ts` → 來源 adapter → 日期與官方連結驗證 → 正規化 | `exhibitions`、原始／待審紀錄、來源別名與異動；`/exhibitions` 搜尋 | 缺結束日不等於常設展；來源清單消失不等於取消 |
+| 限期特展 | `src/ingest.ts`／`src/sync-source.ts` → 來源資料轉換器 → 日期與官方連結驗證 → 正規化 | `exhibitions`、原始／待審紀錄、來源別名與異動；`/exhibitions` 搜尋 | 缺結束日不等於常設展；來源清單消失不等於取消 |
 | 表演與海洋節目 | `src/sync-domain.ts` → `src/sources/ntt-events.ts` 或 `nmmba-programmes.ts` → `src/domain-events.ts`；歌劇院已接獨立每週 Actions 工作，海生館當日節目仍按觀察日人工同步 | `domain_events` 加 `event_sessions` 或 `recurring_schedules`；`/performances`、`/marine-programmes` | 歌劇院有場次不等於仍有票；海生館今日時段不保證未來時段或開館 |
-| 奇美活動候選 | 官網內部 JSON 的人工刷新／本機快照 → 奇美 adapter | 候選 `programme_events` 與靜態 `/chimei-activities.json`；沒有公開活動搜尋 API | 候選不等於已確認特展；內部端點不是公開文件化 API |
+| 奇美活動候選 | 官網內部 JSON 的人工刷新／本機快照 → 奇美資料轉換器 | 候選 `programme_events` 與靜態 `/chimei-activities.json`；沒有公開活動搜尋 API | 候選不等於已確認特展；內部端點不是公開文件化 API |
 
 導覽頁在 `web/guides/`，由人工編寫並附官方核對連結；它們不是上述任何一條自動同步資料流。React 首頁在 `frontend/`，公開查詢由 `src/server.ts` 提供；登入後的本機審查工具由 `src/admin-server.ts` 提供，不列入公開 OpenAPI。
 
@@ -32,10 +32,10 @@
 
 文件變更可先跑 `npm run check:docs`，確認 README、STATUS 與 `docs/*.md` 的本機相對連結都有目標檔案；這不驗證外部網址或頁內錨點。
 
-新增或修改一個來源時，先在 [來源盤點](sources.md)留下官方入口與已核對的欄位，再改對應 adapter。來源特有欄位留在 adapter；輸入驗證失敗應產生待審或讓整批失敗，不讓不明資料冒充公開展覽。若更動資料庫結構，新增 `db/` migration 並更新查詢與 [OpenAPI](openapi.yaml)；舊 migration 不改寫。
+新增或修改一個來源時，先在 [來源盤點](sources.md)留下官方入口與已核對的欄位，再改對應資料轉換器。來源特有欄位留在資料轉換器；輸入驗證失敗應產生待審或讓整批失敗，不讓不明資料冒充公開展覽。若更動資料庫結構，新增 `db/` migration 並更新查詢與 [OpenAPI](openapi.yaml)；舊 migration 不改寫。
 
 本機命令以 `package.json` 為準：`npm run migrate` 套用結構，`npm test` 跑單元與 OpenAPI 文件檢查，`npm run typecheck` 檢查後端／前端型別，`npm run build:web` 建置 React，`npm run test:integration` 需可連線的 PostgreSQL，會使用隔離測試資料庫驗證實際 HTTP 回應。外部館方頁面會變動，固定 CI 不依賴即時館方內容；來源真實性另以有日期的只讀核對與階段紀錄留證。資料庫或外網缺席時，應明確記錄「未驗證」，不能把單元測試當作整合通過。
 
 查詢可從 `GET /health`、`GET /museums`、`GET /exhibitions?status=active` 開始，再看 `GET /performances?source=ntt` 與 `GET /marine-programmes?source=nmmba`。完整參數、回應 schema、錯誤碼請用 [OpenAPI](openapi.yaml)；人工審核、資料同步與工作重播是本機命令或管理頁，不是公開寫入 API。
 
-每次功能或資料決策變更，依 [AGENTS.md](../AGENTS.md) 同步更新 [技術決策](technical-decisions.md)、[STATUS](../STATUS.md)，必要時更新 API、架構及運作文件。API 的 schema 以實際 HTTP 回應與整合測試為準；文件不能宣稱 Queue、線上排程、通知、部署或 AWS 已運作，除非有對應驗證證據。
+每次功能或資料決策變更，依 [AGENTS.md](../AGENTS.md) 同步更新 [技術決策](technical-decisions.md)、[STATUS](../STATUS.md)，必要時更新 API、架構及運作文件。API 的 schema 以實際 HTTP 回應與整合測試為準；文件不能宣稱工作佇列、線上排程、通知、部署或 AWS 已運作，除非有對應驗證證據。

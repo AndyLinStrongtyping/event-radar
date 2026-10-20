@@ -4,8 +4,8 @@
 
 ## 先用三條路理解專案
 
-1. **訪客查展覽**：`frontend/src/` 的 React 首頁呼叫 `src/server.ts` 的唯讀 API，再讀 PostgreSQL。
-2. **館方資料變成展覽**：`src/sources/` 的館別 Adapter 解析來源，`src/normalize.ts` 統一驗證，`src/ingest.ts` 用交易寫入 PostgreSQL。
+1. **訪客查展覽**：`frontend/src/` 的 React 首頁呼叫 `src/server.ts` 的唯讀查詢介面，再讀 PostgreSQL。
+2. **館方資料變成展覽**：`src/sources/` 的館別資料轉換器解析來源，`src/normalize.ts` 統一驗證，`src/ingest.ts` 用交易寫入 PostgreSQL。
 3. **固定工作與品質保護**：GitHub Actions 觸發 `src/source-job-cli.ts` 或 `src/sync-domain.ts`；來源清單縮水、格式異常或缺展期時停在待審／失敗紀錄，不直接刪公開資料。
 
 ```mermaid
@@ -15,11 +15,11 @@ flowchart TB
     STATIC[web/<br/>靜態館所導覽與圖片]
   end
   subgraph API[公開與本機服務]
-    SERVER[src/server.ts<br/>唯讀 REST API、靜態服務、SEO]
+    SERVER[src/server.ts<br/>唯讀查詢介面、靜態服務、搜尋引擎設定]
     ADMIN[src/admin-server.ts<br/>本機審查工具]
   end
   subgraph INGEST[資料匯入]
-    ADAPTER[src/sources/<br/>每館資料差異]
+    ADAPTER[src/sources/<br/>每館資料格式差異]
     NORMAL[src/normalize.ts<br/>共通驗證與正規化]
     INGESTTS[src/ingest.ts<br/>交易、去重、異動、待審]
     DOMAIN[src/sync-domain.ts + domain-events.ts<br/>歌劇院場次／海生館每日節目]
@@ -27,13 +27,13 @@ flowchart TB
   subgraph STORE[資料與可靠性]
     DB[(PostgreSQL / Neon)]
     MIG[db/<br/>版本化 migration]
-    HEALTH[src/source-*.ts<br/>工作、健康、完整度、重試]
+    HEALTH[src/source-*.ts<br/>工作、來源健康、完整度、重試]
   end
   subgraph QUALITY[驗證與發布]
     TEST[test/<br/>單元、整合、契約]
     CI[.github/workflows/ci.yml]
     WEEKLY[.github/workflows/weekly-sync.yml]
-    TOOLS[scripts/<br/>文件檢查、備份、smoke test]
+    TOOLS[scripts/<br/>文件檢查、備份、部署後冒煙檢查]
   end
   FE --> SERVER
   STATIC --> SERVER
@@ -60,12 +60,12 @@ Event Radar
 ├─ db/                        PostgreSQL migration，唯一的資料庫結構變更入口
 ├─ docs/                      規格、設計決策、維運、階段證據與面試說明
 ├─ frontend/                  React + Vite 首頁原始碼與建置設定
-│  └─ src/                    互動介面元件、樣式與 API URL 工具
-├─ postman/                   API 手動測試 collection
+│  └─ src/                    互動介面元件、樣式與 查詢網址工具
+├─ postman/                   Postman 手動測試集合
 ├─ private/                   本機機密設定與備份位置，受 .gitignore 保護
-├─ scripts/                   文件檢查、部署 smoke test、資料庫備份／還原工具
-├─ src/                       Node + TypeScript 後端、匯入流程與本機 CLI
-│  └─ sources/                每一來源各自的 Adapter／Parser
+├─ scripts/                   文件檢查、部署後冒煙檢查、資料庫備份／還原工具
+├─ src/                       Node + TypeScript 後端、匯入流程與本機 命令列工具
+│  └─ sources/                每一來源各自的資料轉換器／解析器
 ├─ test/                      單元、fixtures、隔離 PostgreSQL 與 HTTP 整合測試
 ├─ web/                       靜態導覽 HTML、共用 CSS/JS、圖片；React 建置輸出不提交
 ├─ .env.example               可提交的環境變數範本，沒有真實密碼或 API Key
@@ -83,20 +83,20 @@ Event Radar
 
 | 邏輯群組 | 主要檔案 | 責任 | 面試時怎麼說 |
 | --- | --- | --- | --- |
-| 公開服務 | `server.ts` | REST GET API、靜態檔、canonical／SEO、輸入參數檢查 | 前端只拿唯讀資料；資料正確性在匯入時建立，查詢端不猜資料。 |
+| 公開服務 | `server.ts` | 唯讀查詢介面、靜態檔、標準網址／搜尋引擎設定、輸入參數檢查 | 前端只拿唯讀資料；資料正確性在匯入時建立，查詢端不猜資料。 |
 | 本機管理 | `admin-server.ts`、`review*.ts`、`corrections.ts` | 本機登入後的待審、補正、海生館開館／歌劇院場次人工核對 | 不把敏感寫入 API 暴露給公開網站；人工決策也保留來源證據。 |
 | 共通匯入核心 | `normalize.ts`、`ingest.ts`、`dedupe.ts`、`sync-source.ts`、`retry-policy.ts` | 正規化、HTTP 防護、交易、去重、異動、來源別有限重試 | 每館格式不同，但通過同一個 `ExhibitionDraft` 品質閘門。 |
-| Queue 與來源健康 | `source-jobs.ts`、`source-job-cli.ts`、`source-job-schedule.ts`、`source-health*.ts`、`source-coverage.ts`、`source-missing.ts`、`source-baseline-review.ts` | PostgreSQL `FETCH_SOURCE` 工作、租約、重試、dead、成功時間、清單縮水保護 | Queue 是單一來源工作隊列；不是未完成就宣稱的多階段通知平台。 |
+| 工作佇列與來源健康 | `source-jobs.ts`、`source-job-cli.ts`、`source-job-schedule.ts`、`source-health*.ts`、`source-coverage.ts`、`source-missing.ts`、`source-baseline-review.ts` | PostgreSQL `FETCH_SOURCE` 工作、租約、重試、停止重試狀態、成功時間、清單縮水保護 | 工作佇列只負責單一來源工作；不是尚未完成的多階段通知平台。 |
 | 不同領域事件 | `sync-domain.ts`、`domain-events.ts`、`performance-session-review.ts`、`marine-opening-review.ts`、`visit-status.ts` | 歌劇院多場次、海生館每日節目與特殊開館狀態 | 不把展期、演出場次、每日節目硬塞成同一個時間欄位。 |
 | 專屬資料工具 | `ticketing.ts`、`chimei-programmes.ts`、`import-chimei-programmes.ts`、`refresh-chimei-activities.ts` | 票務人工核對、奇美活動候選快照與本機匯入 | 候選來源與正式特展同步分開，避免誤導使用者。 |
 | 資料庫與啟動 | `migrate.ts` | 依序套用 migration、驗證舊資料庫基線 | Schema 只能靠新增 migration 演進，不能手動改線上表。 |
 | 來源探測工具 | `check-chimei.ts`、`probe-chimei-source.ts`、`probe-ntmofa.ts` | 對可疑來源做只讀驗證 | 探測成功不等於已承諾為正式、穩定自動來源。 |
 
-### `src/sources/`：來源特例只能留在這裡
+### `src/sources/`：來源專屬差異只能留在這裡
 
-| Adapter／檔案 | 資料類型與特例 |
+| 資料轉換器／檔案 | 資料類型與特例 |
 | --- | --- |
-| `nmns.ts`、`nmns-api.ts` | 科博館 OpenAPI／公開 JSON，檢查 API 回傳、日期與館方網址。 |
+| `nmns.ts`、`nmns-api.ts` | 科博館公開資料介面／公開 JSON，檢查 API 回傳、日期與館方網址。 |
 | `npm-south.ts`、`npm-north.ts` | 故宮南院 HTML、北院公開 JSON；處理民國年、院區與展期。 |
 | `nmmba.ts`、`nmmba-detail.ts` | 海生館特展公開資料與需要官方詳情佐證的日期。 |
 | `nstm.ts` | 科工館 JSON 加官方列表交叉驗證。 |
@@ -106,7 +106,7 @@ Event Radar
 | `chimei-*.ts`、`moc-chimei.ts` | 奇美候選／快照與文化部補充；不把內部端點稱作公開 API。 |
 | `official-html.ts` | 受限大小、逾時與官方主機檢查的共用 HTML 讀取。 |
 
-Adapter 的輸出必須回到 `ExhibitionDraft`、`PerformanceEvent` 或 `MarineProgramme`。`specialEvent`、`expoEvent` 這類館方私有欄位不應流入 API、資料庫共通模型或 React 元件。
+資料轉換器的輸出必須回到 `ExhibitionDraft`、`PerformanceEvent` 或 `MarineProgramme`。`specialEvent`、`expoEvent` 這類館方私有欄位不應流入 API、資料庫共通模型或 React 元件。
 
 ## 資料庫 `db/` 怎麼讀
 
@@ -123,7 +123,7 @@ Adapter 的輸出必須回到 `ExhibitionDraft`、`PerformanceEvent` 或 `Marine
 | --- | --- | --- |
 | React 首頁 | `frontend/src/main.tsx` | 搜尋、城市與館所連動、展覽卡、票務、來源狀態、深海與化石區入口。 |
 | React 領域元件 | `DomainProgrammes.tsx`、`FossilExpedition.tsx` | 表演／海生館節目與化石圖鑑的互動顯示。 |
-| URL 安全 | `runtime-url.ts` | GitHub Pages 靜態前端可安全指向 Render API。 |
+| 網址安全 | `runtime-url.ts` | GitHub Pages 靜態前端可安全指向 Render 查詢介面。 |
 | 外觀 | `styles.css` | 考古主視覺、響應式版面、讀取動畫與回頂／快速跳轉。 |
 | 靜態館所導覽 | `web/guides/` | 每館單獨 HTML；適合人工介紹、照片署名與官方連結。 |
 | 靜態素材 | `web/assets/` | 圖片與共用資源；授權與出處在 `web/photo-credits.html`。 |
@@ -134,8 +134,8 @@ Adapter 的輸出必須回到 `ExhibitionDraft`、`PerformanceEvent` 或 `Marine
 
 | 位置 | 何時跑 | 保護什麼 |
 | --- | --- | --- |
-| `test/*.test.ts`、`test/*.test.mjs` | `npm test` | parser、正規化、去重、異動、健康與領域資料規則。 |
-| `test/ingest.integration.cjs` | `npm run test:integration` | 隔離 PostgreSQL 匯入、公開 HTTP API、OpenAPI 回應。 |
+| `test/*.test.ts`、`test/*.test.mjs` | `npm test` | 解析器、正規化、去重、異動、健康與領域資料規則。 |
+| `test/ingest.integration.cjs` | `npm run test:integration` | 隔離 PostgreSQL 匯入、公開 HTTP 查詢介面、OpenAPI 回應契約。 |
 | `.github/workflows/ci.yml` | push／PR | 文件連結、型別、單元、整合、備份還原驗證。 |
 | `.github/workflows/weekly-sync.yml` | 手動或每週二 | 每館獨立同步；以 GitHub Secrets 的連線資訊寫入 Neon。 |
 | `.github/workflows/pages.yml` | `main` push | 建置並發布 GitHub Pages React 介面。 |
@@ -156,8 +156,8 @@ Adapter 的輸出必須回到 `ExhibitionDraft`、`PerformanceEvent` 或 `Marine
 
 ## 後續整理原則
 
-- 新增正式館方來源：先新增或擴充 `src/sources/<source>.ts`，再接到 `src/ingest.ts`／`sync-domain.ts`，最後補 adapter test、來源文件與狀態。
-- 新增公開資料欄位：先確認它是共通欄位還是領域專屬欄位；必要時新增 migration 和 OpenAPI／React 型別，不能只改前端。
+- 新增正式館方來源：先新增或擴充 `src/sources/<source>.ts`，再接到 `src/ingest.ts`／`sync-domain.ts`，最後補資料轉換器測試、來源文件與狀態。
+- 新增公開資料欄位：先確認它是共通欄位還是領域專屬欄位；必要時新增 migration 和 公開介面契約／React 型別，不能只改前端。
 - 新增一次性命令：若只為診斷，使用清楚的 `*-cli.ts` 或 `probe-*.ts` 名稱；若會變更資料，記錄審核者、證據與結果。
 - 需要真的重整實體目錄時，應拆成獨立 PR：先移動檔案、更新 import／scripts／測試，再跑完整 CI。不要在功能修改中順手大搬家。
 
@@ -167,10 +167,10 @@ Adapter 的輸出必須回到 `ExhibitionDraft`、`PerformanceEvent` 或 `Marine
 
 | 類別 | 檔案 | 一句話用途 |
 | --- | --- | --- |
-| 公開／管理入口 | `server.ts`、`admin-server.ts` | 公開唯讀 API 與僅限本機的管理／審查頁。 |
+| 公開／管理入口 | `server.ts`、`admin-server.ts` | 公開唯讀查詢介面 與僅限本機的管理／審查頁。 |
 | 主要匯入 | `ingest.ts`、`normalize.ts`、`dedupe.ts`、`sync-source.ts`、`sync-status.ts`、`retry-policy.ts` | 限期展覽取得、正規化、寫入、比對、同步紀錄與有限重試。 |
 | Migration | `migrate.ts` | 檢查並依序套用 `db/` SQL。 |
-| 來源工作 | `source-jobs.ts`、`source-job-cli.ts`、`source-job-schedule.ts` | Queue 的入列、領取、完成、重播和排程執行。 |
+| 來源工作 | `source-jobs.ts`、`source-job-cli.ts`、`source-job-schedule.ts` | 工作佇列的入列、領取、完成、重播和排程執行。 |
 | 來源品質 | `source-coverage.ts`、`source-missing.ts`、`source-baseline-review.ts`、`source-baseline-review-cli.ts` | 清單縮水、缺席候選與人工接受新基準。 |
 | 健康狀態 | `source-freshness.ts`、`source-health.ts`、`source-health-report.ts` | 將成功時間、失敗與待審量變成健康狀態。 |
 | 人工審查 | `review.ts`、`approve-review.ts`、`review-service.ts`、`missing-review-service.ts`、`corrections.ts` | 列出待審、附證據核准與保存補正。 |
@@ -179,11 +179,11 @@ Adapter 的輸出必須回到 `ExhibitionDraft`、`PerformanceEvent` 或 `Marine
 | 票務／奇美候選 | `ticketing.ts`、`chimei-programmes.ts`、`import-chimei-programmes.ts`、`refresh-chimei-activities.ts` | 人工票務設定及奇美候選活動快照。 |
 | 來源探測 | `check-chimei.ts`、`probe-chimei-source.ts`、`probe-ntmofa.ts` | 唯讀檢查來源是否可解析，不直接宣告為正式同步。 |
 
-`src/sources/` 的完整 Adapter 索引：`official-html.ts`（安全抓 HTML）、`nmns.ts`、`npm-south.ts`、`npm-north.ts`、`nmmba.ts`、`nmmba-detail.ts`、`nstm.ts`、`ntmofa.ts`（特展）；`ntt-events.ts`（表演）；`nmmba-programmes.ts`（海洋每日節目）；`chimei.ts`、`chimei-activities.ts`、`chimei-internal.ts`、`fetch-chimei-public.ts`、`moc-chimei.ts`（奇美候選／文化部補充）。
+`src/sources/` 的完整資料轉換器索引：`official-html.ts`（安全讀取 HTML）、`nmns.ts`、`npm-south.ts`、`npm-north.ts`、`nmmba.ts`、`nmmba-detail.ts`、`nstm.ts`、`ntmofa.ts`（特展）；`ntt-events.ts`（表演）；`nmmba-programmes.ts`（海洋每日節目）；`chimei.ts`、`chimei-activities.ts`、`chimei-internal.ts`、`fetch-chimei-public.ts`、`moc-chimei.ts`（奇美候選／文化部補充）。
 
 ## 可規劃但尚未執行的實體目錄重整
 
-目前先用本文件建立邏輯分類；如果之後確實要移動程式，建議分開做一個只調整路徑的重構 PR，目標如下。這不是目前實際結構，不能在面試時說成已完成。
+目前先用本文件建立邏輯分類；如果之後確實要移動程式，建議分開做一個只調整路徑的重構版本，目標如下。這不是目前實際結構，不能在面試時說成已完成。
 
 ```text
 src/

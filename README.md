@@ -1,6 +1,6 @@
 # Event Radar｜博物館與展演資訊整理平台
 
-Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查詢結果。核心工作是**來源 Adapter、資料驗證、保守去重、異動偵測、待審隔離與來源健康追蹤**；不同領域保留各自的時間模型。[快速公開入口](https://andylinstrongtyping.github.io/event-radar/)由 GitHub Pages 提供介面與圖片，[主要網址／API](https://event-radar-preview.onrender.com/)則由 Render 連接 Neon。免費後端休眠時，快速入口仍會先顯示可操作介面，但展覽資料可能要等待後端喚醒。Search Console 以 Render 為 canonical；GA4 已收到本站測試造訪，尚無可宣稱的外部訪客或搜尋成效。
+Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查詢結果。核心工作是**來源資料轉換器、資料驗證、保守去重、異動偵測、待審隔離與來源健康追蹤**；不同領域保留各自的時間模型。[快速公開入口](https://andylinstrongtyping.github.io/event-radar/)由 GitHub Pages 提供介面與圖片，[主要網址／API](https://event-radar-preview.onrender.com/)則由 Render 連接 Neon。免費後端休眠時，快速入口仍會先顯示可操作介面，但展覽資料可能要等待後端喚醒。Search Console 以 Render 為 canonical；GA4 已收到本站測試造訪，尚無可宣稱的外部訪客或搜尋成效。
 
 | 領域 | 現有能力 | 資料邊界 |
 | --- | --- | --- |
@@ -8,7 +8,7 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 | 表演藝術 | 臺中國家歌劇院 `place=1` 範圍的節目、逐場時間／廳別、可核對票價與狀態 | 本機手動同步；不是全站或即時票務 |
 | 海洋節目 | 屏東海生館的當日餵食／解說時段與成功批次歷史快照 | 觀察到的當日表不能保證未來每日場次或開館 |
 | 靜態導覽 | 沖繩美麗海、澎湖化石館、左鎮化石園區等館所／圖鑑資訊 | 人工整理、有來源連結；不冒充自動匯入 |
-| 奇美活動 | 官網內部 JSON 候選 Adapter、人工刷新快照及本機候選表 | 官網端點**不是公開文件化 API**；尚無自動活動同步或公開活動搜尋 |
+| 奇美活動 | 官網內部 JSON 候選資料轉換器、人工刷新快照及本機候選表 | 官網端點**不是公開文件化 API**；尚無自動活動同步或公開活動搜尋 |
 
 首頁採 React + Vite，提供城市與館所連動、展覽狀態／明確免費資訊篩選、表演、深海與化石專區；載入展覽的發掘動畫支援「減少動態效果」。下圖是開發時的介面紀錄；訪客可使用[快速公開入口](https://andylinstrongtyping.github.io/event-radar/)，館所介紹與 canonical 仍使用[主要網址](https://event-radar-preview.onrender.com/)。
 
@@ -18,15 +18,15 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 
 [早期首頁畫面](docs/screenshots/event-radar-showcase.png)保留作設計歷程。
 
-[目前系統架構圖](docs/architecture.md#目前實作公開技術預覽)、[資料庫 ERD](docs/erd.md)及[領域模型對照](docs/domain-model.md)分別說明執行流程、資料關聯與不同時間語意。長期概念圖中的多階段 Queue、通知與遠端監控仍未實作。
+[目前系統架構圖](docs/architecture.md#目前實作公開技術預覽)、[資料庫 ERD](docs/erd.md)及[領域模型對照](docs/domain-model.md)分別說明執行流程、資料關聯與不同時間語意。長期概念圖中的多階段工作佇列、通知與遠端監控仍未實作。
 
 原始產品核心是臺灣博物館的特展與期間限定展；後續為驗證不同時間模型，另開表演藝術與海洋節目專區。三種資料各有查詢端點，不把演出、每日活動或市集混入特展結果。所有頁面均提供官方入口供訪客出發前核對。
 
-目前是 **免費技術預覽**：GitHub Pages 靜態介面、Render 唯讀 API 與 Neon PostgreSQL 已公開運作，2026-10-19 跨來源瀏覽器驗收取得 11 間館所、25 筆未結束特展。科博館、故宮南院、海生館、科工館、國美館及歌劇院六個獨立工作已通過線上手動 Actions 驗證；故宮北院官方資料網址從雲端連線逾時，暫由本機工作站人工同步。**真正的週二排程與跨週穩定仍待驗證**。現有 PostgreSQL Queue 只執行 `FETCH_SOURCE`，沒有多階段解析／通知工作。一般入館票價與購票入口是人工核對資料，不等於每檔展覽票價；免費篩選只認來源明確標示。見[部署紀錄](docs/deployment.md)、[ER-91／95](docs/technical-decisions.md)及[票務來源與維護](docs/ticketing.md)。
+目前是 **免費技術預覽**：GitHub Pages 靜態介面、Render 唯讀 API 與 Neon PostgreSQL 已公開運作，2026-10-19 跨來源瀏覽器驗收取得 11 間館所、25 筆未結束特展。科博館、故宮南院、海生館、科工館、國美館及歌劇院六個獨立工作已通過線上手動 Actions 驗證；故宮北院官方資料網址從雲端連線逾時，暫由本機工作站人工同步。**真正的週二排程與跨週穩定仍待驗證**。現有 PostgreSQL 工作佇列只執行 `FETCH_SOURCE`，沒有多階段解析／通知工作。一般入館票價與購票入口是人工核對資料，不等於每檔展覽票價；免費篩選只認來源明確標示。見[部署紀錄](docs/deployment.md)、[ER-91／95](docs/technical-decisions.md)及[票務來源與維護](docs/ticketing.md)。
 
 ## 來源與展示範圍
 
-以下保留初期館所選擇的背景；**目前是否有自動 Adapter、人工快照或只有靜態導覽，請以[來源盤點](docs/sources.md)的現況矩陣為準**。表演、海洋節目與化石圖鑑是後續獨立加入的領域。
+以下保留初期館所選擇的背景；**目前是否有自動資料轉換器、人工快照或只有靜態導覽，請以[來源盤點](docs/sources.md)的現況矩陣為準**。表演、海洋節目與化石圖鑑是後續獨立加入的領域。
 
 - **首批來源目標**：奇美博物館、國立自然科學博物館、國立臺灣博物館、國立故宮博物院（北／南院）、國立臺灣歷史博物館。
 - **第二批**：國立科學工藝博物館、國立臺灣科學教育館、國立臺灣美術館、臺南市美術館。
@@ -38,7 +38,7 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 - 導覽頁的地圖入口可選出發地，開啟外部路線；本站不計算即時車程、票價或最佳路線，也不儲存輸入地點。
 - 奇美公開特展頁已有**本機可執行的每週變更檢查**（`npm run check:chimei`）。該檢查與文化部補充匯入互相獨立；前者比對官網初始 HTML 明確列出的連結及已知特展詳情的展名／展期，後者只納入能通過官網逐筆核對的文化部資料，兩者都不保證完整奇美展覽清單。線上排程尚未啟用。
 
-詳見 [需求規格](docs/requirements.md)、[API 契約](docs/api.md)、[來源盤點](docs/sources.md)、[官方 API／第三方資料源查證](docs/api-source-research.md)、[每週同步運作設計](docs/operations.md)與[後續方向（館所與 Queue）](docs/future-roadmap.md)。
+詳見 [需求規格](docs/requirements.md)、[API 契約](docs/api.md)、[來源盤點](docs/sources.md)、[官方 API／第三方資料源查證](docs/api-source-research.md)、[每週同步運作設計](docs/operations.md)與[後續方向（館所與工作佇列）](docs/future-roadmap.md)。
 
 **奇美來源新線索（2026-10-11）**：官網展覽頁使用未公開文件化的內部 JSON 端點；無 session 請求回 419；公開頁正常匿名流程可由 Node.js 取得 200。`npm run probe:chimei` 可只讀重測；離線適配器分類限期特展、常設展與活動，活動可手動更新快照並匯入本機候選表，**特展候選未接正式匯入**。沒有跨週穩定、自動同步或公開 API 證據。[實測與啟用門檻](docs/stage-2026-10-11-chimei-probe.md)及[候選來源評估](docs/chimei-internal-endpoint.md)記錄細節。
 
