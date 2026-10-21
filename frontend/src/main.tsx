@@ -284,14 +284,14 @@ function App() {
     <header className="site-header"><div className="header-inner"><a className="brand" href={appUrl()} aria-label="展館雷達首頁"><span className="brand-glyph">✧</span><span>展館 <b>雷達</b><small>博物館・美術館・表演與自然探索</small></span></a><nav aria-label="主要導覽"><a href="#explore-title">探索特展</a><a href="#activities">奇美活動</a><a href="#performances">表演節目</a><a href="#deep-sea">深海探勘</a><a href="#fossils">化石探勘</a><a href="#guides">博物館圖鑑</a><a href="#tickets">票務索引</a></nav><span className="header-edition">EXHIBITION &amp; VENUE <i>TAIWAN</i></span></div></header>
     <nav className="desktop-section-nav" aria-label="頁面快速跳轉" hidden={!showBackToTop}>
       <span>快速跳轉</span>
-      <a className="section-jump exhibitions" href="#explore-title"><i aria-hidden="true">⌕</i><span><b>特展搜尋</b><small>當期展覽</small></span></a>
-      <a className="section-jump chimei" href="#activities"><i aria-hidden="true">♜</i><span><b>奇美活動</b><small>活動與節目</small></span></a>
-      <a className="section-jump performance" href="#performances"><i aria-hidden="true">◒</i><span><b>表演節目</b><small>場次與舞台</small></span></a>
-      <a className="section-jump ocean" href="#deep-sea"><i aria-hidden="true">≈</i><span><b>深海探勘</b><small>海洋生物</small></span></a>
-      <a className="section-jump fossils" href="#fossils"><i aria-hidden="true">◌</i><span><b>化石探勘</b><small>遠古生命</small></span></a>
-      <a className="section-jump guides" href="#guides"><i aria-hidden="true">⌂</i><span><b>館所圖鑑</b><small>認識館舍</small></span></a>
-      <a className="section-jump tickets" href="#tickets"><i aria-hidden="true">↗</i><span><b>票務索引</b><small>出發前核對</small></span></a>
-      <a className="desktop-section-nav-top" href="#hero-title">↑ 回到上方</a>
+      <a className="section-jump exhibitions" href="#explore-title" aria-label="特展搜尋" title="特展搜尋"><i aria-hidden="true">⌕</i><span><b>特展搜尋</b><small>當期展覽</small></span></a>
+      <a className="section-jump chimei" href="#activities" aria-label="奇美活動" title="奇美活動"><i aria-hidden="true">♜</i><span><b>奇美活動</b><small>活動與節目</small></span></a>
+      <a className="section-jump performance" href="#performances" aria-label="表演節目" title="表演節目"><i aria-hidden="true">◒</i><span><b>表演節目</b><small>場次與舞台</small></span></a>
+      <a className="section-jump ocean" href="#deep-sea" aria-label="深海探勘" title="深海探勘"><i aria-hidden="true">≈</i><span><b>深海探勘</b><small>海洋生物</small></span></a>
+      <a className="section-jump fossils" href="#fossils" aria-label="化石探勘" title="化石探勘"><i aria-hidden="true">◌</i><span><b>化石探勘</b><small>遠古生命</small></span></a>
+      <a className="section-jump guides" href="#guides" aria-label="館所圖鑑" title="館所圖鑑"><i aria-hidden="true">⌂</i><span><b>館所圖鑑</b><small>認識館舍</small></span></a>
+      <a className="section-jump tickets" href="#tickets" aria-label="票務索引" title="票務索引"><i aria-hidden="true">↗</i><span><b>票務索引</b><small>出發前核對</small></span></a>
+      <a className="desktop-section-nav-top" href="#hero-title" aria-label="回到上方" title="回到上方">↑ 回到上方</a>
     </nav>
     <main>
       <section className="hero" aria-labelledby="hero-title"><div className="hero-grain" aria-hidden="true"/><div className="hero-inner"><div className="hero-copy-block"><p className="eyebrow"><span className="eyebrow-line"/> 展館雷達 ／ EXHIBITION &amp; VENUE RADAR</p><h1 id="hero-title">全台博物館、<br/><span>美術館與藝文展覽資訊。</span></h1><p className="hero-lede">從古埃及的文字、遠古生命的化石，到博物館與表演場館的當期展覽。跟著官方資料留下的線索，選一站，開始你的探索。</p><div className="hero-actions"><a className="primary-cta" href="#explore-title">開始發掘展覽 <span aria-hidden="true">↗</span></a><a className="text-cta" href="#guides">先認識博物館 <span aria-hidden="true">→</span></a></div><div className="hero-coordinate">25° N — 22° N <span>／</span> TAIWAN VENUE GUIDES</div></div><div className="hero-art" aria-label="古文明展品的考古檔案視覺"><span className="art-corner art-corner-top"/><img src={appUrl('/assets/egypt-writing-user.jpg')} alt="博物館內的羅塞塔石碑複製品展示，表面刻有古代文字"/><span className="art-corner art-corner-bottom"/><div className="artifact-tag"><span>FIELD NOTE / 001</span><strong>文字留下的線索</strong><small>古文明 · 自攝展品照片</small></div><div className="art-seal" aria-hidden="true"><CompassIcon/></div></div></div><div className="hero-bottom"><span>SCROLL TO DISCOVER</span><span className="hero-bottom-line"/><span>考古不是回到過去，而是重新看見現在。</span></div></section>
