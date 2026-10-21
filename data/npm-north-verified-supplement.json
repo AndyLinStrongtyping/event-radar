@@ -16,5 +16,41 @@
     "startDate": "2026-09-22",
     "endDate": "2026-12-27",
     "sourceUrl": "https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014551"
+  },
+  {
+    "museumId": "npm-north",
+    "sourceKey": "04014553",
+    "title": "匯流1950：新入藏文物風華",
+    "venue": "北部院區 第一展覽館 304",
+    "startDate": "2026-09-11",
+    "endDate": "2028-09-10",
+    "sourceUrl": "https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014553"
+  },
+  {
+    "museumId": "npm-north",
+    "sourceKey": "04014556",
+    "title": "物華再現：文物保存修復",
+    "venue": "北部院區 第一展覽館 105,107",
+    "startDate": "2026-10-08",
+    "endDate": "2027-01-03",
+    "sourceUrl": "https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014556"
+  },
+  {
+    "museumId": "npm-north",
+    "sourceKey": "04014550",
+    "title": "獨具慧眼：美感原則與繪畫欣賞",
+    "venue": "北部院區 第一展覽館 210,212",
+    "startDate": "2026-10-09",
+    "endDate": "2026-12-27",
+    "sourceUrl": "https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014550"
+  },
+  {
+    "museumId": "npm-north",
+    "sourceKey": "04014552",
+    "title": "國寶聚焦 2026-III",
+    "venue": "北部院區 第一展覽館 208",
+    "startDate": "2026-10-09",
+    "endDate": "2026-12-27",
+    "sourceUrl": "https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014552"
   }
 ]

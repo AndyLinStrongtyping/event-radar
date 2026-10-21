@@ -651,18 +651,27 @@ async function main() {
     { cwd: project, env: seaEnv, encoding: 'utf8' }), /Command failed/);
   result = await testDb.query("SELECT visible FROM exhibitions WHERE museum_id='npm-north' AND source_key='04012832'");
   assert.equal(result.rows[0].visible, false, '館方連結改變時舊補正展覽必須隱藏');
-  const northSupplementArgs = ['--experimental-strip-types', 'src/ingest.ts', '--source', 'npm-north',
-    '--provider', 'npm-north-manual', '--file', 'data/npm-north-verified-supplement.json'];
+  const verifiedNorthRows = JSON.parse(await readFile(
+    join(project, 'data/npm-north-verified-supplement.json'), 'utf8'));
+  const priorNorthFile = await fixture('npm-north-prior-supplement.json', verifiedNorthRows.slice(0, 2));
+  const northSupplementBaseArgs = ['--experimental-strip-types', 'src/ingest.ts', '--source', 'npm-north',
+    '--provider', 'npm-north-manual', '--file'];
+  const priorNorth = JSON.parse(execFileSync(process.execPath, [...northSupplementBaseArgs, priorNorthFile],
+    { cwd: project, env: seaEnv, encoding: 'utf8' }));
+  assert.equal(priorNorth.inserted, 2, '先模擬線上已有的兩筆逐頁核對展覽');
+  const northSupplementArgs = [...northSupplementBaseArgs, 'data/npm-north-verified-supplement.json'];
   const northSupplementFirst = JSON.parse(execFileSync(process.execPath, northSupplementArgs,
     { cwd: project, env: seaEnv, encoding: 'utf8' }));
-  assert.equal(northSupplementFirst.inserted, 2, '逐頁核對的兩檔漏展應能獨立補入');
+  assert.equal(northSupplementFirst.inserted, 4, '已有兩筆時只應補入四筆漏展');
+  assert.equal(northSupplementFirst.unchanged, 2, '既有兩筆不應重複建立');
   const northSupplementRepeat = JSON.parse(execFileSync(process.execPath, northSupplementArgs,
     { cwd: project, env: seaEnv, encoding: 'utf8' }));
   assert.equal(northSupplementRepeat.inserted, 0, '人工補充重跑不得重複新增');
-  assert.equal(northSupplementRepeat.unchanged, 2);
+  assert.equal(northSupplementRepeat.unchanged, 6);
   const northSupplementRows = await testDb.query(`SELECT source_key,primary_provider,visible
-    FROM exhibitions WHERE museum_id='npm-north' AND source_key IN ('04014549','04014551')`);
-  assert.equal(northSupplementRows.rows.length, 2);
+    FROM exhibitions WHERE museum_id='npm-north' AND source_key IN
+    ('04014549','04014551','04014553','04014556','04014550','04014552')`);
+  assert.equal(northSupplementRows.rows.length, 6);
   assert.ok(northSupplementRows.rows.every((row) => row.primary_provider === 'npm-north-manual'
     && row.visible === true));
   result = await testDb.query("SELECT last_official_success_at FROM museums WHERE id='npm-north'");

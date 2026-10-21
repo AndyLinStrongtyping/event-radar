@@ -13,6 +13,18 @@ export const npmNorthKnownCurrent = [
   { sourceKey: '04014551', title: '養心：巨幅名作展',
     startDate: '2026-09-22', endDate: '2026-12-27',
     sourceUrl: 'https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014551' },
+  { sourceKey: '04014553', title: '匯流1950：新入藏文物風華',
+    startDate: '2026-09-11', endDate: '2028-09-10',
+    sourceUrl: 'https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014553' },
+  { sourceKey: '04014556', title: '物華再現：文物保存修復',
+    startDate: '2026-10-08', endDate: '2027-01-03',
+    sourceUrl: 'https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014556' },
+  { sourceKey: '04014550', title: '獨具慧眼：美感原則與繪畫欣賞',
+    startDate: '2026-10-09', endDate: '2026-12-27',
+    sourceUrl: 'https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014550' },
+  { sourceKey: '04014552', title: '國寶聚焦 2026-III',
+    startDate: '2026-10-09', endDate: '2026-12-27',
+    sourceUrl: 'https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014552' },
 ] as const;
 
 export function checkNpmNorthKnownCoverage(rows: ExhibitionDraft[], today: string): string[] {
