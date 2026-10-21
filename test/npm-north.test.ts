@@ -34,23 +34,36 @@ test('故宮展覽連結不能指向非官方網站', () => {
   assert.equal(batch.records[0].status, 'review');
 });
 
+test('有完整展期且剛好兩年的北院特展可收錄', () => {
+  const batch = classifyNpmNorthFeed([{ ...base, sno: '04014553',
+    title: '匯流1950：新入藏文物風華', time: '2026-09-11 ~ 2028-09-10',
+    link: 'https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=04014553' }], '2026-10-21');
+  assert.equal(batch.rows.length, 1);
+  assert.equal(batch.records[0].status, 'ready');
+});
+
 test('已知當期展缺漏可標為部分涵蓋，展期結束後停止警示', () => {
   const rows = classifyNpmNorthFeed([base], '2026-10-20').rows;
-  assert.equal(checkNpmNorthKnownCoverage(rows, '2026-10-20').length, 2);
-  assert.deepEqual(checkNpmNorthKnownCoverage(rows, '2026-12-28'), []);
+  assert.equal(checkNpmNorthKnownCoverage(rows, '2026-10-20').length, 6);
+  assert.equal(checkNpmNorthKnownCoverage(rows, '2026-12-28').length, 2);
+  assert.deepEqual(checkNpmNorthKnownCoverage(rows, '2028-09-11'), []);
 });
 
 test('已知展覽必須同時符合來源鍵、標題、展期與官方詳情網址', () => {
   const known = [
     { sno: '04014549', title: '真知灼見：美感原則與書法欣賞', time: '2026-09-25 ~ 2026-12-27' },
     { sno: '04014551', title: '養心：巨幅名作展', time: '2026-09-22 ~ 2026-12-27' },
+    { sno: '04014553', title: '匯流1950：新入藏文物風華', time: '2026-09-11 ~ 2028-09-10' },
+    { sno: '04014556', title: '物華再現：文物保存修復', time: '2026-10-08 ~ 2027-01-03' },
+    { sno: '04014550', title: '獨具慧眼：美感原則與繪畫欣賞', time: '2026-10-09 ~ 2026-12-27' },
+    { sno: '04014552', title: '國寶聚焦 2026-III', time: '2026-10-09 ~ 2026-12-27' },
   ];
   const rows = classifyNpmNorthFeed(known.map((item) => ({ ...base, ...item,
     link: `https://www.npm.gov.tw/Exhibition-Content.aspx?l=1&sno=${item.sno}` })), '2026-10-20').rows;
   assert.deepEqual(checkNpmNorthKnownCoverage(rows, '2026-10-20'), []);
-  assert.equal(checkNpmNorthKnownCoverage([{ ...rows[0], endDate: '2026-12-28' }, rows[1]], '2026-10-20').length, 1);
+  assert.equal(checkNpmNorthKnownCoverage([{ ...rows[0], endDate: '2026-12-28' }, ...rows.slice(1)], '2026-10-20').length, 1);
   assert.equal(checkNpmNorthKnownCoverage([{ ...rows[0], sourceUrl:
-    'https://www.npm.gov.tw/Articles.aspx?sno=04014549' }, rows[1]], '2026-10-20').length, 1);
+    'https://www.npm.gov.tw/Articles.aspx?sno=04014549' }, ...rows.slice(1)], '2026-10-20').length, 1);
 });
 
 test('人工補充清單只收已核對的故宮北院詳情網址與完整展期', () => {
@@ -58,7 +71,7 @@ test('人工補充清單只收已核對的故宮北院詳情網址與完整展�
   const items: unknown = JSON.parse(readFileSync(file, 'utf8'));
   assert.ok(Array.isArray(items));
   const rows = items.map((item) => normalizeExhibition(item, 'npm-north'));
-  assert.equal(rows.length, 2);
+  assert.equal(rows.length, 6);
   assert.deepEqual(checkNpmNorthKnownCoverage(rows, '2026-10-20'), []);
   assert.equal(new Set(rows.map((row) => row.sourceKey)).size, rows.length);
 });
