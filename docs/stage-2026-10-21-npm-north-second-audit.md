@@ -17,4 +17,10 @@
 
 四檔加入 `data/npm-north-verified-supplement.json`，沿用獨立 `npm-north-manual` 來源及館方展覽編號作冪等鍵；該檔現有六筆。`probe:npm-north` 的已知展比對同步擴為六筆，僅在展期內警示缺漏。2026-10-21 唯讀探測回 HTTP 200、22 筆來源、1 筆合格、15 筆待審、6 筆略過，六檔已知展均未出現在可公開清單；因缺漏而回非零碼是預期警示。80 項單元測試、TypeScript 型別檢查、67 份文件連結檢查與隔離 PostgreSQL 完整整合測試通過；整合測試先建立既有兩筆，再以六筆補充檔匯入，確認只新增四筆、兩筆未變；重跑零新增且六筆未變，人工來源不推進官方完整同步時間。這是隔離庫結果，正式庫在本次提交前已有前兩筆。
 
-本段先記錄程式與來源核對；是否已合併、匯入正式 Neon 或顯示於公開站，以後續明確的發布與 API 驗證紀錄為準。即使六筆全數顯示，仍只表示六檔已知漏展有資料，不能稱故宮北院自動清單完整或啟用雲端週排程。
+## 正式匯入與標示修正
+
+PR [#9](https://github.com/AndyLinStrongtyping/event-radar/pull/9) 的兩項 CI 均通過並已合併。先以 PostgreSQL 自訂格式建立正式 Neon 備份，大小 147,498 bytes，SHA-256 `2d79406d326ec9ed0b930272ed89943bb7408b4dab1df7998884b39da454374b`，存於本機 `%LOCALAPPDATA%/EventRadar/backups`。接著由維運工作站以 `npm-north-manual` 匯入六筆，結果 `fetched=6, inserted=4, updated=0, unchanged=2, review=0`。公開 `GET /exhibitions?museum=npm-north&status=all&limit=100` 回 200、`total=7`，包含原有〈龍藏經〉與六筆人工補充，各標題、展期、官方詳情 URL 均已比對。
+
+公開 API 也暴露既有標示問題：展覽的 `sourceStatus` 原先直接取館所的 `open_data`，導致這六筆人工核對展覽在卡片上被稱為「公開資料」。後續修正用單筆展覽的 `primary_provider` 判別：`npm-north-manual` 回 `curated`，官方 JSON 仍回 `open_data`；整合測試同時查清單及詳情。此修正尚須部署後核對公開回應，不能在部署前宣稱標示已修好。
+
+即使六筆全數顯示，仍只表示六檔已知漏展有資料，不能稱故宮北院自動清單完整或啟用雲端週排程。

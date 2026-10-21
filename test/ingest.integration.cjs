@@ -191,6 +191,15 @@ async function checkPublicApiContract(afterChecks) {
     assert.equal(museums.items.find((museum) => museum.id === 'nstm').coverageStatus, 'deferred_partial');
     assert.equal(museums.items.find((museum) => museum.id === 'ntmofa').venueType, 'art_museum');
 
+    const northExhibitions = await get('/exhibitions?museum=npm-north&status=all&limit=100');
+    const manualNorthKeys = ['04014549', '04014551', '04014553', '04014556', '04014550', '04014552'];
+    for (const sourceKey of manualNorthKeys) {
+      const exhibition = northExhibitions.items.find((item) => item.sourceUrl.includes(`sno=${sourceKey}`));
+      assert.equal(exhibition?.sourceStatus, 'curated', `${sourceKey} 應標示為人工核對`);
+      const northDetail = await get(`/exhibitions/${exhibition.id}`);
+      assert.equal(northDetail.sourceStatus, 'curated', '詳情與清單來源標籤須一致');
+    }
+
     const performances = await get('/performances?source=ntt&period=all');
     assert.equal(performances.total, 1);
     assert.equal(performances.items[0].domain, 'performance');
