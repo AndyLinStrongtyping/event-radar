@@ -49,7 +49,8 @@ function withSearchStatus(row: ExhibitionRow, asOf: string) {
 }
 
 const fields = `e.id,e.title,e.museum_id AS "museumId",m.name AS "museumName",m.city,
-  m.source_status AS "sourceStatus",
+  CASE WHEN e.primary_provider='npm-north-manual' THEN 'curated'
+    ELSE m.source_status END AS "sourceStatus",
   e.venue,to_char(e.start_date,'YYYY-MM-DD') AS "startDate",
   to_char(e.end_date,'YYYY-MM-DD') AS "endDate",e.price_note AS "priceNote",
   e.source_url AS "sourceUrl",e.summary,e.last_seen_at AS "lastSeenAt",

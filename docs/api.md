@@ -35,7 +35,7 @@ Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "
 
 `GET /visit-status?museum=nmns&date=2026-10-05` 回傳 `museumId,date,status,message,sourceUrl`，核對資料另有 `checkedAt`。`status` 為 `open`、`closed` 或 `unknown`；科博館僅在金鑰可用且日期落於 API 未來一週資料內才宣稱開／休館。奇美週三可能特別開放，因此回 `unknown` 並提供 `newsUrl` 查看臨時公告。海生館只有指定日期已依官方詳情或公告人工覆核時才回 `open`／`closed`、官方證據 `sourceUrl` 與核對時間；其他日期仍是 `unknown`，服務頁的平常時間與週二規則不能推定特殊假期。其他館目前也只有官方入口與 `unknown`，不將特展或節目日期推論為開館日。
 
-`sourceStatus` 分為 `curated`（人工核對）、`open_data`（官方公開資料）、`official_page`（館方公開頁同步）與 `planned`（尚未接入）。`GET /exhibitions/:id/changes` 回傳 `{ "items": [{ "field": "endDate", "oldValue": "2026-12-06", "newValue": "2026-12-07", "detectedAt": "..." }] }`；沒有異動時為空陣列，不表示資料未曾被核對。
+`sourceStatus` 分為 `curated`（人工核對）、`open_data`（官方公開資料）、`official_page`（館方公開頁同步）與 `planned`（尚未接入）。展覽清單和詳情中的此欄位以單筆展覽的實際來源判斷；例如故宮北院由 `npm-north-manual` 補入的展覽為 `curated`，同館由官方 JSON 匯入的展覽仍為 `open_data`。`GET /exhibitions/:id/changes` 回傳 `{ "items": [{ "field": "endDate", "oldValue": "2026-12-06", "newValue": "2026-12-07", "detectedAt": "..." }] }`；沒有異動時為空陣列，不表示資料未曾被核對。
 
 `GET /museums` 另有 `venueType`（`museum`／`art_museum`）。`Exhibition.art` 對一般博物館是 `null`；已核對的國美館限期展回傳 `artistNames`、`curatorNames`、`exhibitionType`、`venueArea`、`floor` 與 `relatedEvents`。來源未明載人物名稱時是空陣列，不以介紹文章中的泛稱推測。相關活動只提供官方連結與類型，**不代表該場次仍可報名**。`/exhibitions/:id/changes` 查共通展覽欄位；`/exhibitions/:id/art-changes` 查美術欄位，回傳同樣的 `items` 結構，其中 `oldValue`／`newValue` 依欄位為字串、字串陣列、相關活動物件陣列或 `null`。一般博物館展覽的美術異動列表為空；隱藏或模擬展覽沿用詳情端點的 404／`includeSample=true` 規則。
 
