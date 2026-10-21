@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-21 **第一次真實週二自動更新已核對**：[GitHub Actions #39343053279](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39343053279)於 10/20 臺灣時間 07:40 啟動，六個獨立工作均成功，故宮北院依開關略過。各來源此次均無新增或更新；國美館取 9 筆、清單基準 10，標為 `deferred_partial`；海生館取 30 筆，其中 25 筆待審。**工作成功不等於完整涵蓋，跨週穩定仍待第二次真實排程**。化石館展覽來源也已盤點：左鎮官網特展頁沒有完整展期，澎湖重新開館展示沒有可核對的獨立限期展日期，兩館不進當期特展搜尋。見[排程與來源核對](docs/stage-2026-10-21-first-weekly-schedule.md)。
+
 2026-10-21 **桌面快速跳轉避開特展查詢**：約 1,265px 寬視窗原本的右側文字導覽覆蓋館所選單及「重新查詢」。在 1,050～1,799px 改成 40px 圖示列，保留各區特色圖示、中文無障礙名稱與滑鼠提示；本機與 [公開快速前端](https://andylinstrongtyping.github.io/event-radar/#explore-title) 均確認按鈕完整露出，本機實際點擊成功。1,800px 以上保留文字版，手機沿用原有版型。[PR #10](https://github.com/AndyLinStrongtyping/event-radar/pull/10) 的兩項檢查通過並已合併，Pages 第 12 次發布成功。見 [ER-97](docs/technical-decisions.md)。
 
 2026-10-21 **故宮北院第二輪漏展已補入正式資料**：逐頁核對官方當期／預告清單與 4 檔詳情頁，發現〈匯流1950〉、〈物華再現〉、〈獨具慧眼〉、〈國寶聚焦 2026-III〉均未列於可取得的官方 JSON。PR [#9](https://github.com/AndyLinStrongtyping/event-radar/pull/9) 兩項 CI 通過後合併；正式 Neon 備份後匯入六筆補充資料，新增 4 筆、既有 2 筆未變，公開 API 顯示北院共 7 筆。PR [#10](https://github.com/AndyLinStrongtyping/event-radar/pull/10) 修正人工補展的來源標籤，Render 部署 `3db2f41` 上線後公開 API 核對為六筆 `curated`、一筆 `open_data`。**這六檔是人工核對補漏，不代表故宮清單已完整；北院雲端週排程仍關閉。**見[第二輪稽核](docs/stage-2026-10-21-npm-north-second-audit.md)與[ER-96](docs/technical-decisions.md)。
