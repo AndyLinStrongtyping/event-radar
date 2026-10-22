@@ -8,9 +8,11 @@
 
 2026-10-18 [CI #50](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/39101962456) 先備份並還原合成展覽、來源與異動關係。同日後續使用 PostgreSQL 18.6 原生工具完成正式 Neon 的**本機備份與隔離還原演練**：146,102 bytes、SHA-256 `8074b679838dc3ad83eb797db2540e9ad4403d2e4ddcddd366af67cbcf532222`，還原後 25 份 migration、11 間館、30 筆展覽及 18 筆匯入紀錄與來源唯讀筆數一致。臨時本機資料庫已停止並清除，備份保留在 `%LOCALAPPDATA%\EventRadar\backups`。這仍是一份單機、未加密、未驗證異地保存的備份；電腦或磁碟故障時可能一併遺失。詳見[演練紀錄](stage-2026-10-18-neon-backup-drill.md)。任何正式還原仍須另行確認停寫、目標、資料版本及回退方案，不能套用測試命令覆寫原庫。
 
+2026-10-21 再次對正式 Neon 建立 148,143 bytes 備份，於獨立空白本機庫還原並核對 25 份 migration、11 間館、36 筆展覽及 26 筆匯入紀錄，均與正式庫唯讀查詢一致。臨時庫已停止並清理；此備份仍只有本機副本，且建立於國美館基準審查寫入之前。見[當次核對紀錄](stage-2026-10-21-review-backup-smoke.md)。
+
 ## 週二排程驗收
 
-每週二臺灣時間 04:15 後，逐一檢查 GitHub Actions 六個已啟用的來源工作：科博館、故宮南院、海生館限期展、科工館、國美館及歌劇院。對照 `npm run sync:status`、`npm run jobs:status`、網站 `/health` 與公開資料的最後成功時間；來源失敗時記錄工作名稱、錯誤種類、來源列數與待審數，不把前次成功誤記成當週成功。首次真實週排程預定 2026-10-20，第二次跨週完成前不宣稱穩定。故宮北院獨立開關維持關閉，按下節人工更新；海生館當日節目不是每週特展工作，不能用週排程宣稱今日節目已更新。
+每週二臺灣時間 04:15 後，逐一檢查 GitHub Actions 六個已啟用的來源工作：科博館、故宮南院、海生館限期展、科工館、國美館及歌劇院。對照 `npm run sync:status`、`npm run jobs:status`、網站 `/health` 與公開資料的最後成功時間；來源失敗時記錄工作名稱、錯誤種類、來源列數與待審數，不把前次成功誤記成當週成功。首次真實週排程已於 2026-10-20 啟動且六個工作成功；第二次跨週完成前不宣稱穩定。故宮北院獨立開關維持關閉，按下節人工更新；海生館當日節目不是每週特展工作，不能用週排程宣稱今日節目已更新。
 
 ## 故宮北院雲端連線失敗時的更新
 
@@ -48,7 +50,7 @@
 
 目標頻率為臺灣時間每週二 04:15；博物館特展不需要每天讀取。排程在非整點，降低 GitHub Actions 整點壅塞機率；它仍可能延遲或漏跑，不能承諾準點更新。重要展期變動可手動執行單館同步。來源資料本身若未更新，重跑只刷新最後看見時間。
 
-`.github/workflows/weekly-sync.yml` 已有 2026-10-17 線上手動執行證據：六個來源成功，故宮北院從雲端抓取失敗。`EVENT_RADAR_SYNC_ENABLED` 啟用已驗證來源；北院另由 `EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 控制（目前應維持非 true），奇美只讀檢查另由 `EVENT_RADAR_CHIMEI_CHECK_ENABLED` 控制（目前應維持非 true）。GitHub Actions 週期執行及跨週可靠性仍待觀察。初次啟用或重建環境的檢查條件：
+`.github/workflows/weekly-sync.yml` 已有 2026-10-17 線上手動執行證據，也有 [2026-10-20 第一次真實週排程](stage-2026-10-21-first-weekly-schedule.md)：六個獨立工作成功，故宮北院依開關略過。`EVENT_RADAR_SYNC_ENABLED` 啟用已驗證來源；北院另由 `EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 控制（目前應維持非 true），奇美只讀檢查另由 `EVENT_RADAR_CHIMEI_CHECK_ENABLED` 控制（目前應維持非 true）。**只有一次真實週排程，跨週可靠性仍待觀察。**初次啟用或重建環境的檢查條件：
 
 1. 專案放到獨立 GitHub repo 的預設分支。
 2. 建立可從 GitHub Actions 連線的 PostgreSQL；**空白庫**執行 `npm run migrate` 即可。既有且已有 migration 帳本的資料庫也直接執行此命令，會套用尚未執行的版本（目前至 025）。若沿用早期手動建表、完全沒有帳本的舊庫，先備份並核對所有 migration 都已套用，再執行一次 `npm run migrate -- --baseline-existing`；結構缺漏會拒絕，不能用基線命令跳過真正缺少的 migration。
@@ -75,7 +77,7 @@
 
 ## 本機 PostgreSQL 來源工作佇列
 
-此功能需先 `npm run migrate`；本機可手動呼叫，每週 workflow 已啟用已驗證來源，2026-10-17 線上手動執行六個工作成功，但真實週排程尚待觀察。故宮北院雲端抓取失敗，另由預設關閉的 `EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 隔離，不算入六個成功工作。`npm run jobs:enqueue -- --source all` 以臺灣日期建立六館工作，也可指定單一館別和 `--date YYYY-MM-DD`；同館同日重送只回既有工作。`npm run jobs:work` 執行一筆到期工作；加 `-- --loop` 才會持續每五秒輪詢。可在不同終端機啟動多個 worker，PostgreSQL `SKIP LOCKED` 避免領到同一筆。`npm run jobs:status` 查看最近 100 筆。`dead` 工作先查錯誤和館方來源，再用 `npm run jobs:replay -- --id <UUID>` 建立新工作，原紀錄不刪。
+此功能需先 `npm run migrate`；本機可手動呼叫，每週 workflow 已啟用已驗證來源，2026-10-17 線上手動執行與 10/20 第一次真實週排程的六個工作成功；第二次週排程仍待觀察。故宮北院雲端抓取失敗，另由預設關閉的 `EVENT_RADAR_NPM_NORTH_SYNC_ENABLED` 隔離，不算入六個成功工作。`npm run jobs:enqueue -- --source all` 以臺灣日期建立六館工作，也可指定單一館別和 `--date YYYY-MM-DD`；同館同日重送只回既有工作。`npm run jobs:work` 執行一筆到期工作；加 `-- --loop` 才會持續每五秒輪詢。可在不同終端機啟動多個 worker，PostgreSQL `SKIP LOCKED` 避免領到同一筆。`npm run jobs:status` 查看最近 100 筆。`dead` 工作先查錯誤和館方來源，再用 `npm run jobs:replay -- --id <UUID>` 建立新工作，原紀錄不刪。
 
 每次工作最長執行官方匯入 90 秒，持有三分鐘租約；單次 `jobs:work` 若工作失敗會回傳非零碼。`npm run jobs:scheduled -- --source nstm` 只處理科工館當日工作，最長等待八分鐘並回報最終狀態；暫時失敗依退避時間等待，成功的同館同日工作不重抓，`dead` 回傳非零碼且不自動重播。等待逾時後用 `jobs:status` 查狀態；成功工作需要重新抓取時，明確改用 `npm run sync -- --source <館別>` 手動處理。暫時錯誤最多三次，間隔 30 秒、2 分鐘，非暫時錯誤直接進 `dead`。worker 異常中止時，下次領取會把過期租約記成失敗並安排退避；沒有常駐 worker 時不會自動恢復。這個 Queue 只處理 `FETCH_SOURCE`，資料解析、正規化、去重、異動仍在一次匯入交易內；不含訂閱通知或圖片處理。不要將「有 Queue」誤寫成已經有線上排程或 AWS 工作服務。
 
