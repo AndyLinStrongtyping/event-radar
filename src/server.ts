@@ -79,6 +79,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/guides/ntmofa.html', ['../web/guides/ntmofa.html', 'text/html; charset=utf-8']],
   ['/guides/ntt.html', ['../web/guides/ntt.html', 'text/html; charset=utf-8']],
   ['/photo-credits.html', ['../web/photo-credits.html', 'text/html; charset=utf-8']],
+  ['/privacy.html', ['../web/privacy.html', 'text/html; charset=utf-8']],
   ['/chimei-activities.json', ['../data/chimei-activities.json', 'application/json; charset=utf-8']],
   ['/styles.css', ['../web/styles.css', 'text/css; charset=utf-8']],
   ['/app.js', ['../web/app.js', 'text/javascript; charset=utf-8']],

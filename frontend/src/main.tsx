@@ -4,6 +4,7 @@ import './styles.css';
 import { DomainProgrammes } from './DomainProgrammes';
 import { FossilExpedition } from './FossilExpedition';
 import { appUrl, backendUrl } from './runtime-url';
+import { trackExhibitionDetailOpen, trackExhibitionSearchCompleted, trackOfficialExhibitionClick } from './analytics';
 
 type Ticket = { label: string; price: string; note: string; infoUrl: string; purchaseUrl?: string | null; checkedOn: string };
 type Museum = {
@@ -127,7 +128,7 @@ function ExhibitionCard({ item, number, museum, expanded, onToggle }: { item: Ex
       <div className="date-ribbon"><small>展覽日期</small><strong>{item.startDate} — {item.endDate}</strong></div>
       <p className="exhibit-summary">{item.summary || '前往官方頁面查看展覽介紹與參觀資訊。'}</p>
     </div>
-    <div className="exhibit-actions"><button type="button" aria-expanded={expanded} onClick={onToggle}>{expanded ? '收起檔案' : '翻開展覽檔案'} <span aria-hidden="true">{expanded ? '−' : '+'}</span></button>{url && <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`前往 ${item.title} 的官方頁面`}>館方原頁 ↗</a>}</div>
+    <div className="exhibit-actions"><button type="button" aria-expanded={expanded} onClick={onToggle}>{expanded ? '收起檔案' : '翻開展覽檔案'} <span aria-hidden="true">{expanded ? '−' : '+'}</span></button>{url && <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`前往 ${item.title} 的官方頁面`} onClick={() => trackOfficialExhibitionClick(item)}>館方原頁 ↗</a>}</div>
     {expanded && <div className="exhibit-details">
       <dl><div><dt>展區</dt><dd>{item.art?.venueArea || item.venue || '以館方公告為準'}{item.art?.floor ? `（${item.art.floor}）` : ''}</dd></div><div><dt>本展票價</dt><dd>{admission}</dd></div>{general && <div><dt>一般入館</dt><dd>{general.price}（{general.label}；不代表本展票價）</dd></div>}{item.lastSeenAt && <div><dt>資料更新</dt><dd>{formatTaipei(item.lastSeenAt)}</dd></div>}{item.art?.artistNames.length ? <div><dt>參展藝術家</dt><dd>{item.art.artistNames.join('、')}</dd></div> : null}{item.art?.curatorNames.length ? <div><dt>策展人</dt><dd>{item.art.curatorNames.join('、')}</dd></div> : null}</dl>
       {item.art?.relatedEvents.length ? <div className="detail-links"><span>相關活動（場次可能已結束，請查館方）：</span>{item.art.relatedEvents.map((event) => <a key={event.sourceUrl} href={officialUrl(event.sourceUrl) || '#explore-title'} target="_blank" rel="noopener noreferrer">{event.title} ↗</a>)}</div> : null}
@@ -156,6 +157,7 @@ function App() {
   const [searchError, setSearchError] = useState('');
   const [loadMoreError, setLoadMoreError] = useState('');
   const searchGeneration = useRef(0);
+  const searchIntent = useRef(false);
   const [refreshKey, setRefreshKey] = useState(0);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [visit, setVisit] = useState<Visit | null>(null);
@@ -230,10 +232,15 @@ function App() {
         setTotal(data.total);
         setExpandedId(null);
         setLoading(false);
+        if (searchIntent.current) {
+          searchIntent.current = false;
+          trackExhibitionSearchCompleted(filters, data.total);
+        }
       } catch (error) {
         if (controller.signal.aborted || generation !== searchGeneration.current) return;
         setSearchError(error instanceof Error ? error.message : '特展資料暫時無法載入');
         setLoading(false);
+        searchIntent.current = false;
       }
     }, delay);
     return () => { clearTimeout(timer); controller.abort(); };
@@ -284,7 +291,11 @@ function App() {
   const ticketMuseums = museums.filter((museum) => museum.generalAdmission && (!ticketCity || museum.city === ticketCity));
   const ticketCities = [...new Set(museums.filter((museum) => museum.generalAdmission).map((museum) => museum.city))];
   const activitySnapshotOld = chimeiActivities && Date.now() - Date.parse(chimeiActivities.checkedAt) > 14 * 86400_000;
-  const updateFilter = <K extends keyof Filters>(name: K, value: Filters[K]) => setFilters((current) => ({ ...current, [name]: value }));
+  const updateFilter = <K extends keyof Filters>(name: K, value: Filters[K]) => {
+    searchIntent.current = true;
+    setFilters((current) => ({ ...current, [name]: value }));
+  };
+  const retrySearch = () => { searchIntent.current = true; setRefreshKey((value) => value + 1); };
 
   return <>
     <a className="skip-link" href="#results">跳到展覽結果</a>
@@ -307,7 +318,7 @@ function App() {
 
       <section className="explore-section" aria-labelledby="explore-title"><div className="section-kicker light"><span>02</span> THE EXHIBITION ARCHIVE</div><div className="explore-heading"><div><h2 id="explore-title">特展發掘站</h2><p>設定目的地與時間，翻開最新的展覽檔案。</p></div><div className="explore-emblem" aria-hidden="true"><CompassIcon/></div></div>
         {preview && <p className="preview-note" role="status">本機展示快照：展覽資料並非即時同步，模擬資料需主動勾選才顯示。</p>}
-        <div className="search-panel" role="search" aria-label="搜尋特展"><div className="search-top"><label className="search-keyword"><span>01 / 尋找線索</span><input type="search" value={filters.q} onChange={(event) => updateFilter('q', event.target.value)} placeholder="輸入展名、主題或關鍵字" autoComplete="off"/></label><label><span>02 / 選擇城市</span><select value={filters.city} onChange={(event) => { setFilters((current) => ({ ...current, city: event.target.value, museum: '' })); }}><option value="">全臺灣</option>{cities.map((city) => <option key={city} value={city}>{city}</option>)}</select></label><label><span>03 / 指定館所</span><select value={filters.museum} onChange={(event) => updateFilter('museum', event.target.value)}><option value="">{filters.city ? '該地區所有博物館' : '所有博物館'}</option>{museumOptions.map((museum) => <option key={museum.id} value={museum.id}>{museum.name}</option>)}</select></label></div><div className="search-bottom"><div className="status-tabs" role="group" aria-label="展覽狀態">{statusOptions.map((option) => <button key={option.value} type="button" className={filters.status === option.value ? 'active' : ''} aria-pressed={filters.status === option.value} onClick={() => updateFilter('status', option.value)}>{option.label}</button>)}</div><button type="button" className="refresh-button" onClick={() => setRefreshKey((value) => value + 1)}>重新查詢 ↗</button></div><div className="advanced-filters"><label>入場資訊<select value={filters.admission} onChange={(event) => updateFilter('admission', event.target.value)}><option value="all">不限票價</option><option value="free">明確標示免費</option></select></label><label>查詢基準日<input type="date" value={filters.asOf} onChange={(event) => updateFilter('asOf', event.target.value)} aria-label="以此日期判斷展覽狀態"/></label><label className="sample-check"><input type="checkbox" checked={filters.includeSample} onChange={(event) => updateFilter('includeSample', event.target.checked)}/> 顯示測試資料</label></div></div>
+        <div className="search-panel" role="search" aria-label="搜尋特展"><div className="search-top"><label className="search-keyword"><span>01 / 尋找線索</span><input type="search" value={filters.q} onChange={(event) => updateFilter('q', event.target.value)} placeholder="輸入展名、主題或關鍵字" autoComplete="off"/></label><label><span>02 / 選擇城市</span><select value={filters.city} onChange={(event) => { searchIntent.current = true; setFilters((current) => ({ ...current, city: event.target.value, museum: '' })); }}><option value="">全臺灣</option>{cities.map((city) => <option key={city} value={city}>{city}</option>)}</select></label><label><span>03 / 指定館所</span><select value={filters.museum} onChange={(event) => updateFilter('museum', event.target.value)}><option value="">{filters.city ? '該地區所有博物館' : '所有博物館'}</option>{museumOptions.map((museum) => <option key={museum.id} value={museum.id}>{museum.name}</option>)}</select></label></div><div className="search-bottom"><div className="status-tabs" role="group" aria-label="展覽狀態">{statusOptions.map((option) => <button key={option.value} type="button" className={filters.status === option.value ? 'active' : ''} aria-pressed={filters.status === option.value} onClick={() => updateFilter('status', option.value)}>{option.label}</button>)}</div><button type="button" className="refresh-button" onClick={retrySearch}>重新查詢 ↗</button></div><div className="advanced-filters"><label>入場資訊<select value={filters.admission} onChange={(event) => updateFilter('admission', event.target.value)}><option value="all">不限票價</option><option value="free">明確標示免費</option></select></label><label>查詢基準日<input type="date" value={filters.asOf} onChange={(event) => updateFilter('asOf', event.target.value)} aria-label="以此日期判斷展覽狀態"/></label><label className="sample-check"><input type="checkbox" checked={filters.includeSample} onChange={(event) => updateFilter('includeSample', event.target.checked)}/> 顯示測試資料</label></div></div>
         <p className="search-note">狀態依展期與查詢基準日計算；「免費」只收錄明確標示免費的資料。未提供票價不推斷為免費。</p>
         <div className="status-panels"><aside className={`status-panel${selectedMuseum && (selectedMuseum.dataStatus !== 'recent' || selectedMuseum.coverageStatus === 'deferred_partial' || selectedMuseum.pendingReviewCount > 0) ? ' caution' : ''}`} aria-live="polite"><span>資料來源狀態</span><strong>{selectedMuseum ? selectedMuseum.name : '各館資料更新方式不同'}</strong><p>{selectedMuseum ? sourceMessage(selectedMuseum) : '選擇一間博物館，查看最後成功匯入與官方同步狀態。參觀前請開啟展覽的官方連結核對。'}</p>{officialUrl(selectedMuseum?.homepageUrl) && <a href={selectedMuseum!.homepageUrl} target="_blank" rel="noopener noreferrer">查看館方網站 ↗</a>}</aside><aside className={`status-panel visit ${visit?.status || ''}`} aria-live="polite"><span>出發前確認</span><strong>{visitLoading ? '正在核對開館資訊' : visitError ? '開館資訊暫時無法核對' : !selectedMuseum ? '平常開放時間已整理' : visit?.status === 'closed' ? '休館提醒' : visit?.status === 'open' ? '館方行事曆顯示開館' : '請向館方確認'}</strong><p>{visitLoading ? '正在讀取館方資料…' : visitError ? '請查看館方最新公告後再出發。' : visit?.message || '已收錄館所的平常時間可查本站導覽；其他館所及特殊日請以館方公告為準。'}</p>{selectedMuseum && <div className="status-links"><a href={guides.some((guide) => guide.id === selectedMuseum.id) ? backendUrl(`/guides/${encodeURIComponent(selectedMuseum.id)}.html`) : selectedMuseum.homepageUrl}>查看參觀資訊 ↗</a>{officialUrl(visit?.sourceUrl) && <a href={visit!.sourceUrl} target="_blank" rel="noopener noreferrer">館方開放資訊 ↗</a>}{officialUrl(visit?.newsUrl) && <a href={visit!.newsUrl || ''} target="_blank" rel="noopener noreferrer">館方最新消息 ↗</a>}</div>}</aside></div>
         <div className="results-heading" id="results">
@@ -315,10 +326,10 @@ function App() {
           <div className="results-tools"><p>每筆展覽皆附館方或資料來源連結</p><button type="button" onClick={replayDig} disabled={demoLoading} aria-label="觀看文物發掘動畫">{demoLoading ? '發掘中…' : '觀看發掘動畫 ↻'}</button></div>
         </div>
         <div className="results-region" aria-busy={loading || demoLoading}>
-          {loading || demoLoading ? <><ExcavationLoader/>{loading && slowLoading && <p role="status">展覽資料仍在連線，伺服器可能正在啟動。你可先瀏覽館所圖鑑；若持續沒有結果，請按「重新查詢」。</p>}</> : searchError || museumError ? <div className="empty-state"><strong>線索暫時中斷</strong><p>{searchError || museumError}</p><button type="button" onClick={() => setRefreshKey((value) => value + 1)}>再試一次</button></div> : items.length ? <>
-            <div className="exhibit-grid">{items.map((item, index) => <ExhibitionCard key={item.id} item={item} number={index + 1} museum={availableMuseums.find((entry) => entry.id === item.museumId)} expanded={expandedId === item.id} onToggle={() => setExpandedId((id) => id === item.id ? null : item.id)}/>)}</div>
+          {loading || demoLoading ? <><ExcavationLoader/>{loading && slowLoading && <p role="status">展覽資料仍在連線，伺服器可能正在啟動。你可先瀏覽館所圖鑑；若持續沒有結果，請按「重新查詢」。</p>}</> : searchError || museumError ? <div className="empty-state"><strong>線索暫時中斷</strong><p>{searchError || museumError}</p><button type="button" onClick={retrySearch}>再試一次</button></div> : items.length ? <>
+            <div className="exhibit-grid">{items.map((item, index) => <ExhibitionCard key={item.id} item={item} number={index + 1} museum={availableMuseums.find((entry) => entry.id === item.museumId)} expanded={expandedId === item.id} onToggle={() => { if (expandedId !== item.id) trackExhibitionDetailOpen(item); setExpandedId(expandedId === item.id ? null : item.id); }}/>)}</div>
             <div className="more-results"><span>目前顯示 {items.length} / {total} 筆展覽</span>{items.length < total && <button type="button" onClick={loadMore} disabled={loadingMore}>{loadingMore ? '正在繼續發掘…' : '載入更多展覽 ↓'}</button>}{loadMoreError && <p role="alert">{loadMoreError}，請再試一次。</p>}</div>
-          </> : <div className="empty-state"><div className="empty-symbol" aria-hidden="true">⌕</div><strong>本站目前沒有符合條件的已收錄特展</strong><p>{filters.admission === 'free' ? '免費篩選只包含館方明確標示免費的特展；取消票價條件可以查看更多展覽。' : '試試其他城市、展覽狀態或入場條件；這不代表館方沒有其他展覽。'}</p>{filters.museum === 'chimei' && <p><a href="https://www.chimeimuseum.org/exhibition-event" target="_blank" rel="noopener noreferrer">查看奇美官方展覽與活動 ↗</a></p>}<button type="button" onClick={() => setFilters({ q: '', city: '', museum: '', status: 'active', admission: 'all', asOf: '', includeSample: false })}>清除篩選</button></div>}
+          </> : <div className="empty-state"><div className="empty-symbol" aria-hidden="true">⌕</div><strong>本站目前沒有符合條件的已收錄特展</strong><p>{filters.admission === 'free' ? '免費篩選只包含館方明確標示免費的特展；取消票價條件可以查看更多展覽。' : '試試其他城市、展覽狀態或入場條件；這不代表館方沒有其他展覽。'}</p>{filters.museum === 'chimei' && <p><a href="https://www.chimeimuseum.org/exhibition-event" target="_blank" rel="noopener noreferrer">查看奇美官方展覽與活動 ↗</a></p>}<button type="button" onClick={() => { searchIntent.current = true; setFilters({ q: '', city: '', museum: '', status: 'active', admission: 'all', asOf: '', includeSample: false }); }}>清除篩選</button></div>}
         </div>
       </section>
 
@@ -331,7 +342,7 @@ function App() {
       </section>
       <DomainProgrammes/>
       <FossilExpedition/>
-    </main><footer className="site-footer"><div><span className="footer-brand">✧ 展館雷達</span><p>沿著真實資料，繼續探索未知。</p></div><p>資訊取自各博物館與政府公開資料；展期、票價、休館與入場規定，以館方公告為準。</p><a href="#hero-title">回到頂端 ↑</a></footer>
+    </main><footer className="site-footer"><div><span className="footer-brand">✧ 展館雷達</span><p>沿著真實資料，繼續探索未知。</p></div><p>資訊取自各博物館與政府公開資料；展期、票價、休館與入場規定，以館方公告為準。<a href={backendUrl('/privacy.html')}>網站流量與隱私說明</a></p><a href="#hero-title">回到頂端 ↑</a></footer>
     <button className="back-to-top" type="button" hidden={!showBackToTop} aria-label="回到頂部" title="回到頂部"
       onClick={() => {
         returningToTop.current = true;
