@@ -1,6 +1,6 @@
 # Event Radar｜目前進度
 
-2026-10-24 **三角色測試後修正**：深海返回搜尋連結已改用前端子路徑函式，歷史海洋快照不再稱「今日」；空結果說明本站收錄界線，連線超過 8 秒會顯示等待提示。正式 Neon 唯讀核對發現奇美展覽及匯入紀錄原本皆為 0；核對官網後以人工資料匯入《埃及之王：法老》1 筆，公開 API 已回傳 `total=1`、`sourceStatus=curated`。這不是奇美自動同步或完整涵蓋；前端修正仍須經發布與公開頁驗收。見[ER-98](docs/technical-decisions.md)及[三角色測試](docs/usability-three-personas-2026-10-24.md)。
+2026-10-24 **三角色測試後修正與公開驗收**：深海返回搜尋連結已改用前端子路徑函式，歷史海洋快照不再稱「今日」；空結果說明本站收錄界線，連線超過 8 秒會顯示等待提示。正式 Neon 唯讀核對發現奇美展覽及匯入紀錄原本皆為 0；核對官網後以人工資料匯入《埃及之王：法老》1 筆，公開 API 已回傳 `total=1`、`sourceStatus=curated`。前端修正由 [PR #13](https://github.com/AndyLinStrongtyping/event-radar/pull/13) 合併、自動檢查通過；公開 Pages 實際點擊深海連結抵達 `/event-radar/?museum=nmmba#explore-title`，館別正確並顯示 2 場已收錄特展。奇美公開頁顯示 1 場《埃及之王：法老》，日期、特展票價與官方詳情連結均可見。這不是奇美自動同步或完整涵蓋；手機實機仍未驗收。見[ER-98](docs/technical-decisions.md)及[三角色測試](docs/usability-three-personas-2026-10-24.md)。
 
 2026-10-21 **桌面快速跳轉避開特展查詢**：約 1,265px 寬視窗原本的右側文字導覽覆蓋館所選單及「重新查詢」。在 1,050～1,799px 改成 40px 圖示列，保留各區特色圖示、中文無障礙名稱與滑鼠提示；本機與 [公開快速前端](https://andylinstrongtyping.github.io/event-radar/#explore-title) 均確認按鈕完整露出，本機實際點擊成功。1,800px 以上保留文字版，手機沿用原有版型。[PR #10](https://github.com/AndyLinStrongtyping/event-radar/pull/10) 的兩項檢查通過並已合併，Pages 第 12 次發布成功。見 [ER-97](docs/technical-decisions.md)。
 
