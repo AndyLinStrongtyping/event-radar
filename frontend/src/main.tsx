@@ -149,6 +149,7 @@ function App() {
   const [items, setItems] = useState<Exhibition[]>([]);
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [slowLoading, setSlowLoading] = useState(false);
   const [demoLoading, setDemoLoading] = useState(false);
   const demoTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -166,6 +167,12 @@ function App() {
   const [activityError, setActivityError] = useState(false);
 
   useEffect(() => () => { if (demoTimer.current) clearTimeout(demoTimer.current); }, []);
+
+  useEffect(() => {
+    if (!loading) { setSlowLoading(false); return; }
+    const timer = setTimeout(() => setSlowLoading(true), 8000);
+    return () => clearTimeout(timer);
+  }, [loading]);
 
   useEffect(() => {
     const update = () => {
@@ -308,10 +315,10 @@ function App() {
           <div className="results-tools"><p>每筆展覽皆附館方或資料來源連結</p><button type="button" onClick={replayDig} disabled={demoLoading} aria-label="觀看文物發掘動畫">{demoLoading ? '發掘中…' : '觀看發掘動畫 ↻'}</button></div>
         </div>
         <div className="results-region" aria-busy={loading || demoLoading}>
-          {loading || demoLoading ? <ExcavationLoader/> : searchError || museumError ? <div className="empty-state"><strong>線索暫時中斷</strong><p>{searchError || museumError}</p><button type="button" onClick={() => setRefreshKey((value) => value + 1)}>再試一次</button></div> : items.length ? <>
+          {loading || demoLoading ? <><ExcavationLoader/>{loading && slowLoading && <p role="status">展覽資料仍在連線，伺服器可能正在啟動。你可先瀏覽館所圖鑑；若持續沒有結果，請按「重新查詢」。</p>}</> : searchError || museumError ? <div className="empty-state"><strong>線索暫時中斷</strong><p>{searchError || museumError}</p><button type="button" onClick={() => setRefreshKey((value) => value + 1)}>再試一次</button></div> : items.length ? <>
             <div className="exhibit-grid">{items.map((item, index) => <ExhibitionCard key={item.id} item={item} number={index + 1} museum={availableMuseums.find((entry) => entry.id === item.museumId)} expanded={expandedId === item.id} onToggle={() => setExpandedId((id) => id === item.id ? null : item.id)}/>)}</div>
             <div className="more-results"><span>目前顯示 {items.length} / {total} 筆展覽</span>{items.length < total && <button type="button" onClick={loadMore} disabled={loadingMore}>{loadingMore ? '正在繼續發掘…' : '載入更多展覽 ↓'}</button>}{loadMoreError && <p role="alert">{loadMoreError}，請再試一次。</p>}</div>
-          </> : <div className="empty-state"><div className="empty-symbol" aria-hidden="true">⌕</div><strong>這片地層暫無線索</strong><p>試試其他城市、展覽狀態或入場條件。</p><button type="button" onClick={() => setFilters({ q: '', city: '', museum: '', status: 'active', admission: 'all', asOf: '', includeSample: false })}>清除篩選</button></div>}
+          </> : <div className="empty-state"><div className="empty-symbol" aria-hidden="true">⌕</div><strong>本站目前沒有符合條件的已收錄特展</strong><p>{filters.admission === 'free' ? '免費篩選只包含館方明確標示免費的特展；取消票價條件可以查看更多展覽。' : '試試其他城市、展覽狀態或入場條件；這不代表館方沒有其他展覽。'}</p>{filters.museum === 'chimei' && <p><a href="https://www.chimeimuseum.org/exhibition-event" target="_blank" rel="noopener noreferrer">查看奇美官方展覽與活動 ↗</a></p>}<button type="button" onClick={() => setFilters({ q: '', city: '', museum: '', status: 'active', admission: 'all', asOf: '', includeSample: false })}>清除篩選</button></div>}
         </div>
       </section>
 

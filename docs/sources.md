@@ -44,6 +44,7 @@
 **2026-10-11 補充**：使用者提供官網內部 `POST /exhibition-event/api` 的 DevTools 回應欄位；本站無 Cookie／CSRF 的 Node POST 回 419；公開頁正常匿名流程由 PowerShell 與 Node.js 取得 200 JSON，三組筆數 1／4／10。日期與標籤篩選已有小樣本核對，仍未驗證資料完整度、伺服器隱含上限與跨日穩定度。它仍是「官網內部使用、未公開文件化的 JSON 端點」，不是館方提供第三方的公開 API，也未接入每日同步。詳見[實測與啟用門檻](stage-2026-10-11-chimei-probe.md)及[候選來源評估](chimei-internal-endpoint.md)。
 
 - [官方特展列表](https://www.chimeimuseum.org/index.php/exhibition-event)公開顯示展名、簡介、展期與展覽連結。頁面程式會向官網自己的 `/exhibition-event/api` 發送帶 CSRF token 的 POST 請求；這是官網內部資料呼叫，不能據此稱為提供第三方使用的公開 API。
+- **2026-10-24 人工補展**：正式庫先前沒有奇美展覽或匯入批次。館方[《埃及之王：法老》詳情](https://www.chimeimuseum.org/special-exhibition/68a68f0a422a6/68a68fa1d1a3b)仍明載 2026-01-29 至 2027-01-10、特展廳及一般全票 NT$580；本站以 `data/chimei-curated-exhibitions.json` 走既有冪等匯入，公開來源標為 `curated`。重跑前須重新核對官網；這不能自動發現新展，也不代表奇美完整收錄。
 - 官網 `robots.txt` 只列出 `/weyacms/` 與 `/admin/` 禁止擷取；robots 規則不是內容再利用授權。[主站著作權與隱私權頁](https://www.chimeimuseum.org/privacy)也未提供特展資料的開放授權或 API 條款。線上商店的使用條款適用於不同網域，不應直接當成主站特展資料條款。
 - 因此目前不依賴內部端點建置每日同步。先維持有官方連結、最後核對時間的人工資料；下一步向館方確認是否提供正式資料介接或再利用方式。若採公開頁面定期讀取，也須先確認可接受的方式，僅保存必要欄位，遇格式變動時停止更新並標記過期。
 - 2026-10-05 新增[文化部 iCulture 展覽 JSON](https://cloud.culture.tw/frontsite/trans/SearchShowAction.do?method=doFindTypeJ&category=6)作補充來源。只挑主辦單位含奇美、官方逐筆網址為奇美特展頁且館方頁可核對完整展期者；相鄰分段合併。這是文化部彙整資料，不是奇美官方 API，也未證明涵蓋所有奇美展覽。實測 10 筆相關紀錄，1 筆合併連至既有展覽、8 筆隔離。

@@ -67,7 +67,7 @@ const churaumiSpecies = [
     url: 'https://churaumi.okinawa/fishbook/1543394214/' },
 ] as const;
 const seaLayers = [
-  { title: '入海', english: 'DESCENT 01', note: '光線還在水面閃動，先打開今日的第一批觀察紀錄。' },
+  { title: '入海', english: 'DESCENT 01', note: '光線還在水面閃動，先打開這次的觀察紀錄。' },
   { title: '暮光', english: 'DESCENT 02', note: '繼續往下，沿著時刻與地點尋找下一條線索。' },
   { title: '深藍', english: 'DESCENT 03', note: '抵達旅程底部，別忘了上岸前再向館方確認。' },
 ] as const;
@@ -254,7 +254,7 @@ function DeepSeaExpedition() {
               <span>{item.exhibitionStatus === 'upcoming' ? '即將展出' : '展出中'} / {item.startDate} — {item.endDate}</span><h5>{item.title}</h5>
               {item.summary && <p>{item.summary}</p>}<a href={item.sourceUrl} target="_blank" rel="noopener noreferrer">核對館方展覽 ↗</a>
             </article>)}</div>}
-          <a className="sea-more-link" href="/?museum=nmmba#explore-title">使用狀態篩選查看海生館全部展覽 ↗</a>
+          <a className="sea-more-link" href={appUrl('?museum=nmmba#explore-title')}>使用狀態篩選查看海生館全部展覽 ↗</a>
         </section>
         <div className="sea-subheading" id="sea-programmes"><span>DAILY PROGRAMMES / 02</span><h4>餵食與定點解說</h4><p>以下節目依海生館當日頁匯入，歷史快照只代表觀察當天。</p></div>
         <label className="sea-observation-picker">選擇觀察紀錄
