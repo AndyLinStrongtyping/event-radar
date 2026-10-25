@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-25 **Render Starter 線上稽核完成；部署設定修正僅在待審分支**：Render Compute／Events 已確認 Web Service 從 Free 升至 `0.5c-512mb`（US$7／月），Neon 仍為 Free。公開站 `4f88c69` 的唯讀 smoke 通過，11 館、32 筆特展；兩次啟動屬不同執行個體，所見 Events 無失敗重啟。SSL 警告來自 `pg-connection-string` 對含糊模式的相容解析；實際 Secret 遮蔽，尚未更動。待審 `render.yaml` 已對齊 Starter，並把 migration 從 Build 移到 Pre-Deploy、停止每次部署觸發首次匯入。**尚未合併、同步 Blueprint、部署或修改正式資料庫／Secret。**完整證據、效能小樣本及回復方式見[Starter 稽核](docs/stage-2026-10-25-render-starter-audit.md)與[ER-102](docs/technical-decisions.md)。
+
 2026-10-25 **文化攻略與主題館 SEO 深度計畫已完成，尚未實作頁面修改**：依既有靜態館所介紹、兩個新主題頁及 10/19～10/24 的有限搜尋基準，建立[搜尋內容與關鍵字地圖](docs/seo-content-plan.md)。先審查 Search Console 原站及代表網址的可索引性，再優先補故宮北院、奇美、左鎮與澎湖的官方票務／導覽／展覽入口；海科館、茶博館與鐵道館先保留候選。不宣稱候選詞有已驗證搜尋量、自然流量或分潤。見[ER-101](docs/technical-decisions.md)。
 
 2026-10-25 **長首頁已分流並公開驗收**：首頁保留特展搜尋、館所、票務、奇美活動與歌劇院節目；深海、化石各有可直接分享的[深海頁](https://event-radar-preview.onrender.com/explore/ocean/)與[化石頁](https://event-radar-preview.onrender.com/explore/fossils/)。首頁探索卡、頂部選單與館所介紹連到新頁，舊首頁錨點轉往對應主題；網站地圖與各頁標題、canonical 同步調整。[PR #17](https://github.com/AndyLinStrongtyping/event-radar/pull/17) 檢查通過後合併，GitHub Pages [#18](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/40165694500) 發布成功，Render 主站 `ae0356e` [部署成功](https://dashboard.render.com/web/srv-db9hkpfavr4c73e40ahg/deploys/dep-dbep7dhsrm7s73csuj90)。公開站 smoke 通過，讀到 11 間館所、32 筆可搜尋特展；Chrome 核對兩個 Pages 主題頁、Render 深海頁、海生館展覽載入及舊 `#fossils` 轉向。**手機實機、Search Console 收錄與 10/27 第二次週排程仍待驗證。**詳見[公開驗收紀錄](docs/stage-2026-10-25-theme-pages-release.md)與[ER-100](docs/technical-decisions.md)。

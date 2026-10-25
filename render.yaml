@@ -1,13 +1,14 @@
-# Phase 9 technical preview. Importing this Blueprint creates a public service.
-# Keep PUBLIC_BASE_URL unset until the site is ready to be indexed.
+# Starter public beta. Keep database migrations separate from the build.
+# Do not deploy schema changes without a fresh backup and compatibility review.
 services:
   - type: web
     name: event-radar-preview
     runtime: node
     region: singapore
-    plan: free
+    plan: 0.5c-512mb
     autoDeployTrigger: off
-    buildCommand: npm ci --include=dev --ignore-scripts --no-audit --no-fund && npm run build:web && npm run migrate && node scripts/bootstrap-preview.mjs
+    buildCommand: npm ci --include=dev --ignore-scripts --no-audit --no-fund && npm run build:web
+    preDeployCommand: npm run migrate
     startCommand: npm run start:prod
     healthCheckPath: /health
     envVars:

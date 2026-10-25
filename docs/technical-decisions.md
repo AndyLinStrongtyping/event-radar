@@ -646,6 +646,12 @@
 - **規劃取捨**：每組行前決策需求先對應一個主要館所頁，使用既有靜態 HTML 增補可核對的官方票務、導覽、展覽入口和最後核對日期；故宮北／南院、常設／特展、每日節目／歷史快照分開說明。Search Console 原站網址審查與標準網址、Render 可用性、React 頁實際可讀文字是擴張前的技術門檻。首批故宮北院、奇美、左鎮、澎湖；海科館、茶博館、鐵道館先研究來源，不承諾已收錄。餐飲心得需實際走訪才寫，聯盟導購等產品有可信內容與流量後再評估。
 - **驗證界線**：[完整計畫](seo-content-plan.md)列出 11 組候選查詢與頁面對應、來源檢查、更新責任及搜尋成效驗收；這是規劃文件，沒有改網站、資料來源、Search Console 設定或廣告。候選字詞未取得搜尋量，沒有排名預測；Google 是否收錄或帶來流量仍待後續實測。
 
+## ER-102｜Starter 後拆分 Build 與資料庫更新（待審，未部署）
+
+- **問題**：Render 控制台 2026-10-25 已切至 `0.5c-512mb`，但 Blueprint 的 `render.yaml` 仍為 `free`；每次 Build 執行 migration 與 `bootstrap-preview.mjs`，在沒有當期展覽時甚至可能啟動來源匯入。`pg-connection-string` 2.14.1 對有歧義的 `sslmode` 發出未來語意將改變的警告。
+- **待審決策**：Blueprint 對齊目前已付費的 Web Service 方案；Build 只安裝與編譯，Starter 的 Pre-Deploy 單獨執行既有 checksum／鎖保護的 migration；首次匯入只在明確手動操作時進行。`start:prod` 與 `/health` 不改。SSL 優先在核對供應商憑證及各處 Secret 後明寫 `sslmode=verify-full`，不關閉憑證驗證；本分支沒有修改 Secret 或程式的 TLS 選項。
+- **驗證與界線**：Render Compute／Events 顯示方案變更、服務 Live，公開唯讀 smoke 查到 11 館與 32 筆可搜尋展覽；短時間兩次啟動是不同執行個體，無失敗事件。`pg` 8.23.1／`pg-connection-string` 2.14.1 以假 URL 解析 `require` 和 `verify-full` 得相同 TLS 設定。這不足以證明真實 Secret 的模式或長期負載能力。變更仍只在分支，正式套用前需要當次備份、隔離驗證、Blueprint 同步和部署後 smoke。見[完整稽核](stage-2026-10-25-render-starter-audit.md)。
+
 ## 後續更新方式
 
 每次功能或技術決策有變動，**同一個提交**更新對應的 ER 編號：將「規劃」改為實際狀態，寫明實作方法、取捨、失敗情境與可重現的驗證，附程式／測試路徑；若改變資料來源或對外承諾，同步更新 [STATUS](../STATUS.md)、[API 契約](api.md)、[架構](architecture.md)或[運作設計](operations.md)。新增技術點接續編號，不要刪除曾影響設計的決策；被取代的做法標註原因與日期。**只有測試通過或實際連線核對過的項目，才能寫「已驗證」。**

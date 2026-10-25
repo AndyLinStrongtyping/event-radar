@@ -1,6 +1,8 @@
 # Phase 9：公開測試版部署手冊
 
-本手冊的第一站採 Render 單一 Web Service（同源提供 React 與 API）和 Neon PostgreSQL。2026-10-17 已建立並驗收[免費公開站](https://event-radar-preview.onrender.com/)；目前已設定 `PUBLIC_BASE_URL`、Search Console 驗證與 sitemap，並移除預覽期 `noindex`，但 Google 仍未確認正式收錄或搜尋流量。免費服務的休眠限制仍在；無須先導入 AWS。
+> **2026-10-25 現況**：Render 控制台已顯示 Starter `0.5c-512mb`，Neon 仍為 Free；公開服務維持 `4f88c69`。目前 Dashboard 的 Build Command 仍執行 migration 與 bootstrap。將兩者拆到 Pre-Deploy／手動首次匯入的 `render.yaml` 修正**僅在待審分支，尚未部署**。SSL Secret 尚未調整。詳細證據與回復方式見[Starter 稽核](stage-2026-10-25-render-starter-audit.md)。以下免費部署步驟屬首次上線歷史紀錄，不能照抄成目前方案。
+
+本手冊的第一站採 Render 單一 Web Service（同源提供 React 與 API）和 Neon PostgreSQL。2026-10-17 已建立並驗收[當時使用免費方案的公開站](https://event-radar-preview.onrender.com/)；網站已設定 `PUBLIC_BASE_URL`、Search Console 驗證與 sitemap，並移除預覽期 `noindex`，但 Google 仍未確認正式收錄或搜尋流量。Render Web Service 已於 2026-10-25 升至 Starter，免費方案休眠限制不再適用於這項服務；無須先導入 AWS。
 
 2026-10-19 新增[GitHub Pages 快速入口](https://andylinstrongtyping.github.io/event-radar/)：由 CDN 提供 React 與公開圖片，跨來源讀取 Render 唯讀 API；Search Console canonical 仍是 Render，Pages 另設 `noindex,follow`。第一次工作因 Pages 尚未啟用而失敗；將儲存庫 Pages Source 設為 **GitHub Actions** 後重跑成功。Render 手動部署主分支 `9de79ed`，公開檢查確認 Pages、圖片、API、CORS、`/health` 及資料庫正常，Chrome 載入 25 筆未結束特展。`render.yaml` 仍關閉自動部署；合併後須手動 **Deploy latest commit**。靜態入口只縮短介面等待，資料查詢仍受免費 Render 休眠影響。
 
