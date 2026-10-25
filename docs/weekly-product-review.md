@@ -6,10 +6,10 @@
 
 | 項目 | 本週證據／數字 |
 | --- | --- |
-| 版本與網址 | [快速入口](https://andylinstrongtyping.github.io/event-radar/)；[主要網站](https://event-radar-preview.onrender.com/)；此頁建立時程式尚未發布新的操作事件 |
+| 版本與網址 | [快速入口](https://andylinstrongtyping.github.io/event-radar/)；[主要網站](https://event-radar-preview.onrender.com/)；10/25 [PR #15](https://github.com/AndyLinStrongtyping/event-radar/pull/15) 合併，Pages [第 16 次發布](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/40152918214)成功，Render 同版 `3d95936` 手動部署成功；公開搜尋回 32 場，`/privacy.html` 可開啟。 |
 | 流量來源、熱門頁 | GA4 已核對 **10/19～10/24**（10/25 尚未納入歷史報表）：17 位活躍使用者、64 次頁面瀏覽。首次取得來源為直接 15、ChatGPT 1、GitHub 1；工作階段來源另有 GitHub Pages → Render 的站內轉介 10 次，不能當成 10 位新訪客。頁面瀏覽：`/` 35、`/event-radar/` 24、海生館導覽 2、科博館導覽 2、奇美導覽 1。包含站長測試流量，不宜作對外真實使用者成果。 |
 | Google 搜尋曝光／點擊／查詢 | GA4 連結的 Search Console「查詢」報表於 **10/19～10/24** 顯示曝光 0、點擊 0、無查詢列；未另核對 Search Console 原站，不能據此判斷長期收錄。 |
-| 搜尋完成／展覽檔案展開／官方頁點擊 | 三個事件為本輪新增；尚無部署後 GA4 收件證據，不能回填本週次數。舊版 GA4 於 10/19～10/24 只見一般 `click` 11 次，不能當成館方頁點擊。 |
+| 搜尋完成／展覽檔案展開／官方頁點擊 | 10/25 公開站人工驗收：主動重查、展開第一筆檔案、點擊館方原頁各一次；GA4「即時總覽」分別收到 `exhibition_search_complete=1`、`exhibition_detail_open=1`、`official_exhibition_click=1`。**這三次是站長測試，不是訪客使用量**；歷史事件報表尚待隔日核對。舊版 GA4 於 10/19～10/24 只見一般 `click` 11 次，不能當成館方頁點擊。 |
 | 每週來源同步 | [10/20 排程](stage-2026-10-21-first-weekly-schedule.md)六個啟用工作成功；故宮北院依設定略過。實際觸發晚於設定時間；國美館部分涵蓋、海生館 25 筆待審 |
 | 維護投入時間 | 未記錄；下週開始以實際處理時間填寫 |
 | 本週唯一改善決策 | 補搜尋、詳情展開及前往官方頁三個事件，先取得使用行為證據；暫不據此新增館所或宣稱轉換成效 |
