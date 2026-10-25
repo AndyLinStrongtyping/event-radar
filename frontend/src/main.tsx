@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import './styles.css';
-import { DomainProgrammes } from './DomainProgrammes';
-import { FossilExpedition } from './FossilExpedition';
+import { Performances } from './DomainProgrammes';
 import { appUrl, backendUrl } from './runtime-url';
 import { trackExhibitionDetailOpen, trackExhibitionSearchCompleted, trackOfficialExhibitionClick } from './analytics';
 
@@ -299,14 +298,14 @@ function App() {
 
   return <>
     <a className="skip-link" href="#results">跳到展覽結果</a>
-    <header className="site-header"><div className="header-inner"><a className="brand" href={appUrl()} aria-label="展館雷達首頁"><span className="brand-glyph">✧</span><span>展館 <b>雷達</b><small>博物館・美術館・表演與自然探索</small></span></a><nav aria-label="主要導覽"><a href="#explore-title">探索特展</a><a href="#activities">奇美活動</a><a href="#performances">表演節目</a><a href="#deep-sea">深海探勘</a><a href="#fossils">化石探勘</a><a href="#guides">博物館圖鑑</a><a href="#tickets">票務索引</a></nav><span className="header-edition">EXHIBITION &amp; VENUE <i>TAIWAN</i></span></div></header>
+    <header className="site-header"><div className="header-inner"><a className="brand" href={appUrl()} aria-label="展館雷達首頁"><span className="brand-glyph">✧</span><span>展館 <b>雷達</b><small>博物館・美術館・表演與自然探索</small></span></a><nav aria-label="主要導覽"><a href="#explore-title">探索特展</a><a href="#activities">奇美活動</a><a href="#performances">表演節目</a><a href={appUrl('explore/ocean/')}>深海探勘</a><a href={appUrl('explore/fossils/')}>化石探勘</a><a href="#guides">博物館圖鑑</a><a href="#tickets">票務索引</a></nav><span className="header-edition">EXHIBITION &amp; VENUE <i>TAIWAN</i></span></div></header>
     <nav className="desktop-section-nav" aria-label="頁面快速跳轉" hidden={!showBackToTop}>
       <span>快速跳轉</span>
       <a className="section-jump exhibitions" href="#explore-title" aria-label="特展搜尋" title="特展搜尋"><i aria-hidden="true">⌕</i><span><b>特展搜尋</b><small>當期展覽</small></span></a>
       <a className="section-jump chimei" href="#activities" aria-label="奇美活動" title="奇美活動"><i aria-hidden="true">♜</i><span><b>奇美活動</b><small>活動與節目</small></span></a>
       <a className="section-jump performance" href="#performances" aria-label="表演節目" title="表演節目"><i aria-hidden="true">◒</i><span><b>表演節目</b><small>場次與舞台</small></span></a>
-      <a className="section-jump ocean" href="#deep-sea" aria-label="深海探勘" title="深海探勘"><i aria-hidden="true">≈</i><span><b>深海探勘</b><small>海洋生物</small></span></a>
-      <a className="section-jump fossils" href="#fossils" aria-label="化石探勘" title="化石探勘"><i aria-hidden="true">◌</i><span><b>化石探勘</b><small>遠古生命</small></span></a>
+      <a className="section-jump ocean" href={appUrl('explore/ocean/')} aria-label="深海探勘" title="深海探勘"><i aria-hidden="true">≈</i><span><b>深海探勘</b><small>海洋生物</small></span></a>
+      <a className="section-jump fossils" href={appUrl('explore/fossils/')} aria-label="化石探勘" title="化石探勘"><i aria-hidden="true">◌</i><span><b>化石探勘</b><small>遠古生命</small></span></a>
       <a className="section-jump guides" href="#guides" aria-label="館所圖鑑" title="館所圖鑑"><i aria-hidden="true">⌂</i><span><b>館所圖鑑</b><small>認識館舍</small></span></a>
       <a className="section-jump tickets" href="#tickets" aria-label="票務索引" title="票務索引"><i aria-hidden="true">↗</i><span><b>票務索引</b><small>出發前核對</small></span></a>
       <a className="desktop-section-nav-top" href="#hero-title" aria-label="回到上方" title="回到上方">↑ 回到上方</a>
@@ -314,7 +313,7 @@ function App() {
     <main>
       <section className="hero" aria-labelledby="hero-title"><div className="hero-grain" aria-hidden="true"/><div className="hero-inner"><div className="hero-copy-block"><p className="eyebrow"><span className="eyebrow-line"/> 展館雷達 ／ EXHIBITION &amp; VENUE RADAR</p><h1 id="hero-title">全台博物館、<br/><span>美術館與藝文展覽資訊。</span></h1><p className="hero-lede">從古埃及的文字、遠古生命的化石，到博物館與表演場館的當期展覽。跟著官方資料留下的線索，選一站，開始你的探索。</p><div className="hero-actions"><a className="primary-cta" href="#explore-title">開始發掘展覽 <span aria-hidden="true">↗</span></a><a className="text-cta" href="#guides">先認識博物館 <span aria-hidden="true">→</span></a></div><div className="hero-coordinate">25° N — 22° N <span>／</span> TAIWAN VENUE GUIDES</div></div><div className="hero-art" aria-label="古文明展品的考古檔案視覺"><span className="art-corner art-corner-top"/><img src={appUrl('/assets/egypt-writing-user.jpg')} alt="博物館內的羅塞塔石碑複製品展示，表面刻有古代文字"/><span className="art-corner art-corner-bottom"/><div className="artifact-tag"><span>FIELD NOTE / 001</span><strong>文字留下的線索</strong><small>古文明 · 自攝展品照片</small></div><div className="art-seal" aria-hidden="true"><CompassIcon/></div></div></div><div className="hero-bottom"><span>SCROLL TO DISCOVER</span><span className="hero-bottom-line"/><span>考古不是回到過去，而是重新看見現在。</span></div></section>
 
-      <section className="discover-intro" aria-labelledby="discover-title"><div className="section-kicker"><span>01</span> START WITH A CLUE</div><div className="intro-heading"><h2 id="discover-title">每座博物館，<em>都是一處新現場。</em></h2><p>從古文明、遠古生命到海洋深處，先選一條線索，再走進自己的探索路線。照片是展品或場館現場紀錄；詳細展覽與開放資訊請以館方為準。</p></div><div className="story-grid"><a className="story-card" href={appUrl('?museum=chimei#explore-title')}><div className="story-image"><img src={appUrl('/assets/egypt-writing-user.jpg')} alt="古埃及文字展示品" loading="lazy"/></div><div className="story-content"><span>CLUE 01 / ANCIENT WORLDS</span><h3>文字與古文明</h3><p>自攝古文明展品作為探索主題示意；點入查看奇美相關展覽，照片並非奇美館藏介紹。</p><b>探索奇美相關展覽 ↗</b></div></a><a className="story-card" href="#fossils"><div className="story-image"><img src={appUrl('/assets/nmns-dinosaur-user.jpg')} alt="科博館展櫃內的恐龍骨骼，作為化石主題示意" loading="lazy"/></div><div className="story-content"><span>CLUE 02 / DEEP TIME</span><h3>化石與遠古生命</h3><p>從澎湖與左鎮兩座化石館開始，沿地層讀古生物的線索。</p><b>進入化石探勘 ↗</b></div></a><a className="story-card sea-story" href="#deep-sea"><div className="story-image"><img src={appUrl('/assets/nmmba-kelp-commons.jpg')} alt="國立海洋生物博物館世界水域館的海藻森林展示缸" loading="lazy"/></div><div className="story-content"><span>CLUE 03 / OCEAN DEPTHS</span><h3>深海與海洋生物</h3><p>沿著海藻森林下潛，認識海生館與沖繩美麗海的真實展區、特色生物與水下觀察。</p><b>進入深海探勘 ↘</b></div></a></div></section>
+      <section className="discover-intro" aria-labelledby="discover-title"><div className="section-kicker"><span>01</span> START WITH A CLUE</div><div className="intro-heading"><h2 id="discover-title">每座博物館，<em>都是一處新現場。</em></h2><p>從古文明、遠古生命到海洋深處，先選一條線索，再走進自己的探索路線。照片是展品或場館現場紀錄；詳細展覽與開放資訊請以館方為準。</p></div><div className="story-grid"><a className="story-card" href={appUrl('?museum=chimei#explore-title')}><div className="story-image"><img src={appUrl('/assets/egypt-writing-user.jpg')} alt="古埃及文字展示品" loading="lazy"/></div><div className="story-content"><span>CLUE 01 / ANCIENT WORLDS</span><h3>文字與古文明</h3><p>自攝古文明展品作為探索主題示意；點入查看奇美相關展覽，照片並非奇美館藏介紹。</p><b>探索奇美相關展覽 ↗</b></div></a><a className="story-card" href={appUrl('explore/fossils/')}><div className="story-image"><img src={appUrl('/assets/nmns-dinosaur-user.jpg')} alt="科博館展櫃內的恐龍骨骼，作為化石主題示意" loading="lazy"/></div><div className="story-content"><span>CLUE 02 / DEEP TIME</span><h3>化石與遠古生命</h3><p>從澎湖與左鎮兩座化石館開始，沿地層讀古生物的線索。</p><b>進入化石探勘 ↗</b></div></a><a className="story-card sea-story" href={appUrl('explore/ocean/')}><div className="story-image"><img src={appUrl('/assets/nmmba-kelp-commons.jpg')} alt="國立海洋生物博物館世界水域館的海藻森林展示缸" loading="lazy"/></div><div className="story-content"><span>CLUE 03 / OCEAN DEPTHS</span><h3>深海與海洋生物</h3><p>沿著海藻森林下潛，認識海生館與沖繩美麗海的真實展區、特色生物與水下觀察。</p><b>進入深海探勘 ↘</b></div></a></div></section>
 
       <section className="explore-section" aria-labelledby="explore-title"><div className="section-kicker light"><span>02</span> THE EXHIBITION ARCHIVE</div><div className="explore-heading"><div><h2 id="explore-title">特展發掘站</h2><p>設定目的地與時間，翻開最新的展覽檔案。</p></div><div className="explore-emblem" aria-hidden="true"><CompassIcon/></div></div>
         {preview && <p className="preview-note" role="status">本機展示快照：展覽資料並非即時同步，模擬資料需主動勾選才顯示。</p>}
@@ -340,8 +339,7 @@ function App() {
         <p className="activity-source">{chimeiActivities ? `館方清單核對：${formatTaipei(chimeiActivities.checkedAt) || chimeiActivities.checkedAt}；共 ${chimeiActivities.items.length} 筆。` : activityError ? '活動快照暫時無法載入。' : '正在開啟活動檔案…'} {activitySnapshotOld && <strong>快照已超過 14 天，可能有異動。</strong>}出發或購票前，請逐筆開啟<a href="https://www.chimeimuseum.org/exhibition-event" target="_blank" rel="noopener noreferrer">奇美官方活動頁 ↗</a>確認日期與名額。</p>
         {chimeiActivities && <div className="activity-grid">{chimeiActivities.items.map((item) => <article className="activity-card" key={item.id}><span>{item.type || '活動與節目'} · 奇美博物館</span><h3>{item.title}</h3><p className="activity-date">{item.dateText}</p><a href={officialUrl(item.sourceUrl) || chimeiActivities.sourceUrl} target="_blank" rel="noopener noreferrer">查看館方活動詳情 ↗</a></article>)}</div>}
       </section>
-      <DomainProgrammes/>
-      <FossilExpedition/>
+      <Performances/>
     </main><footer className="site-footer"><div><span className="footer-brand">✧ 展館雷達</span><p>沿著真實資料，繼續探索未知。</p></div><p>資訊取自各博物館與政府公開資料；展期、票價、休館與入場規定，以館方公告為準。<a href={backendUrl('/privacy.html')}>網站流量與隱私說明</a></p><a href="#hero-title">回到頂端 ↑</a></footer>
     <button className="back-to-top" type="button" hidden={!showBackToTop} aria-label="回到頂部" title="回到頂部"
       onClick={() => {
@@ -353,4 +351,11 @@ function App() {
   </>;
 }
 
-createRoot(document.getElementById('root')!).render(<App/>);
+const oldSection = window.location.hash;
+if (/^#(?:deep-sea|sea-|expeditions)/.test(oldSection)) {
+  window.location.replace(`${appUrl('explore/ocean/')}${oldSection}`);
+} else if (/^#fossils?(?:-|$)/.test(oldSection)) {
+  window.location.replace(`${appUrl('explore/fossils/')}${oldSection}`);
+} else {
+  createRoot(document.getElementById('root')!).render(<App/>);
+}

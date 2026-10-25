@@ -80,7 +80,7 @@ export function FossilExpedition() {
   return <section className="fossil-section" id="fossils" aria-labelledby="fossils-title">
     <div className="fossil-ridge" aria-hidden="true"><span/><span/><span/></div>
     <div className="fossil-inner">
-      <div className="section-kicker"><span>08</span> DEEP TIME FIELD NOTES</div>
+      <div className="section-kicker"><span>01</span> DEEP TIME FIELD NOTES</div>
       <div className="fossil-intro"><div><p className="fossil-overline">PENGHU → ZUOJHEN / 兩座化石館</p><h2 id="fossils-title">穿過地層，<em>遇見遠古生命。</em></h2><p>從澎湖水道的古鱷，到菜寮溪的早坂犀。切換兩座館，讀常設展區、化石線索與出發前要確認的資訊。</p></div><div className="fossil-time-mark" aria-hidden="true"><span>DEEP TIME</span><strong>01 / 02</strong><i>化石探勘</i></div></div>
       <p className="fossil-caveat">本區是 2026/10/16 依館方及政府公開頁人工整理的靜態導覽，沒有自動匯入展覽或每日活動。展件輪替、活動日期、票務及特殊開館以各館公告為準。</p>
       <div className="fossil-venue-tabs" role="group" aria-label="切換化石館">{venues.map((item) => <button key={item.id} type="button" aria-pressed={selected === item.id} className={selected === item.id ? 'active' : ''} onClick={() => setSelected(item.id)}><span>{item.number} / {item.region}</span><strong>{item.name}</strong></button>)}</div>

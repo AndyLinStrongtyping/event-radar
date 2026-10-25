@@ -6,6 +6,8 @@ const root = join(__dirname, 'web');
 const port = Number(process.env.PORT || 4180);
 const files = {
   '/': ['react-build/index.html', 'text/html; charset=utf-8'],
+  '/explore/ocean/': ['react-build/explore/ocean/index.html', 'text/html; charset=utf-8'],
+  '/explore/fossils/': ['react-build/explore/fossils/index.html', 'text/html; charset=utf-8'],
   '/guides/chimei.html': ['guides/chimei.html', 'text/html; charset=utf-8'],
   '/guides/nmns.html': ['guides/nmns.html', 'text/html; charset=utf-8'],
   '/guides/ntm.html': ['guides/ntm.html', 'text/html; charset=utf-8'],
@@ -70,6 +72,11 @@ const museums = [
 createServer(async (request, response) => {
   try {
     const url = new URL(request.url || '/', 'http://localhost');
+    if (url.pathname === '/explore/ocean' || url.pathname === '/explore/fossils') {
+      response.writeHead(308, { location: `${url.pathname}/${url.search}` });
+      response.end();
+      return;
+    }
     if (/^\/react-assets\/[a-zA-Z0-9_-]+\.(js|css)$/.test(url.pathname)) {
       response.writeHead(200, { 'content-type': url.pathname.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=31536000, immutable' });
       response.end(await readFile(join(root, 'react-build', url.pathname.slice(1))));

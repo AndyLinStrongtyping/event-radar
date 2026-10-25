@@ -1,5 +1,7 @@
 # Event Radar｜目前進度
 
+2026-10-25 **長首頁分流已在本機完成**：首頁保留特展搜尋、館所、票務、奇美活動與歌劇院節目；深海、化石各有 `/explore/ocean/`、`/explore/fossils/` 獨立頁。首頁探索卡、頂部選單與館所介紹已改連新頁，舊首頁錨點會轉往對應主題；網站地圖與各頁標題、canonical 同步調整。本機多頁建置與型別通過，Chrome 直接開啟及首頁卡片跳轉成功，化石頁手機寬度已目視確認。**公開部署與 Search Console 收錄尚未驗證；10/27 第二次週排程仍待發生。**技術取捨見[ER-100](docs/technical-decisions.md)。
+
 2026-10-25 **首次週排程已核對，核心操作追蹤已公開驗收**：[10/20 真實排程](docs/stage-2026-10-21-first-weekly-schedule.md)由 GitHub Actions 自動觸發，科博館、故宮南院、海生館限期展、科工館、國美館與歌劇院六個工作成功，故宮北院依設定略過；實際啟動晚於 04:15，國美館仍為部分涵蓋，海生館 25 筆待審。這證明單次排程可執行，**第二次跨週結果尚待 10/27 核對**。[PR #15](https://github.com/AndyLinStrongtyping/event-radar/pull/15) 合併後，Pages 第 16 次發布與 Render `3d95936` 手動部署成功；公開搜尋回 32 場，隱私說明可開啟。React 特展搜尋完成、展覽檔案展開及前往官方展覽頁三個 GA4 事件已在公開站人工操作，GA4 即時總覽各收到 1 次；這是站長測試，**不能當成訪客使用量**。搜尋僅在使用者操作且請求成功時記錄，不送出原始搜尋字詞、展名或外部網址。10/19～10/24 的 GA4 基準與待核對項目見[成效與維護紀錄](docs/weekly-product-review.md)；歷史事件報表及 10/27 排程仍待核對。[ER-99](docs/technical-decisions.md)記錄取捨。
 
 2026-10-24 **三角色測試後修正與公開驗收**：深海返回搜尋連結已改用前端子路徑函式，歷史海洋快照不再稱「今日」；空結果說明本站收錄界線，連線超過 8 秒會顯示等待提示。正式 Neon 唯讀核對發現奇美展覽及匯入紀錄原本皆為 0；核對官網後以人工資料匯入《埃及之王：法老》1 筆，公開 API 已回傳 `total=1`、`sourceStatus=curated`。前端修正由 [PR #13](https://github.com/AndyLinStrongtyping/event-radar/pull/13) 合併、自動檢查通過；公開 Pages 實際點擊深海連結抵達 `/event-radar/?museum=nmmba#explore-title`，館別正確並顯示 2 場已收錄特展。奇美公開頁顯示 1 場《埃及之王：法老》，日期、特展票價與官方詳情連結均可見。這不是奇美自動同步或完整涵蓋；手機實機仍未驗收。見[ER-98](docs/technical-decisions.md)及[三角色測試](docs/usability-three-personas-2026-10-24.md)。

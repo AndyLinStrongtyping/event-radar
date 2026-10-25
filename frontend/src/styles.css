@@ -78,3 +78,13 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{ou
   .desktop-section-nav .desktop-section-nav-top{display:grid;place-items:center;padding:11px 0;font-size:0}
   .desktop-section-nav .desktop-section-nav-top::before{content:'↑';font-size:1rem}
 }
+
+/* Independent exploration pages keep the home search one tap away. */
+.site-header nav a[aria-current="page"]{color:#d9bc85;text-decoration:underline;text-underline-offset:7px}
+.theme-breadcrumb{display:flex;align-items:center;gap:12px;max-width:1320px;margin:auto;padding:20px clamp(20px,4vw,70px);color:#605943;font-size:.75rem;letter-spacing:.04em}
+.theme-breadcrumb a{color:#315843;text-underline-offset:4px}.theme-breadcrumb strong{font-weight:700}
+.theme-next{display:flex;justify-content:space-between;align-items:center;gap:30px;padding:64px clamp(20px,5vw,80px);background:#202c27;color:#f6edd9}
+.theme-next span{font-size:.65rem;letter-spacing:.2em;color:#d7bb87}.theme-next h2{font:600 clamp(1.5rem,3vw,2.7rem)/1.35 'Noto Serif TC',serif;margin:10px 0 0}
+.theme-next>div:last-child{display:flex;flex-wrap:wrap;gap:12px}.theme-next a{display:inline-block;padding:12px 17px;border:1px solid #b69c72;color:#fff0d2;text-decoration:none;font-size:.8rem;font-weight:700}.theme-next a:hover,.theme-next a:focus-visible{background:#e7d5ad;color:#24352e;outline:2px solid #e7d5ad;outline-offset:2px}
+body[data-theme="fossils"] .fossil-ridge{background:linear-gradient(#d9c8a6 0%,#a7906d 35%,#776d58 72%,#8d7054 100%)}
+@media(max-width:760px){.theme-next{align-items:flex-start;flex-direction:column;padding:48px 20px}.theme-next>div:last-child{width:100%}.theme-next a{flex:1;text-align:center;min-width:150px}}

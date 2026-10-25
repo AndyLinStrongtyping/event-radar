@@ -47,6 +47,15 @@ for (const path of ['/performances?limit=1', '/marine-programmes?limit=1']) {
 }
 await get('/guides/nmmba.html', /text\/html/);
 await get('/assets/fossil-penghu-crocodile-gov.jpg', /image\/jpeg/);
+for (const [path, title] of [
+  ['/explore/ocean/', '深海探勘'],
+  ['/explore/fossils/', '化石探勘'],
+]) {
+  const page = await (await get(path, /text\/html/)).text();
+  assert.match(page, new RegExp(`<title>${title}`), `${path} 缺少獨立頁面標題`);
+  assert.match(page, /id="root"/, `${path} 缺少 React 掛載點`);
+  if (!localHttp) assert.ok(page.includes(`rel="canonical" href="${base.origin}${path}"`), `${path} canonical 錯誤`);
+}
 
 if (options.includes('--expect-noindex')) {
   const robots = await (await get('/robots.txt', /text\/plain/)).text();
@@ -58,6 +67,8 @@ if (options.includes('--expect-noindex')) {
   assert.match(robots, /Allow: \/\n/, '公開站 robots.txt 未開放');
   const sitemap = await (await get('/sitemap.xml', /application\/xml/)).text();
   assert.ok(sitemap.includes(`${base.origin}/guides/nmmba.html`), '網站地圖缺少館所頁');
+  assert.ok(sitemap.includes(`${base.origin}/explore/ocean/`), '網站地圖缺少深海頁');
+  assert.ok(sitemap.includes(`${base.origin}/explore/fossils/`), '網站地圖缺少化石頁');
 }
 
 const target = localHttp ? '本機' : options.includes('--expect-noindex') ? '預覽站' : '公開站';
