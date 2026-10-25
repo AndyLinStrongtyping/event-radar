@@ -59,8 +59,9 @@ Event Radar
 ├─ data/                      人工核對或離線使用的來源快照；不是正式資料庫
 ├─ db/                        PostgreSQL migration，唯一的資料庫結構變更入口
 ├─ docs/                      規格、設計決策、維運、階段證據與面試說明
-├─ frontend/                  React + Vite 首頁原始碼與建置設定
-│  └─ src/                    互動介面元件、樣式與 查詢網址工具
+├─ frontend/                  React + Vite 首頁及深海／化石獨立頁
+│  ├─ explore/                兩個主題頁各自的 HTML 標題與描述
+│  └─ src/                    互動介面元件、樣式與查詢網址工具
 ├─ postman/                   Postman 手動測試集合
 ├─ private/                   本機機密設定與備份位置，受 .gitignore 保護
 ├─ scripts/                   文件檢查、部署後冒煙檢查、資料庫備份／還原工具
@@ -121,7 +122,8 @@ Event Radar
 
 | 區域 | 檔案 | 用途 |
 | --- | --- | --- |
-| React 首頁 | `frontend/src/main.tsx` | 搜尋、城市與館所連動、展覽卡、票務、來源狀態、深海與化石區入口。 |
+| React 首頁 | `frontend/src/main.tsx` | 搜尋、城市與館所連動、展覽卡、票務、來源狀態、深海與化石主題入口。 |
+| 主題頁外殼 | `frontend/src/theme-page.tsx`、`frontend/explore/` | 主題頁導覽、返回搜尋、各頁標題；依頁面類型呈現深海或化石內容。 |
 | React 領域元件 | `DomainProgrammes.tsx`、`FossilExpedition.tsx` | 表演／海生館節目與化石圖鑑的互動顯示。 |
 | 網址安全 | `runtime-url.ts` | GitHub Pages 靜態前端可安全指向 Render 查詢介面。 |
 | 外觀 | `styles.css` | 考古主視覺、響應式版面、讀取動畫與回頂／快速跳轉。 |

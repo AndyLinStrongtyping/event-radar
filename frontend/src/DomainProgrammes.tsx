@@ -95,7 +95,7 @@ function useProgrammes(path: string | null) {
   return { data, error };
 }
 
-function Performances() {
+export function Performances() {
   const [period, setPeriod] = useState<'upcoming' | 'all'>('upcoming');
   const { data, error } = useProgrammes(`/performances?period=${period}&limit=100`);
   const statusLabel = (session: Session) => {
@@ -152,7 +152,7 @@ function MarineCard({ item, number }: { item: Programme; number: number }) {
   </article>;
 }
 
-function DeepSeaExpedition() {
+export function DeepSeaExpedition() {
   const [selectedMuseum, setSelectedMuseum] = useState<'taiwan' | 'okinawa'>(() =>
     typeof window !== 'undefined' && window.location.hash.startsWith('#sea-okinawa') ? 'okinawa' : 'taiwan');
   const [historyDate, setHistoryDate] = useState('');
@@ -222,11 +222,11 @@ function DeepSeaExpedition() {
         <path className="sea-shore-foam" d="M0 191C160 169 280 211 451 177C613 144 784 179 948 184C1132 190 1284 165 1440 180"/>
         <path className="sea-shore-foam sea-shore-foam-soft" d="M0 218C166 196 290 229 461 201C627 174 792 205 958 209C1129 214 1291 188 1440 208"/>
       </svg>
-      <div className="sea-shore-copy"><span>FROM LAND TO SEA / 07</span><strong>從陸地，向海裡走。</strong></div>
+      <div className="sea-shore-copy"><span>FROM LAND TO SEA / 01</span><strong>從陸地，向海裡走。</strong></div>
     </div>
     <div className="sea-light" aria-hidden="true"/><div className="sea-bubbles" aria-hidden="true"/>
     <div className="sea-intro"><div className="sea-intro-inner">
-      <div className="section-kicker"><span>07</span> DEEP SEA EXPEDITION</div>
+      <div className="section-kicker"><span>01</span> DEEP SEA EXPEDITION</div>
       <p className="sea-coordinate">PINGTUNG / TAIWAN → MOTOBU / OKINAWA</p>
       <h2 id="deep-sea-title">深海<em>探勘</em></h2>
       <p className="sea-lede">從屏東海生館的展覽與每日節目出發，再游向沖繩美麗海水族館。兩座館的資料來源與更新方式各自標示。</p>
@@ -322,8 +322,4 @@ function DeepSeaExpedition() {
       </div>
     </div>
   </section>;
-}
-
-export function DomainProgrammes() {
-  return <><Performances/><DeepSeaExpedition/></>;
 }

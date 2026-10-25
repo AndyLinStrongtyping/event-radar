@@ -98,7 +98,16 @@ async function checkPublicApiContract(afterChecks) {
     assert.match(await robots.text(), /Sitemap: https:\/\/event-radar\.example\/sitemap\.xml/);
     const sitemap = await fetch(base + '/sitemap.xml');
     assert.equal(sitemap.status, 200);
-    assert.match(await sitemap.text(), /https:\/\/event-radar\.example\/guides\/nmmba\.html/);
+    const sitemapXml = await sitemap.text();
+    assert.match(sitemapXml, /https:\/\/event-radar\.example\/guides\/nmmba\.html/);
+    for (const [path, title] of [['/explore/ocean/', '深海探勘'], ['/explore/fossils/', '化石探勘']]) {
+      assert.ok(sitemapXml.includes(`https://event-radar.example${path}`));
+      const page = await fetch(base + path);
+      assert.equal(page.status, 200, `${path} 應可直接開啟`);
+      const themedHtml = await page.text();
+      assert.ok(themedHtml.includes(`<title>${title}`));
+      assert.ok(themedHtml.includes(`rel="canonical" href="https://event-radar.example${path}"`));
+    }
     const indexedGuide = await fetch(base + '/guides/nmmba.html');
     assert.match(await indexedGuide.text(), /rel="canonical" href="https:\/\/event-radar\.example\/guides\/nmmba\.html"/);
     const bundlePath = html.match(/src="(\/react-assets\/[^\"]+\.js)"/)?.[1];

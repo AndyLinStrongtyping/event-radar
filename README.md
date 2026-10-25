@@ -10,7 +10,7 @@ Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查�
 | 靜態導覽 | 沖繩美麗海、澎湖化石館、左鎮化石園區等館所／圖鑑資訊 | 人工整理、有來源連結；不冒充自動匯入 |
 | 奇美活動 | 官網內部 JSON 候選資料轉換器、人工刷新快照及本機候選表 | 官網端點**不是公開文件化 API**；尚無自動活動同步或公開活動搜尋 |
 
-首頁採 React + Vite，提供城市與館所連動、展覽狀態／明確免費資訊篩選、表演、深海與化石專區；載入展覽的發掘動畫支援「減少動態效果」。下圖是開發時的介面紀錄；訪客可使用[快速公開入口](https://andylinstrongtyping.github.io/event-radar/)，館所介紹與 canonical 仍使用[主要網址](https://event-radar-preview.onrender.com/)。
+首頁採 React + Vite，保留城市與館所連動、展覽狀態／明確免費資訊篩選、票務與表演；深海與化石各拆為[深海探勘](https://event-radar-preview.onrender.com/explore/ocean/)及[化石探勘](https://event-radar-preview.onrender.com/explore/fossils/)獨立主題頁。載入展覽的發掘動畫支援「減少動態效果」。下圖是開發時的介面紀錄；訪客可使用[快速公開入口](https://andylinstrongtyping.github.io/event-radar/)，館所介紹與 canonical 仍使用[主要網址](https://event-radar-preview.onrender.com/)。主題分頁截至 2026-10-25 已完成本機驗證，公開網址須待本次發布後再核對。
 
 想快速評估專案，可依序閱讀：[目前進度](STATUS.md) → [完整開發復盤](docs/development-retrospective-2026-10.md) → [技術難點與解決決策報告](docs/technical-challenges-report.md) → [面試用專案介紹](docs/portfolio-brief.md) → [面試技術學習手冊](docs/interview-study-guide.md) → [專案結構地圖](docs/project-structure.md) → [程式導覽](docs/code-reference.md) → [開發導覽](docs/development-guide.md) → [API 契約](docs/api.md)／[OpenAPI](docs/openapi.yaml) → [來源盤點](docs/sources.md) → [技術決策](docs/technical-decisions.md)。[Phase 8 文件驗收](docs/stage-2026-10-16-phase8.md)記錄當時的整理範圍與限制。
 

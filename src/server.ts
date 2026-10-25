@@ -64,6 +64,8 @@ const fields = `e.id,e.title,e.museum_id AS "museumId",m.name AS "museumName",m.
 
 const staticFiles = new Map<string, [string, string]>([
   ['/', ['../web/react-build/index.html', 'text/html; charset=utf-8']],
+  ['/explore/ocean/', ['../web/react-build/explore/ocean/index.html', 'text/html; charset=utf-8']],
+  ['/explore/fossils/', ['../web/react-build/explore/fossils/index.html', 'text/html; charset=utf-8']],
   ['/guides/chimei.html', ['../web/guides/chimei.html', 'text/html; charset=utf-8']],
   ['/guides/nmns.html', ['../web/guides/nmns.html', 'text/html; charset=utf-8']],
   ['/guides/ntm.html', ['../web/guides/ntm.html', 'text/html; charset=utf-8']],
@@ -114,7 +116,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/assets/ntmofa-building-commons.jpg', ['../web/assets/ntmofa-building-commons.jpg', 'image/jpeg']],
   ['/assets/ntt-building-commons.jpg', ['../web/assets/ntt-building-commons.jpg', 'image/jpeg']],
 ]);
-const indexablePaths = ['/', ...[...staticFiles.keys()].filter((path) => path.startsWith('/guides/'))];
+const indexablePaths = ['/', '/explore/ocean/', '/explore/fossils/', ...[...staticFiles.keys()].filter((path) => path.startsWith('/guides/'))];
 
 const server = createServer(async (request, response) => {
   try {
@@ -127,6 +129,11 @@ const server = createServer(async (request, response) => {
       return;
     }
     const url = new URL(request.url ?? '/', 'http://localhost');
+    if (url.pathname === '/explore/ocean' || url.pathname === '/explore/fossils') {
+      response.writeHead(308, { location: `${url.pathname}/${url.search}` });
+      response.end();
+      return;
+    }
     if (url.pathname === '/robots.txt') {
       const body = publicBaseUrl
         ? `User-agent: *\nAllow: /\nSitemap: ${publicBaseUrl.origin}/sitemap.xml\n`

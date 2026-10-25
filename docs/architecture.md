@@ -2,6 +2,8 @@
 
 最後核對：2026-10-25。這份文件供作品展示與開發取捨使用；新接手者可先讀[開發導覽](development-guide.md)，資料關聯見[ERD](erd.md)。**目前實作圖包含 Render／Neon 公開技術預覽與已完成一次真實排程的雲端來源工作；跨週穩定尚待驗證。下方 PNG 是未來構想，不代表已上線能力。** 特展搜尋與表演／海洋節目分流，一般市集、音樂節與講座不自動混入特展搜尋。
 
+前端採三個固定入口：`/` 保留展覽搜尋與行前資訊；`/explore/ocean/` 展示雙館深海探勘；`/explore/fossils/` 展示雙館化石探勘。三頁由同一 Vite 建置產出，後端明列路由並在 sitemap 收錄兩個主題頁。GitHub Pages 鏡像使用專案子路徑、`noindex` 與指向 Render 的 canonical；舊首頁主題錨點轉向新頁。這項前端分流不改動既有資料庫、來源匯入或公開 API。
+
 Phase 6 的[資料模型對照](domain-model.md)列出限期展、美術館、表演、海洋節目與奇美活動候選的共同來源概念和不同時間語意。第 025 migration 保證 `event_sessions` 只屬表演、`recurring_schedules` 只屬海洋節目；現階段仍是分領域查詢，沒有統一公開事件 API。
 
 公開 OpenAPI 對表演與海洋節目使用分型回應，且各端點只接受自己的領域；契約測試會拒絕觀察日、場次與每日時段放錯位置。這是現有回應的格式驗證，不會把不同時間模型合併為單一時段。
@@ -26,7 +28,7 @@ Phase 3／4 的領域匯入：歌劇院官方 `place=1` 清單 HTML 的可辨識
 
 ```mermaid
 flowchart TB
-  F[frontend/src<br/>React 首頁與互動狀態] --> S[src/server.ts<br/>公開唯讀 API／靜態檔]
+  F[frontend/src<br/>React 首頁與深海／化石主題頁] --> S[src/server.ts<br/>公開唯讀 API／靜態檔]
   W[web/<br/>館所導覽、圖片、共用腳本] --> S
   S --> P[(PostgreSQL / Neon)]
   A[src/sources/<br/>館別資料轉換器] --> N[src/normalize.ts<br/>共通資料品質閘門]
