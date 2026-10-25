@@ -30,6 +30,8 @@ if (options.includes('--expect-noindex')) {
 }
 const home = await homeResponse.text();
 assert.match(home, /id="root"/, '首頁缺少 React 掛載點');
+assert.match(home, /<h1>探索台灣近期展覽<\/h1>/, '首頁初始 HTML 缺少可供檢索的主題說明');
+assert.match(home, /href="\/guides\/chimei\.html"/, '首頁初始 HTML 缺少館所入口');
 const script = home.match(/src="(\/react-assets\/[a-zA-Z0-9_-]+\.js)"/)?.[1];
 const style = home.match(/href="(\/react-assets\/[a-zA-Z0-9_-]+\.css)"/)?.[1];
 assert.ok(script && style, '首頁找不到 React 建置檔');
@@ -54,6 +56,7 @@ for (const [path, title] of [
   const page = await (await get(path, /text\/html/)).text();
   assert.match(page, new RegExp(`<title>${title}`), `${path} 缺少獨立頁面標題`);
   assert.match(page, /id="root"/, `${path} 缺少 React 掛載點`);
+  assert.match(page, /<h1>[^<]+<\/h1>/, `${path} 初始 HTML 缺少主題說明`);
   if (!localHttp) assert.ok(page.includes(`rel="canonical" href="${base.origin}${path}"`), `${path} canonical 錯誤`);
 }
 
