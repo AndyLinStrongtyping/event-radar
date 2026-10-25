@@ -26,4 +26,8 @@
 
 ## 驗證與發布狀態
 
-本機 `npm test` 82/82、`npm run typecheck`、`npm run build:web`、`npm run check:docs` 通過。上線後仍需檢查首頁與六個代表頁的 200、初始 HTML、canonical、robots、sitemap、圖片與搜尋 API；本節在發布前不記為已上線。
+本機 `npm test` 82/82、`npm run typecheck`、`npm run build:web`、`npm run check:docs` 通過。[PR #21](https://github.com/AndyLinStrongtyping/event-radar/pull/21) 的兩項 GitHub 檢查通過並合併，主分支提交為 `2d979511a4f87435a79f8f420fea68fcfd7259c1`。[Render 部署](https://dashboard.render.com/web/srv-db9hkpfavr4c73e40ahg/deploys/dep-dbev598m7kps73f6skfg) 使用該提交，控制台顯示 `Deploy succeeded | Live`。原有 25 份 migration 均已存在（新套用 0 份），已有 32 筆限期展，首次匯入略過。
+
+部署後對 `https://event-radar-preview.onrender.com` 執行 `node scripts/smoke-deploy.mjs` 通過：`/health` 顯示 API 與資料庫正常、首頁初始 HTML 有主標題及奇美導覽入口、前端資源可載入、11 間館所與 32 筆特展可查、表演與海洋清單格式正確、化石照片可讀、深海與化石頁有初始主標題與 canonical、`robots.txt` 開放且 sitemap 包含館所與主題頁。Chrome 公開首頁也顯示新的標題、文案、搜尋條件與主題入口。
+
+這次仍未驗證 Google 已重新檢索變更後的各頁，亦未取得搜尋曝光或排名提升的證據。後續每週觀察 Search Console 的頁面索引、查詢與實際點擊；若代表頁持續未收錄，再依原因調整內容與內鏈。
