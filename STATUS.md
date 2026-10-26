@@ -1,8 +1,8 @@
 # Event Radar｜目前進度
 
-## 2026-10-26 文案編輯追加（本機，尚未發布）
+## 2026-10-26 文案編輯追加（GitHub Pages 已發布）
 
-14館圖鑑介紹、細節及延伸文字改為分享知識的口吻，減少指令與制式提問；左鎮照片導讀及部分科普同步調整。圖像標示、來源、版本及展示限制保留。本輪範圍與原則見[文案紀錄](docs/stage-2026-10-26-conversational-copy.md)。
+14館圖鑑介紹、細節及延伸文字改為分享知識的口吻，減少指令與制式提問；左鎮照片導讀及部分科普同步調整。圖像標示、來源、版本及展示限制保留。[PR #25](https://github.com/AndyLinStrongtyping/event-radar/pull/25)通過檢查後合併，Pages發布成功且公開白鯨圖鑑已驗收；Render尚未部署，連到Render的館所介紹仍為原版。本輪範圍與證據見[文案紀錄](docs/stage-2026-10-26-conversational-copy.md)。
 
 2026-10-26 **圖鑑與審查修正已提交並合併GitHub**：[PR #23](https://github.com/AndyLinStrongtyping/event-radar/pull/23) 已合併main（`1330773`），功能提交 `97d76f6`；[CI #130](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/40291816947) 的單元、型別、隔離資料庫／HTTP／OpenAPI與備份還原全部通過。包含14館圖鑑、生物仿舊插畫、左鎮自攝與本輪可靠性修正。**Render尚未手動重新部署此版本，不能宣稱正式站已更新**。完整審查與兩份AI角色使用心得見[紀錄](docs/review-2026-10-26-atlas-and-user-trials.md)；跨週排程仍待10/27核對。
 
