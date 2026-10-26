@@ -65,6 +65,14 @@
 
 發布前統一執行型別、87項單元、隔離PostgreSQL／HTTP／OpenAPI整合、前端建置與文件連結檢查。整合含新圖鑑、14張WebP、13張自攝JPEG、來源保留與缺檔回歸。
 
-正式推送、CI與部署結果待完成後補記；本節在完成之前不宣稱公開站已更新。10/27第二次真實週排程仍是獨立待辦，沒有以手動測試冒充跨週證據。
+### GitHub提交與合併結果
+
+- 使用者確認後建立提交 `97d76f6a5a558624824038be4ecd87e058529b4e`，推送至 `codex/collection-atlas-reviewed-release`。
+- [PR #23](https://github.com/AndyLinStrongtyping/event-radar/pull/23) 已合併至main，合併提交 `13307738f16549e5b04ba32e627ed256aa9d3035`。
+- [CI #130](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/40291816947) 通過：型別、87項單元、隔離PostgreSQL／HTTP／OpenAPI整合、文件連結，以及PostgreSQL17備份還原檢查均成功。
+- GitHub連接器建立PR時回403，本機Git可正常推送，因此使用Git現有授權向GitHub建立與合併PR；憑證僅留記憶體，不寫入Git、文件或日誌。合併前核對完整head SHA與所有check runs成功。
+- 這次完成GitHub提交與合併；**尚未手動重新部署Render，也未做此版本正式站驗收**。GitHub Pages由main觸發的工作須另看結果，不能把合併當成所有服務已更新。
+
+10/27第二次真實週排程仍是獨立待辦，沒有以手動測試冒充跨週證據。
 
 同日追加的白鯨／鯨鯊仿舊相片版本，使用者已看過本機預覽並同意提交。新資產已通過87項單元與建置，兩張在瀏覽器均能載入；主體仍標AI概念插畫，不冒充歷史照片。仿舊調整沒有改動文物、化石或自攝照片。
