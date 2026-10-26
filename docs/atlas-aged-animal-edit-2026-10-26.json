@@ -1,0 +1,12 @@
+{
+  "prompt": "Use case: lighting-weather / style-transfer. Edit this supplied illustration with ONLY an aged photograph color and print finish. Preserve the exact 3D animal, pose, expression, proportions, eye, fins, tail, composition, water and lighting geometry. Keep it a charming modern 3D zoo-management animal illustration, NOT a scientific reconstruction and NOT a real historical animal photograph. Make the illustration look printed as a gently aged mid-century color snapshot: softly faded cyan/turquoise water, restrained warm cream highlights, reduced saturation and contrast, subtle fine photographic grain, slight warm edge discoloration, and a narrow aged ivory photographic paper border. Retain enough blue to read as underwater and keep the animal clear, not muddy or brown. No heavy damage, no scratches across the animal, no added animals or objects, no text, logos, dates, stamps or watermarks. Square image. Do not change anatomy or restyle the animal into a bronze object, fossil, antique engraving, painting or live-action photo.",
+  "sourceImages": [
+    "web/assets/atlas-beluga-3d.webp",
+    "web/assets/atlas-whaleshark-3d.webp"
+  ],
+  "outputImages": [
+    "web/assets/atlas-beluga-3d-aged-v2.webp",
+    "web/assets/atlas-whaleshark-3d-aged-v2.webp"
+  ],
+  "tool": "built-in imagegen edit"
+}

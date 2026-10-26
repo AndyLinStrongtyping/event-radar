@@ -37,6 +37,7 @@ export default defineConfig({
         home: resolve('frontend/index.html'),
         ocean: resolve('frontend/explore/ocean/index.html'),
         fossils: resolve('frontend/explore/fossils/index.html'),
+        collections: resolve('frontend/explore/collections/index.html'),
       },
     },
   },

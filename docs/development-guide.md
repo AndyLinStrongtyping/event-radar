@@ -4,6 +4,8 @@
 
 ## 建議閱讀順序
 
+若要了解產品為何做、先做什麼，先讀[產品需求規格](product-prd.md)、[版本優先級](product-mvp.md)、[使用者故事與驗收](product-stories.md)、[產品流程](product-flows.md)，再接下方工程導覽。新內容目前是規劃，不能從需求文件推定已實作。
+
 1. [STATUS](../STATUS.md)：哪些來源可匯入、哪些只有人工資料、哪些仍待驗證。
 2. [專案結構地圖](project-structure.md)、[程式導覽](code-reference.md)、[本頁](development-guide.md)、[目前架構](architecture.md#目前實作公開技術預覽)與[ERD](erd.md)：先找到檔案責任，再理解資料如何進入、分流、建立關聯與被查詢。
 3. [API 說明](api.md)和 [OpenAPI 3.0](openapi.yaml)：公開唯讀端點的語意、參數、回應與錯誤。

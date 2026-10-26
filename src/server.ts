@@ -5,9 +5,11 @@ import pg from 'pg';
 import { visitStatus, validVisitDate } from './visit-status.ts';
 import { sourceFreshness } from './source-freshness.ts';
 import { museumTickets, ticketingForExhibition } from './ticketing.ts';
+import { handleIdlePoolErrors } from './database-errors.ts';
 
 if (!process.env.DATABASE_URL) throw new Error('請先設定 DATABASE_URL');
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+handleIdlePoolErrors(pool);
 const publicBaseUrl = process.env.PUBLIC_BASE_URL ? new URL(process.env.PUBLIC_BASE_URL) : null;
 if (publicBaseUrl && (publicBaseUrl.protocol !== 'https:' || publicBaseUrl.pathname !== '/'
   || publicBaseUrl.search || publicBaseUrl.hash || publicBaseUrl.username || publicBaseUrl.password)) {
@@ -63,6 +65,17 @@ const fields = `e.id,e.title,e.museum_id AS "museumId",m.name AS "museumName",m.
     FROM art_exhibition_details a WHERE a.exhibition_id=e.id) AS art`;
 
 const staticFiles = new Map<string, [string, string]>([
+  ['/assets/zuojhen-evolution-hall-user.jpg', ['../web/assets/zuojhen-evolution-hall-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-evolution-path-user.jpg', ['../web/assets/zuojhen-evolution-path-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-evolution-tree-user.jpg', ['../web/assets/zuojhen-evolution-tree-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-ammonite-model-user.jpg', ['../web/assets/zuojhen-ammonite-model-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-ammonite-fossils-user.jpg', ['../web/assets/zuojhen-ammonite-fossils-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-crocodile-user.jpg', ['../web/assets/zuojhen-crocodile-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-elephant-user.jpg', ['../web/assets/zuojhen-elephant-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-deer-user.jpg', ['../web/assets/zuojhen-deer-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-shark-jaw-user.jpg', ['../web/assets/zuojhen-shark-jaw-user.jpg', 'image/jpeg']],
+  ['/explore/collections/', ['../web/react-build/explore/collections/index.html', 'text/html; charset=utf-8']],
+  ...['bell', 'ewer', 'music', 'map', 'coins', 'chip', 'buffalo', 'mummy', 'switchboard', 'crocodile', 'rhino', 'theater', 'beluga-3d', 'whaleshark-3d', 'beluga-3d-aged-v2', 'whaleshark-3d-aged-v2'].map((name): [string, [string, string]] => [`/assets/atlas-${name}.webp`, [`../web/assets/atlas-${name}.webp`, 'image/webp']]),
   ['/', ['../web/react-build/index.html', 'text/html; charset=utf-8']],
   ['/explore/ocean/', ['../web/react-build/explore/ocean/index.html', 'text/html; charset=utf-8']],
   ['/explore/fossils/', ['../web/react-build/explore/fossils/index.html', 'text/html; charset=utf-8']],
@@ -109,6 +122,10 @@ const staticFiles = new Map<string, [string, string]>([
   ['/assets/fossil-zuojhen-rhino-commons.jpg', ['../web/assets/fossil-zuojhen-rhino-commons.jpg', 'image/jpeg']],
   ['/assets/fossil-zuojhen-crocodile-commons.jpg', ['../web/assets/fossil-zuojhen-crocodile-commons.jpg', 'image/jpeg']],
   ['/assets/fossil-zuojhen-building-commons.jpg', ['../web/assets/fossil-zuojhen-building-commons.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-shop-overview-user.jpg', ['../web/assets/zuojhen-shop-overview-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-shop-specimens-user.jpg', ['../web/assets/zuojhen-shop-specimens-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-shop-eggshell-user.jpg', ['../web/assets/zuojhen-shop-eggshell-user.jpg', 'image/jpeg']],
+  ['/assets/zuojhen-shop-coprolite-user.jpg', ['../web/assets/zuojhen-shop-coprolite-user.jpg', 'image/jpeg']],
   ['/assets/npm-teacup-commons.jpg', ['../web/assets/npm-teacup-commons.jpg', 'image/jpeg']],
   ['/assets/ntm-building-commons.jpg', ['../web/assets/ntm-building-commons.jpg', 'image/jpeg']],
   ['/assets/nmth-building-commons.jpg', ['../web/assets/nmth-building-commons.jpg', 'image/jpeg']],
@@ -116,7 +133,7 @@ const staticFiles = new Map<string, [string, string]>([
   ['/assets/ntmofa-building-commons.jpg', ['../web/assets/ntmofa-building-commons.jpg', 'image/jpeg']],
   ['/assets/ntt-building-commons.jpg', ['../web/assets/ntt-building-commons.jpg', 'image/jpeg']],
 ]);
-const indexablePaths = ['/', '/explore/ocean/', '/explore/fossils/', ...[...staticFiles.keys()].filter((path) => path.startsWith('/guides/'))];
+const indexablePaths = ['/', '/explore/ocean/', '/explore/fossils/', '/explore/collections/', ...[...staticFiles.keys()].filter((path) => path.startsWith('/guides/'))];
 
 const server = createServer(async (request, response) => {
   try {
@@ -129,7 +146,7 @@ const server = createServer(async (request, response) => {
       return;
     }
     const url = new URL(request.url ?? '/', 'http://localhost');
-    if (url.pathname === '/explore/ocean' || url.pathname === '/explore/fossils') {
+    if (['/explore/ocean', '/explore/fossils', '/explore/collections'].includes(url.pathname)) {
       response.writeHead(308, { location: `${url.pathname}/${url.search}` });
       response.end();
       return;
@@ -154,14 +171,15 @@ const server = createServer(async (request, response) => {
     }
     if (/^\/react-assets\/[a-zA-Z0-9_-]+\.(js|css)$/.test(url.pathname)) {
       const mime = url.pathname.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8';
+      const content = await readFile(new URL(`../web/react-build${url.pathname}`, import.meta.url));
       response.writeHead(200, { 'content-type': mime, 'cache-control': 'public, max-age=31536000, immutable' });
-      response.end(await readFile(new URL(`../web/react-build${url.pathname}`, import.meta.url)));
+      response.end(content);
       return;
     }
     const asset = staticFiles.get(url.pathname);
     if (asset) {
-      response.writeHead(200, { 'content-type': asset[1] });
       const content = await readFile(new URL(asset[0], import.meta.url));
+      response.writeHead(200, { 'content-type': asset[1] });
       if (publicBaseUrl && asset[1].startsWith('text/html')) {
         
 const canonical = `<link rel="canonical" href="${publicBaseUrl.origin}${url.pathname}">`;
@@ -405,7 +423,13 @@ response.end(
     }
     json(response, 404, { error: { code: 'NOT_FOUND', message: '找不到路徑' } });
   } catch (error) {
-    if (error instanceof Error && /必須是有效的|不可早於|參數無效|太長/.test(error.message)) {
+    if (response.headersSent) {
+      response.destroy();
+      return;
+    }
+    if (error instanceof Error && 'code' in error && error.code === 'ENOENT') {
+      json(response, 404, { error: { code: 'NOT_FOUND', message: '找不到檔案' } });
+    } else if (error instanceof Error && /必須是有效的|不可早於|參數無效|太長/.test(error.message)) {
       json(response, 400, { error: { code: 'BAD_REQUEST', message: error.message } });
     } else {
       process.stderr.write(`${error instanceof Error ? error.message : String(error)}\n`);

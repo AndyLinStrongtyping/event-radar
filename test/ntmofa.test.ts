@@ -43,3 +43,20 @@ test('國美館空清單或重複來源 ID 整批停止', async () => {
   await assert.rejects(classifyNtmofaPages([card('60146', educationTitle, 'B1')
     + card('60146', educationTitle, 'B1'), ''], async () => detail), /ID 重複/);
 });
+
+test('國美館單筆詳情失聯與內容驗證失敗分流，避免連線故障使舊展下架', async () => {
+  const pages = [card('60146', educationTitle, 'B1 教育展示空間')
+    + card('60123', '國際版畫雙年展', '101展覽室')
+    + card('60124', '另一檔特展', '102展覽室'), ''];
+  const result = await classifyNtmofaPages(pages, async (url) => {
+    if (url.includes('60123')) throw new Error('逾時');
+    if (url.includes('60124')) return '<div class="programDetailGroup"><div class="title_01">不同標題</div></div>';
+    return detail;
+  });
+  assert.equal(result.rows.length, 1);
+  assert.equal(result.records[1].status, 'review');
+  assert.equal(result.records[1].preserveExisting, true);
+  assert.match(result.records[1].reason!, /保留上次核對/);
+  assert.equal(result.records[2].status, 'review');
+  assert.notEqual(result.records[2].preserveExisting, true);
+});

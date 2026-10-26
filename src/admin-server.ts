@@ -5,6 +5,7 @@ import pg from 'pg';
 import { approveReview } from './review-service.ts';
 import { reviewMissingCandidate } from './missing-review-service.ts';
 import { loadSourceHealth } from './source-health-report.ts';
+import { handleIdlePoolErrors } from './database-errors.ts';
 
 if (!process.env.DATABASE_URL) throw new Error('請先設定 DATABASE_URL');
 const password = process.env.EVENT_RADAR_ADMIN_PASSWORD ?? '';
@@ -13,6 +14,7 @@ const port = Number(process.env.ADMIN_PORT ?? 3010);
 if (!Number.isInteger(port) || port < 1 || port > 65535) throw new Error('ADMIN_PORT 無效');
 const origin = `http://127.0.0.1:${port}`;
 const pool = new pg.Pool({ connectionString: process.env.DATABASE_URL });
+handleIdlePoolErrors(pool);
 const sessions = new Map<string, { csrf: string; expires: number }>();
 const attempts: number[] = [];
 

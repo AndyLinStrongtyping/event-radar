@@ -9,6 +9,8 @@ export type SourceRecord = {
   raw: Record<string, unknown>;
   status: 'ready' | 'review' | 'ignored' | 'approved';
   reason: string | null;
+  // Transport failure is not evidence that an already published record became invalid.
+  preserveExisting?: boolean;
 };
 
 export type NmmbaBatch = { rows: ExhibitionDraft[]; records: SourceRecord[] };

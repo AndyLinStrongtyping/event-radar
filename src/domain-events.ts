@@ -178,8 +178,8 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
               && session.statusSourceHash?.trim() === contentHash)
               .map((session) => [session.sessionKey,session.status]) : []);
           const staleManualKeys = new Set(row.domain === 'performance'
-            ? oldDetail.rows.filter((session) => session.statusOrigin === 'manual'
-              && session.statusSourceHash?.trim() !== contentHash)
+            ? oldDetail.rows.filter((session) => session.status === 'unknown'
+              || (session.statusOrigin === 'manual' && session.statusSourceHash?.trim() !== contentHash))
               .map((session) => session.sessionKey) : []);
           const prior = row.domain === 'performance' ? oldDetail.rows.map((session) => ({
             sessionKey:session.sessionKey,startsAt:new Date(session.startsAt).toISOString(),
@@ -211,7 +211,8 @@ export async function importDomainEvents(pool: pg.Pool, rows: DomainDraft[], sco
           status=CASE
             WHEN event_sessions.status_origin='manual' AND event_sessions.status_source_hash=$9
               THEN event_sessions.status
-            WHEN event_sessions.status_origin='manual' AND EXCLUDED.status='scheduled'
+            WHEN (event_sessions.status_origin='manual' OR event_sessions.status='unknown')
+              AND EXCLUDED.status='scheduled'
               THEN 'unknown' ELSE EXCLUDED.status END,
           status_origin=CASE WHEN event_sessions.status_origin='manual'
             AND event_sessions.status_source_hash=$9 THEN 'manual' ELSE 'source' END,

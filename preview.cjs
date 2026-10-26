@@ -5,6 +5,17 @@ const { join } = require('node:path');
 const root = join(__dirname, 'web');
 const port = Number(process.env.PORT || 4180);
 const files = {
+  '/assets/zuojhen-evolution-hall-user.jpg': ['assets/zuojhen-evolution-hall-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-evolution-path-user.jpg': ['assets/zuojhen-evolution-path-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-evolution-tree-user.jpg': ['assets/zuojhen-evolution-tree-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-ammonite-model-user.jpg': ['assets/zuojhen-ammonite-model-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-ammonite-fossils-user.jpg': ['assets/zuojhen-ammonite-fossils-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-crocodile-user.jpg': ['assets/zuojhen-crocodile-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-elephant-user.jpg': ['assets/zuojhen-elephant-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-deer-user.jpg': ['assets/zuojhen-deer-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-shark-jaw-user.jpg': ['assets/zuojhen-shark-jaw-user.jpg', 'image/jpeg'],
+  '/explore/collections/': ['react-build/explore/collections/index.html', 'text/html; charset=utf-8'],
+  ...Object.fromEntries(['bell', 'ewer', 'music', 'map', 'coins', 'chip', 'buffalo', 'mummy', 'switchboard', 'crocodile', 'rhino', 'theater', 'beluga-3d', 'whaleshark-3d', 'beluga-3d-aged-v2', 'whaleshark-3d-aged-v2'].map((name) => [`/assets/atlas-${name}.webp`, [`assets/atlas-${name}.webp`, 'image/webp']])),
   '/': ['react-build/index.html', 'text/html; charset=utf-8'],
   '/explore/ocean/': ['react-build/explore/ocean/index.html', 'text/html; charset=utf-8'],
   '/explore/fossils/': ['react-build/explore/fossils/index.html', 'text/html; charset=utf-8'],
@@ -50,6 +61,10 @@ const files = {
   '/assets/fossil-zuojhen-rhino-commons.jpg': ['assets/fossil-zuojhen-rhino-commons.jpg', 'image/jpeg'],
   '/assets/fossil-zuojhen-crocodile-commons.jpg': ['assets/fossil-zuojhen-crocodile-commons.jpg', 'image/jpeg'],
   '/assets/fossil-zuojhen-building-commons.jpg': ['assets/fossil-zuojhen-building-commons.jpg', 'image/jpeg'],
+  '/assets/zuojhen-shop-overview-user.jpg': ['assets/zuojhen-shop-overview-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-shop-specimens-user.jpg': ['assets/zuojhen-shop-specimens-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-shop-eggshell-user.jpg': ['assets/zuojhen-shop-eggshell-user.jpg', 'image/jpeg'],
+  '/assets/zuojhen-shop-coprolite-user.jpg': ['assets/zuojhen-shop-coprolite-user.jpg', 'image/jpeg'],
   '/assets/npm-teacup-commons.jpg': ['assets/npm-teacup-commons.jpg', 'image/jpeg'],
   '/assets/ntm-building-commons.jpg': ['assets/ntm-building-commons.jpg', 'image/jpeg'],
   '/assets/nmth-building-commons.jpg': ['assets/nmth-building-commons.jpg', 'image/jpeg'],
@@ -72,20 +87,22 @@ const museums = [
 createServer(async (request, response) => {
   try {
     const url = new URL(request.url || '/', 'http://localhost');
-    if (url.pathname === '/explore/ocean' || url.pathname === '/explore/fossils') {
+    if (['/explore/ocean', '/explore/fossils', '/explore/collections'].includes(url.pathname)) {
       response.writeHead(308, { location: `${url.pathname}/${url.search}` });
       response.end();
       return;
     }
     if (/^\/react-assets\/[a-zA-Z0-9_-]+\.(js|css)$/.test(url.pathname)) {
+      const content = await readFile(join(root, 'react-build', url.pathname.slice(1)));
       response.writeHead(200, { 'content-type': url.pathname.endsWith('.css') ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8', 'cache-control': 'public, max-age=31536000, immutable' });
-      response.end(await readFile(join(root, 'react-build', url.pathname.slice(1))));
+      response.end(content);
       return;
     }
     if (files[url.pathname]) {
       const [name, type] = files[url.pathname];
+      const content = await readFile(join(root, name));
       response.writeHead(200, { 'content-type': type });
-      response.end(await readFile(join(root, name)));
+      response.end(content);
       return;
     }
     response.setHeader('content-type', 'application/json; charset=utf-8');
@@ -169,8 +186,10 @@ createServer(async (request, response) => {
     response.statusCode = 404;
     response.end(JSON.stringify({ error: { code: 'NOT_FOUND', message: '找不到路徑' } }));
   } catch (error) {
-    response.statusCode = 500;
-    response.end(JSON.stringify({ error: { code: 'PREVIEW_ERROR', message: error.message } }));
+    if (response.headersSent) { response.destroy(); return; }
+    const missing = error.code === 'ENOENT';
+    response.writeHead(missing ? 404 : 500, { 'content-type': 'application/json; charset=utf-8' });
+    response.end(JSON.stringify({ error: { code: missing ? 'NOT_FOUND' : 'PREVIEW_ERROR', message: missing ? '找不到檔案' : '預覽暫時無法讀取資料' } }));
   }
 }).listen(port, '127.0.0.1', () => {
   process.stdout.write(`Event Radar preview: http://127.0.0.1:${port}/\n`);

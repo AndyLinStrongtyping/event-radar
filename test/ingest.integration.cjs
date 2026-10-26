@@ -62,8 +62,10 @@ async function checkPublicApiContract(afterChecks) {
   const port = 33000 + Math.floor(Math.random() * 2000);
   const base = `http://127.0.0.1:${port}`;
   const coveredSuccessPaths = new Set();
+  const httpDatabase = new URL(testUrl.href);
+  httpDatabase.searchParams.set('application_name', `event_radar_http_${port}`);
   const server = spawn(process.execPath, ['--experimental-strip-types', 'src/server.ts'], {
-    cwd: project, env: { ...process.env, DATABASE_URL: testUrl.href, PORT: String(port),
+    cwd: project, env: { ...process.env, DATABASE_URL: httpDatabase.href, PORT: String(port),
       PUBLIC_BASE_URL: 'https://event-radar.example', NMNS_API_KEY: '' },
     stdio: 'ignore',
   });
@@ -85,6 +87,19 @@ async function checkPublicApiContract(afterChecks) {
     assert.equal(ready, true, '公開 API 應可啟動並連接測試資料庫');
     assert.deepEqual(await get('/health'), { status: 'ok', database: 'ok' });
 
+    for (const asset of ['/react-assets/missing-review.js', '/react-assets/missing-review.css']) {
+      const missing = await fetch(base + asset);
+      assert.equal(missing.status, 404, '不存在的前端資源須回 404');
+      await missing.text();
+      await get('/health');
+    }
+    const disconnected = await testDb.query(`SELECT pg_terminate_backend(pid) AS terminated
+      FROM pg_stat_activity WHERE application_name=$1 AND pid<>pg_backend_pid()`, [`event_radar_http_${port}`]);
+    assert.ok(disconnected.rowCount > 0, '本測試只中斷自建公開服務的連線');
+    await new Promise((resolve) => setTimeout(resolve, 200));
+    assert.equal(server.exitCode, null, '閒置連線中斷不能使公開服務退出');
+    await get('/health');
+
     const homepage = await fetch(base + '/', { headers: { origin: 'https://andylinstrongtyping.github.io' } });
     assert.equal(homepage.status, 200);
     assert.equal(homepage.headers.get('access-control-allow-origin'), '*',
@@ -100,7 +115,7 @@ async function checkPublicApiContract(afterChecks) {
     assert.equal(sitemap.status, 200);
     const sitemapXml = await sitemap.text();
     assert.match(sitemapXml, /https:\/\/event-radar\.example\/guides\/nmmba\.html/);
-    for (const [path, title] of [['/explore/ocean/', '深海探勘'], ['/explore/fossils/', '化石探勘']]) {
+    for (const [path, title] of [['/explore/ocean/', '深海探勘'], ['/explore/fossils/', '化石探勘'], ['/explore/collections/', '館藏與展品圖鑑']]) {
       assert.ok(sitemapXml.includes(`https://event-radar.example${path}`));
       const page = await fetch(base + path);
       assert.equal(page.status, 200, `${path} 應可直接開啟`);
@@ -126,6 +141,30 @@ async function checkPublicApiContract(afterChecks) {
     assert.match(await artGuide.text(), /國立臺灣美術館/);
     const artImage = await fetch(base + '/assets/ntmofa-building-commons.jpg');
     assert.equal(artImage.status, 200, '國美館圖鑑照片應可載入');
+    const atlasRedirect = await fetch(base + '/explore/collections?museum=ntmofa', { redirect: 'manual' });
+    assert.equal(atlasRedirect.status, 308);
+    assert.equal(atlasRedirect.headers.get('location'), '/explore/collections/?museum=ntmofa');
+    for (const name of ['bell','ewer','music','map','coins','chip','buffalo','mummy','switchboard','crocodile','rhino','theater','beluga-3d-aged-v2','whaleshark-3d-aged-v2']) {
+      const illustration = await fetch(base + `/assets/atlas-${name}.webp`);
+      assert.equal(illustration.status, 200);
+      assert.match(illustration.headers.get('content-type'), /^image\/webp/);
+      const bytes = Buffer.from(await illustration.arrayBuffer());
+      assert.equal(bytes.toString('ascii',0,4), 'RIFF');
+      assert.equal(bytes.toString('ascii',8,12), 'WEBP');
+    }
+    for (const name of ['overview','specimens','eggshell','coprolite']) {
+      const photo = await fetch(base + `/assets/zuojhen-shop-${name}-user.jpg`);
+      assert.equal(photo.status, 200, '左鎮現場照片須可讀取');
+      assert.match(photo.headers.get('content-type'), /^image\/jpeg/);
+      const bytes = new Uint8Array(await photo.arrayBuffer());
+      assert.deepEqual([...bytes.slice(0,3)],[255,216,255], '回應須是真正 JPEG 而非錯誤 HTML');
+    }
+    for (const name of ['evolution-hall','evolution-path','evolution-tree','ammonite-model','ammonite-fossils','crocodile','elephant','deer','shark-jaw']) {
+      const photo = await fetch(base + `/assets/zuojhen-${name}-user.jpg`);
+      assert.equal(photo.status, 200);
+      assert.match(photo.headers.get('content-type'), /^image\/jpeg/);
+      assert.deepEqual([...new Uint8Array(await photo.arrayBuffer()).slice(0,3)],[255,216,255]);
+    }
     const theaterGuide = await fetch(base + '/guides/ntt.html');
     assert.equal(theaterGuide.status, 200, '歌劇院場館圖鑑應可開啟');
     assert.match(await theaterGuide.text(), /臺中國家歌劇院/);
@@ -314,6 +353,35 @@ async function checkPublicApiContract(afterChecks) {
   }
 }
 
+async function checkLocalPreviewFiles() {
+  const port = 38000 + Math.floor(Math.random() * 2000);
+  const base = `http://127.0.0.1:${port}`;
+  const server = spawn(process.execPath, ['preview.cjs'], {
+    cwd: project, env: { ...process.env, PORT: String(port) }, stdio: 'ignore',
+  });
+  try {
+    let ready = false;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      try { if ((await fetch(base + '/preview-status')).status === 200) { ready = true; break; } }
+      catch { await new Promise((resolve) => setTimeout(resolve, 100)); }
+    }
+    assert.equal(ready, true, '本機預覽應可啟動');
+    for (const path of ['/react-assets/missing-review.js', '/react-assets/missing-review.css']) {
+      const response = await fetch(base + path);
+      assert.equal(response.status, 404, '本機預覽缺檔須回404而非200');
+      assert.match(response.headers.get('content-type'), /application\/json/);
+      assert.deepEqual(await response.json(), { error: { code: 'NOT_FOUND', message: '找不到檔案' } });
+      assert.equal((await fetch(base + '/explore/collections/')).status, 200, '缺檔後服務須繼續運作');
+    }
+  } finally {
+    if (server.exitCode === null && server.signalCode === null) {
+      const exited = new Promise((resolve) => server.once('exit', resolve));
+      server.kill();
+      await exited;
+    }
+  }
+}
+
 async function checkPreviewIndexing() {
   const port = 35000 + Math.floor(Math.random() * 2000);
   const base = `http://127.0.0.1:${port}`;
@@ -487,6 +555,33 @@ async function main() {
   assert.equal((await testDb.query(`SELECT count(*)::int AS count FROM art_exhibition_changes
     WHERE field_name='artistNames'`)).rows[0].count, 1);
   assert.equal((await testDb.query(`SELECT count(*)::int AS count FROM art_related_events`)).rows[0].count, 1);
+  const artSecondUrl = artUrl.replace('60146', '60123');
+  const artSecondCard = artCard.replaceAll('60146', '60123').replaceAll(artTitle, '另檔整合測試特展');
+  const artSecondDetail = artDetail('測試藝術家').replaceAll(artTitle, '另檔整合測試特展');
+  await writeFile(artSnapshot, JSON.stringify({pages:[artCard + artSecondCard, ''],
+    details:{[artUrl]:artDetail('乙藝術家'),[artSecondUrl]:artSecondDetail}}), 'utf8');
+  artIngest();
+  const officialArtIngest = () => JSON.parse(execFileSync(process.execPath,
+    ['--import',pathToFileURL(join(project,'test/fixtures/mock-ntmofa-fetch.mjs')).href,
+      '--experimental-strip-types','src/ingest.ts','--source','ntmofa','--official'],
+    {cwd:project,env:{...artEnv,TEST_NTMOFA_SNAPSHOT:artSnapshot},encoding:'utf8'}));
+  assert.equal(officialArtIngest().coverageStatus,'baseline_created');
+  const artOfficialAt = (await testDb.query(`SELECT last_official_success_at FROM museums
+    WHERE id='ntmofa'`)).rows[0].last_official_success_at;
+  await writeFile(artSnapshot, JSON.stringify({pages:[artCard + artSecondCard, ''],
+    details:{[artUrl]:artDetail('乙藝術家')}}), 'utf8');
+  const partialArt = officialArtIngest();
+  assert.equal(partialArt.review, 1);
+  assert.equal(partialArt.coverageStatus,'deferred_partial','單筆失聯也不宣稱官方完整同步');
+  assert.equal((await testDb.query(`SELECT last_official_success_at FROM museums
+    WHERE id='ntmofa'`)).rows[0].last_official_success_at.getTime(),artOfficialAt.getTime());
+  assert.equal((await testDb.query(`SELECT visible FROM exhibitions WHERE museum_id='ntmofa'
+    AND source_url=$1`,[artSecondUrl])).rows[0].visible,true,'單筆失聯不得隱藏既有國美館展覽');
+  await writeFile(artSnapshot, JSON.stringify({pages:[artCard + artSecondCard, ''],
+    details:{[artUrl]:artDetail('乙藝術家'),[artSecondUrl]:'<div class="programDetailGroup"><div class="title_01">矛盾標題</div></div>'}}), 'utf8');
+  artIngest();
+  assert.equal((await testDb.query(`SELECT visible FROM exhibitions WHERE museum_id='ntmofa'
+    AND source_url=$1`,[artSecondUrl])).rows[0].visible,false,'成功取得但內容矛盾仍須隔離');
   const nstmData = Array.from({ length: 6 }, (_, index) => ({
     Category: '特展', ExhibitionName: `整合測試科工館展覽${index + 1}`,
     ExhibitionStartDate: '20260101', ExhibitionEndDate: '20991231', Floor: '2F',
@@ -960,6 +1055,18 @@ async function main() {
     '官方節目版本變更後，舊核對結論必須失效並重新審查');
   assert.equal(preservedReview.rows[0].status_origin,'source');
   assert.equal(preservedReview.rows[0].status_evidence_url,null);
+  const changeCount = (await testDb.query(`SELECT count(*)::int AS count FROM domain_event_changes
+    WHERE event_id=(SELECT id FROM domain_events WHERE source_id='ntt' AND source_key=$1)`,
+  [performance.sourceKey])).rows[0].count;
+  assert.deepEqual(await importDomainEvents(testDb,[{...performance,sessions:[secondSession]}],
+    'single_detail','2026-10-12T12:00:00Z'),{inserted:0,updated:0,unchanged:1});
+  const repeatedReview = await testDb.query(`SELECT status FROM event_sessions s
+    JOIN domain_events d ON d.id=s.event_id WHERE d.source_id='ntt' AND d.source_key=$1 AND s.starts_at=$2`,
+  [performance.sourceKey,secondStart]);
+  assert.equal(repeatedReview.rows[0].status,'unknown','相同來源重複匯入不得解除重新核對狀態');
+  assert.equal((await testDb.query(`SELECT count(*)::int AS count FROM domain_event_changes
+    WHERE event_id=(SELECT id FROM domain_events WHERE source_id='ntt' AND source_key=$1)`,
+  [performance.sourceKey])).rows[0].count,changeCount,'未變資料不製造異動或無紀錄的狀態恢復');
   assert.equal((await reviewNttSession(testDb,sessionReview)).changed,true,
     '核對者可依新版官網內容再次逐場確認');
   await assert.rejects(importDomainEvents(testDb,[performance],'single_detail','2026-10-10T12:00:00Z'),/更舊/);
@@ -1434,6 +1541,7 @@ async function main() {
   assert.equal((await testDb.query('SELECT count(*)::int AS count FROM programme_events')).rows[0].count,
     5, '歷史缺席項可保留，但覆蓋率只與上一份可信快照比較');
   await checkPreviewIndexing();
+  await checkLocalPreviewFiles();
   process.stdout.write('匯入回滾、去重、欄位異動及公開 API 回應契約：通過\n');
 }
 

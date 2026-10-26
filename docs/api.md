@@ -1,5 +1,7 @@
 # v0.1 API 契約
 
+2026-10-26本機修正（待部署）：場次因來源內容變更而失效的人工結論，及既有unknown，遇到僅預設scheduled的來源資料時維持unknown，重複匯入不解除待核對。明確來源狀態或人工重新核對才可更新。國美館單筆詳情失聯保留上次可用展覽，該次官方批次為deferred_partial，不推進完整官方成功時間；仍保留待審原因。回應欄位未變，見[修正紀錄](stage-2026-10-26-reliability-and-zuojhen.md)。
+
 關鍵字 `q` 是不區分大小寫的字面子字串搜尋；`%`、`_`、`#` 不作查詢語法。`GET /museums` 的 `lastSuccessAt` 是最後成功匯入時間（包含手動檔案／快照）；`lastOfficialSuccessAt` 是最後成功取得並匯入官方來源的時間。`dataStatus` 依後者與最近同步嘗試判斷，手動匯入不能刷新官方新鮮度。
 
 Base URL `http://127.0.0.1:3000`。日期格式 `YYYY-MM-DD`；錯誤格式 `{ "error": { "code": "...", "message": "..." } }`。[OpenAPI 3.0 規格](openapi.yaml)描述公開唯讀端點，可供文件工具匯入；`npm test` 會檢查語法、路由及引用。
