@@ -100,8 +100,14 @@ export async function classifyNtmofaPages(pages: string[], fetchDetail: (url: st
       record.status = 'ignored'; record.reason = '常設、公告、線上或館外項目'; continue;
     }
     if (!dates) { record.reason = '缺少完整展期'; continue; }
+    let html: string;
+    try { html = await fetchDetail(target.url); }
+    catch (error) {
+      record.preserveExisting = true;
+      record.reason = `詳情暫時無法取得，保留上次核對資料：${error instanceof Error ? error.message : String(error)}`;
+      continue;
+    }
     try {
-      const html = await fetchDetail(target.url);
       const detailTitle = plain(html.match(/<div class="programDetailGroup">[\s\S]*?<div class="title_01">([\s\S]*?)<\/div>/)?.[1] ?? '');
       if (detailTitle.normalize('NFKC') !== title.normalize('NFKC')) throw new Error('詳情標題與官方清單不符');
       const onSite = /展覽室|教育展示空間|美術街/.test(venue)

@@ -234,7 +234,7 @@ async function applyCorrections(client: pg.PoolClient, museum: string, provider:
 async function quarantineInvalidPrimaryRecords(client: pg.PoolClient, museum: string,
   provider: string, records: SourceRecord[]): Promise<void> {
   for (const record of records) {
-    if (record.status !== 'review') continue;
+    if (record.status !== 'review' || record.preserveExisting) continue;
     const previous = await client.query<{ source_url: string | null }>(`SELECT source_url
       FROM source_records WHERE museum_id=$1 AND provider=$2 AND source_key=$3`,
     [museum, provider, record.sourceKey]);
@@ -313,7 +313,7 @@ async function main(): Promise<void> {
       sourceRows: null as number | null, coverageBaselineRows: null as number | null };
     if (official && rows.length > 0) {
       const coverage = await assessOfficialSourceCoverage(client, museum, provider, runId!, rows, records,
-        knownGaps.length > 0);
+        knownGaps.length > 0 || records.some((record) => record.preserveExisting));
       counts.coverageStatus = coverage.status;
       counts.sourceIdentities = coverage.identityCount;
       counts.sourceIdentityKeys = coverage.identityKeys;

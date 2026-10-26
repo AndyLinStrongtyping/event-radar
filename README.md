@@ -1,5 +1,7 @@
 # Event Radar｜博物館與展演資訊整理平台
 
+**產品文件入口：**[產品需求規格（PRD）](docs/product-prd.md) → [最小可用版本與優先級](docs/product-mvp.md) → [使用者故事、使用案例與驗收條件](docs/product-stories.md) → [產品流程](docs/product-flows.md)。這套文件於 2026-10-25 依現況補建；[本輪審查](docs/review-2026-10-25-non-seo.md)的五項可靠性缺陷已本機修正。10/26新增14館各一筆的短篇圖鑑，待發布；三篇完整展品長文與閱讀事件仍屬規劃。
+
 Event Radar 將多個官方來源的展覽與節目資料轉成可追溯的查詢結果。核心工作是**來源資料轉換器、資料驗證、保守去重、異動偵測、待審隔離與來源健康追蹤**；不同領域保留各自的時間模型。[快速公開入口](https://andylinstrongtyping.github.io/event-radar/)由 GitHub Pages 提供介面與圖片，[主要網址／API](https://event-radar-preview.onrender.com/)則由 Render 連接 Neon。免費後端休眠時，快速入口仍會先顯示可操作介面，但展覽資料可能要等待後端喚醒。Search Console 以 Render 為 canonical；GA4 已收到本站測試造訪，尚無可宣稱的外部訪客或搜尋成效。
 
 | 領域 | 現有能力 | 資料邊界 |
@@ -99,3 +101,6 @@ npm start
 ## 已完成與未完成
 
 P7 已完成**現有本機功能**的 72 項單元、型別、React build、隔離 PostgreSQL／HTTP 整合及公開 GET OpenAPI 回應契約驗收；P8 文件與作品集資訊見[驗收紀錄](docs/stage-2026-10-16-phase8.md)。P9 免費技術預覽已完成單次部署與 smoke；來源跨週穩定、奇美特展正式自動匯入、沖繩自動來源、逐日特殊開館、線上排程、通知、搜尋流量與 AWS 尚未完成。不能把單次線上驗收寫成長期維運或真實使用成果。
+# 本機新增：館藏與展品圖鑑
+
+`/explore/collections/` 提供14館各一筆代表展品／主題選讀，支援館別、分類與分享網址。原創歷史百科插畫與參考照片分別標示；不代表當日在展。此批目前待發布，詳見[2026/10/26圖鑑紀錄](docs/stage-2026-10-26-collection-atlas.md)。

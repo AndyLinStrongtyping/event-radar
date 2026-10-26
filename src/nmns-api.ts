@@ -1,3 +1,5 @@
+import { SourceRequestError } from './retry-policy.ts';
+
 const base = 'https://www.nmns.edu.tw/backend/opendata/';
 
 export async function fetchNmnsApi(path: 'Exhibition/list' | 'Calendar/weekHours',
@@ -12,11 +14,15 @@ export async function fetchNmnsApi(path: 'Exhibition/list' | 'Calendar/weekHours
   let response: Response;
   try { response = await fetch(url, { redirect: 'manual', signal: AbortSignal.timeout(15_000),
     headers: { Accept: 'application/json' } }); }
-  catch { throw new Error('科博館 API 連線失敗'); }
+  catch { throw new SourceRequestError('科博館 API 連線失敗', true); }
   if (new URL(response.url).hostname !== 'www.nmns.edu.tw' || !response.ok) {
-    throw new Error(`科博館 API 回應失敗（HTTP ${response.status}）`);
+    throw new SourceRequestError(`科博館 API 回應失敗（HTTP ${response.status}）`,
+      new URL(response.url).hostname === 'www.nmns.edu.tw'
+        && (response.status === 429 || response.status >= 500));
   }
-  const bytes = await response.arrayBuffer();
+  let bytes: ArrayBuffer;
+  try { bytes = await response.arrayBuffer(); }
+  catch { throw new SourceRequestError('科博館 API 回應讀取中斷', true); }
   if (bytes.byteLength > 10_000_000) throw new Error('科博館 API 回應過大');
   try { return JSON.parse(new TextDecoder().decode(bytes)); }
   catch { throw new Error('科博館 API 回應不是 JSON'); }

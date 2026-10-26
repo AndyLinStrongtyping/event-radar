@@ -49,9 +49,13 @@ for (const path of ['/performances?limit=1', '/marine-programmes?limit=1']) {
 }
 await get('/guides/nmmba.html', /text\/html/);
 await get('/assets/fossil-penghu-crocodile-gov.jpg', /image\/jpeg/);
+await get('/assets/atlas-beluga-3d-aged-v2.webp', /image\/webp/);
+await get('/assets/atlas-mummy.webp', /image\/webp/);
+await get('/assets/zuojhen-evolution-hall-user.jpg', /image\/jpeg/);
 for (const [path, title] of [
   ['/explore/ocean/', '深海探勘'],
   ['/explore/fossils/', '化石探勘'],
+  ['/explore/collections/', '館藏與展品圖鑑'],
 ]) {
   const page = await (await get(path, /text\/html/)).text();
   assert.match(page, new RegExp(`<title>${title}`), `${path} 缺少獨立頁面標題`);
