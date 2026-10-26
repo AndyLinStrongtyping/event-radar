@@ -14,4 +14,11 @@
 
 本輪是編輯既有內容，未另做全站逐頁改寫或新的學術考證。沒有改資料庫、來源匯入、API、排程及圖片。圖鑑仍是人工知識選讀，不是當日展件清單。
 
-驗證：型別檢查、前端建置、兩項既有圖鑑測試、83份Markdown本機連結檢查與差異格式檢查通過。未新增文字快照測試，未重跑與文案無關的資料庫整合。本文件不代表已發布；修改先提供本機預覽。
+本機驗證：型別檢查、前端建置、兩項既有圖鑑測試、83份Markdown本機連結檢查與差異格式檢查通過。未新增文字快照測試；本機未重跑與文案無關的資料庫整合，發布CI另執行完整檢查。
+
+## 公開發布結果
+
+- 功能提交 `91ac0b71d3ba62f20db8a286a9ce945aea4bc717`，經[PR #25](https://github.com/AndyLinStrongtyping/event-radar/pull/25)合併；合併提交 `66e962bb1cb0562d7622e337c63c8d541f7fc934`。
+- PR的兩組程式與資料庫檢查成功，main的[驗證工作](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/40327765105)成功。
+- [GitHub Pages部署](https://github.com/AndyLinStrongtyping/event-radar/actions/runs/40327765205)成功。瀏覽器重載[公開白鯨圖鑑](https://andylinstrongtyping.github.io/event-radar/explore/collections/?museum=nmmba)，已顯示「聊聊牠的日常」「有幾個細節滿有意思」及新版介紹。
+- Render沒有重新部署；Pages圖鑑已更新，但連向Render的館所介紹（包括左鎮）尚未套用本輪修改。不能把Pages成功當作Render也已更新。
