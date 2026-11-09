@@ -28,6 +28,7 @@
     "review:approve": "node --env-file-if-exists=.env --experimental-strip-types src/approve-review.ts",
     "admin": "node --env-file-if-exists=.env --experimental-strip-types src/admin-server.ts",
     "migrate": "node --env-file-if-exists=.env --experimental-strip-types src/migrate.ts",
+    "preview:moc": "node scripts/moc-preview-cli.mjs",
     "check:chimei": "node --experimental-strip-types src/check-chimei.ts",
     "probe:chimei": "node --experimental-strip-types src/probe-chimei-source.ts",
     "probe:ntmofa": "node --experimental-strip-types src/probe-ntmofa.ts",
